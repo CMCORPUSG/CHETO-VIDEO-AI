@@ -14,27 +14,31 @@ Selección local nativa, validación segura, FFprobe, metadata normalizada, pers
 
 Persistencia administrada por Rust, manifests versionados, migración progresiva desde el índice v2 y primera especificación EDL vacía en microsegundos.
 
-## V0.4 — Transcripción
+## V0.4 — Playback + Proxy (implementado)
+
+Reproductor local controlado, timebase en microsegundos, selección original/proxy, generación FFmpeg cancelable, progreso real y fallback NVENC→libx264.
+
+## V0.5 — Transcripción
 
 Pipeline local de audio y transcripción, sujeto a evaluación técnica y de recursos.
 
-## V0.5 — Smart Cut
+## V0.6 — Smart Cut
 
 Detección y propuesta revisable de cortes.
 
-## V0.6 — Smart Camera
+## V0.7 — Smart Camera
 
 Decisiones de zoom, paneo, seguimiento y reencuadre.
 
-## V0.7 — Subtítulos
+## V0.8 — Subtítulos
 
 Edición, estilos y exportación de subtítulos.
 
-## V0.8 — B-roll
+## V0.9 — B-roll
 
 Flujo opcional y explícito para sugerencias o generación cuando aporte valor.
 
-## V0.9 — Render + Quality Check
+## V0.10 — Render + Quality Check
 
 Render MP4 y verificaciones técnicas del resultado.
 

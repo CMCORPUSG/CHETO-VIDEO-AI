@@ -2,25 +2,30 @@ import { AlertTriangle, ArrowLeft, Clock3, Database, FileJson2, FileSearch, File
 import type { ReactNode } from "react";
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
+import { MediaWorkspace } from "../components/media/MediaWorkspace";
 import { StatusBadge } from "../components/StatusBadge";
 import { formatFileSize } from "../lib/format";
 import { formatBitrate, formatChannels, formatCodec, formatDuration, formatFps, formatSampleRate } from "../media/format";
 import { countEdlTracks } from "../project/conversion";
 import type { ProjectBundle } from "../project/contracts";
 import type { LocalProject } from "../types/project";
+import type { LogLevel } from "../types/diagnostics";
+import type { ToastTone } from "../types/toast";
 
 interface ProjectDetailPageProps {
   isRelocating: boolean;
   onBack: () => void;
   onDelete: (project: LocalProject) => void;
   onRelocate: (project: LocalProject) => void;
+  onLog: (message: string, level?: LogLevel) => void;
+  onNotify: (message: string, tone?: ToastTone) => void;
   project: LocalProject;
   projectBundle: ProjectBundle | null;
   storageError: string | null;
   storageLoading: boolean;
 }
 
-export function ProjectDetailPage({ isRelocating, onBack, onDelete, onRelocate, project, projectBundle, storageError, storageLoading }: ProjectDetailPageProps) {
+export function ProjectDetailPage({ isRelocating, onBack, onDelete, onLog, onNotify, onRelocate, project, projectBundle, storageError, storageLoading }: ProjectDetailPageProps) {
   const metadata = project.metadata;
   const sourceUnavailable = project.status === "source-missing" || project.status === "legacy";
   const trackCounts = countEdlTracks(projectBundle);
@@ -50,6 +55,8 @@ export function ProjectDetailPage({ isRelocating, onBack, onDelete, onRelocate, 
           </div>
         </Card>
       ) : null}
+
+      {projectBundle && project.status === "ready" ? <MediaWorkspace bundle={projectBundle} onLog={onLog} onNotify={onNotify} /> : null}
 
       <Card className="surface-shine p-6">
         <div className="flex items-start gap-4">

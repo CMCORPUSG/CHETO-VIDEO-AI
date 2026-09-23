@@ -82,25 +82,25 @@ pub struct ProjectManifest {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct FpsSnapshot {
-    numerator: Option<u64>,
-    denominator: Option<u64>,
-    decimal: Option<f64>,
+    pub(crate) numerator: Option<u64>,
+    pub(crate) denominator: Option<u64>,
+    pub(crate) decimal: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SourceVideoSnapshot {
-    codec: Option<String>,
-    codec_long_name: Option<String>,
-    width: Option<u64>,
-    height: Option<u64>,
-    display_width: Option<u64>,
-    display_height: Option<u64>,
-    fps: FpsSnapshot,
-    pixel_format: Option<String>,
-    bit_rate: Option<u64>,
-    rotation: i32,
-    display_aspect_ratio: Option<String>,
+    pub(crate) codec: Option<String>,
+    pub(crate) codec_long_name: Option<String>,
+    pub(crate) width: Option<u64>,
+    pub(crate) height: Option<u64>,
+    pub(crate) display_width: Option<u64>,
+    pub(crate) display_height: Option<u64>,
+    pub(crate) fps: FpsSnapshot,
+    pub(crate) pixel_format: Option<String>,
+    pub(crate) bit_rate: Option<u64>,
+    pub(crate) rotation: i32,
+    pub(crate) display_aspect_ratio: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -136,18 +136,18 @@ pub struct ContainerSnapshot {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SourceManifest {
-    schema_version: u32,
-    source_id: String,
-    path: String,
-    file_name: String,
-    extension: String,
-    file_size_bytes: u64,
-    modified_at: Option<String>,
-    duration_us: Option<u64>,
-    container: ContainerSnapshot,
-    video: SourceVideoSnapshot,
-    audio: SourceAudioSnapshot,
-    streams: StreamCounts,
+    pub(crate) schema_version: u32,
+    pub(crate) source_id: String,
+    pub(crate) path: String,
+    pub(crate) file_name: String,
+    pub(crate) extension: String,
+    pub(crate) file_size_bytes: u64,
+    pub(crate) modified_at: Option<String>,
+    pub(crate) duration_us: Option<u64>,
+    pub(crate) container: ContainerSnapshot,
+    pub(crate) video: SourceVideoSnapshot,
+    pub(crate) audio: SourceAudioSnapshot,
+    pub(crate) streams: StreamCounts,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -259,9 +259,9 @@ pub struct EdlManifest {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectBundle {
-    project: ProjectManifest,
-    source: SourceManifest,
-    edl: EdlManifest,
+    pub(crate) project: ProjectManifest,
+    pub(crate) source: SourceManifest,
+    pub(crate) edl: EdlManifest,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -279,7 +279,7 @@ pub struct ProjectStorageInfo {
     projects_path: String,
 }
 
-struct ProjectStorage {
+pub(crate) struct ProjectStorage {
     projects_root: PathBuf,
 }
 
@@ -288,7 +288,7 @@ impl ProjectStorage {
         Self { projects_root }
     }
 
-    fn from_app(app: &AppHandle) -> Result<Self, ProjectStorageError> {
+    pub(crate) fn from_app(app: &AppHandle) -> Result<Self, ProjectStorageError> {
         let app_data = app.path().app_data_dir().map_err(|error| {
             ProjectStorageError::new(
                 "app-data-unavailable",
@@ -311,7 +311,7 @@ impl ProjectStorage {
         })
     }
 
-    fn validate_id(value: &str, label: &str) -> Result<(), ProjectStorageError> {
+    pub(crate) fn validate_id(value: &str, label: &str) -> Result<(), ProjectStorageError> {
         Uuid::parse_str(value).map_err(|_| {
             ProjectStorageError::new(
                 "invalid-project-id",
@@ -321,7 +321,7 @@ impl ProjectStorage {
         Ok(())
     }
 
-    fn project_dir(&self, project_id: &str) -> Result<PathBuf, ProjectStorageError> {
+    pub(crate) fn project_dir(&self, project_id: &str) -> Result<PathBuf, ProjectStorageError> {
         Self::validate_id(project_id, "projectId")?;
         Ok(self.projects_root.join(project_id))
     }
@@ -402,7 +402,10 @@ impl ProjectStorage {
         Ok(bundle)
     }
 
-    fn load_project(&self, project_id: &str) -> Result<ProjectBundle, ProjectStorageError> {
+    pub(crate) fn load_project(
+        &self,
+        project_id: &str,
+    ) -> Result<ProjectBundle, ProjectStorageError> {
         let project_dir = self.project_dir(project_id)?;
         let bundle = ProjectBundle {
             project: self.read_json(&project_dir.join(PROJECT_FILE))?,

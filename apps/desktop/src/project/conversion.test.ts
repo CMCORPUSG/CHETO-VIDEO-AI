@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import fixture from "../media/__fixtures__/ffprobe-standard.json";
 import { normalizeProbe } from "../media/normalize";
 import type { LocalProject } from "../types/project";
-import { countEdlTracks, createManifestInitializationRequest, secondsToMicroseconds } from "./conversion";
+import { countEdlTracks, createManifestInitializationRequest } from "./conversion";
 import { projectStorageErrorMessage } from "./service";
 
 const projectId = "77f0f15f-cf3c-4a39-a2e6-1cd5528b13d0";
@@ -34,12 +34,6 @@ function localProject(): LocalProject {
 }
 
 describe("project manifest", () => {
-  it("convierte segundos a microsegundos enteros", () => {
-    expect(secondsToMicroseconds(58.000123)).toBe(58_000_123);
-    expect(secondsToMicroseconds(null)).toBeNull();
-    expect(secondsToMicroseconds(-1)).toBeNull();
-  });
-
   it("convierte un proyecto localStorage V2 en una solicitud de inicialización", () => {
     const request = createManifestInitializationRequest(localProject(), timestamp, sourceId);
     expect(request.project).toMatchObject({

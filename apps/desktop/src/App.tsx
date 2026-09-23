@@ -317,6 +317,8 @@ export function App() {
         isRelocating={isRelocating}
         onBack={() => setActivePage("projects")}
         onDelete={setProjectToDelete}
+        onLog={addLog}
+        onNotify={notify}
         onRelocate={(project) => void relocateProject(project)}
         project={selectedProject}
         projectBundle={projectBundles[selectedProject.id] ?? null}

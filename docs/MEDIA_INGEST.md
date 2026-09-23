@@ -59,4 +59,4 @@ Se controlan binario ausente, timeout, ruta relativa, archivo inexistente, carpe
 - Empaquetar FFmpeg/FFprobe como sidecar.
 - Abrir Explorer con selección segura del archivo (TASK-002A).
 - Selector de pista cuando existan múltiples streams.
-- Proxies, reproducción y análisis de contenido.
+- Análisis de contenido; reproducción y proxies se incorporaron en TASK-004.

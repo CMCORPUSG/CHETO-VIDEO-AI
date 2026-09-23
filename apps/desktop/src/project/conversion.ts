@@ -1,13 +1,8 @@
 import { createId } from "../lib/id";
 import type { VideoMetadata } from "../media/models";
+import { secondsToUs } from "../playback/time";
 import type { LocalProject } from "../types/project";
 import type { InitializeProjectRequest, ProjectBundle, SourceManifest, TrackCounts } from "./contracts";
-
-export function secondsToMicroseconds(seconds: number | null): number | null {
-  if (seconds === null || !Number.isFinite(seconds) || seconds < 0) return null;
-  const microseconds = Math.round(seconds * 1_000_000);
-  return Number.isSafeInteger(microseconds) ? microseconds : null;
-}
 
 function modifiedAt(milliseconds: number | null): string | null {
   if (milliseconds === null || !Number.isFinite(milliseconds)) return null;
@@ -24,7 +19,7 @@ export function createSourceManifest(metadata: VideoMetadata, sourceId: string):
     extension: metadata.extension.startsWith(".") ? metadata.extension : `.${metadata.extension}`,
     fileSizeBytes: metadata.sizeBytes,
     modifiedAt: modifiedAt(metadata.lastModifiedMs),
-    durationUs: secondsToMicroseconds(metadata.durationSeconds),
+    durationUs: metadata.durationSeconds === null ? null : secondsToUs(metadata.durationSeconds),
     container: metadata.container,
     video: {
       codec: metadata.video.codec,

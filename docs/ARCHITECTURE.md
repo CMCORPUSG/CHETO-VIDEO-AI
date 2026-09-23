@@ -19,6 +19,8 @@ Metadata service / FFprobe
 Rust Project Storage
     ↓ JSON versionado en AppData
 project.json + source.json + edl.json
+    ↓ reproducción / proxy explícito
+Media Player + Rust Proxy Pipeline
     ↓
 Python Worker (futuro)
     ↓
@@ -46,6 +48,12 @@ FFprobe produce JSON técnico. `apps/desktop/src/media` lo convierte en un model
 Rust centraliza el almacenamiento físico en `<appDataDir>/projects/<projectId>`. Valida UUID, evita path traversal y escribe `project.json`, `source.json` y `edl.json` mediante temporales y reemplazo seguro. React solicita operaciones por IPC y no escribe rutas arbitrarias.
 
 `cheto-video-ai.projects.v2` se conserva como índice ligero. Al abrir una entrada con metadata válida pero sin manifest, se inicializa el bundle de disco reutilizando la metadata existente, sin ejecutar FFprobe de nuevo y sin alterar el nombre personalizado.
+
+### Reproducción y proxy
+
+React controla el estado efímero del player y convierte segundos DOM a microsegundos sin persistir el playhead. Rust resuelve la fuente de reproducción por UUID, valida vigencia del proxy y autoriza en el protocolo asset únicamente el archivo elegido.
+
+`media_proxy.rs` resuelve almacenamiento e IPC; `proxy_ffmpeg.rs` administra proceso, progreso y cancelación; `proxy_model.rs` contiene contratos y lógica pura de dimensiones, vigencia y selección de encoder. Cada proyecto puede tener un proxy H.264/AAC dentro de `media/`, mientras el original continúa siendo la fuente maestra. Consulta `MEDIA_PLAYBACK.md` y `PROXY_PIPELINE.md`.
 
 ### Python Worker
 
