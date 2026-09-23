@@ -1,0 +1,60 @@
+@import "../../../../design/tokens/tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 720px;
+  background: var(--color-background);
+  font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--color-background);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: rgb(37 99 255 / 45%);
+  color: var(--color-text);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+
+::-webkit-scrollbar-thumb {
+  border: 3px solid var(--color-background);
+  border-radius: 999px;
+  background: var(--color-border);
+}
+
+.hero-grid {
+  background-image:
+    linear-gradient(110deg, rgb(16 23 32 / 98%) 30%, rgb(16 23 32 / 76%)),
+    linear-gradient(rgb(38 50 65 / 24%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(38 50 65 / 24%) 1px, transparent 1px);
+  background-size: auto, 32px 32px, 32px 32px;
+}

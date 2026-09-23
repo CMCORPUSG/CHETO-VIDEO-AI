@@ -1,0 +1,39 @@
+# Environment and credentials
+.env
+.env.*
+!.env.example
+*.key
+*.secret
+credentials/
+
+# Dependencies and build output
+node_modules/
+dist/
+target/
+*.tsbuildinfo
+
+# Local runtime data
+models/
+temp/
+cache/
+output/
+projects/local/
+logs/*.log
+
+# Personal media
+*.mp4
+*.mov
+*.mkv
+*.avi
+*.wav
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+coverage/
+playwright-report/
+test-results/

@@ -1,0 +1,19 @@
+{
+  "name": "cheto-video-ai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Base de escritorio para CHETO VIDEO AI",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @cheto/desktop",
+    "build": "npm run build --workspace @cheto/desktop",
+    "typecheck": "npm run typecheck --workspace @cheto/desktop",
+    "lint": "npm run lint --workspace @cheto/desktop",
+    "tauri": "npm run tauri --workspace @cheto/desktop"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  }
+}
