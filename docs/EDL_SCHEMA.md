@@ -39,7 +39,7 @@ Los tipos TypeScript y Rust reservan los siguientes contratos futuros:
 - `broll`: ID, intervalo, tipo de medio, origen, asset, razón y confianza.
 - `audio`: ID, intervalo, operación y parámetros JSON.
 
-Los procesadores futuros deberán validar que los IDs sean UUID, que los tiempos sean enteros no negativos y que `endUs > startUs` antes de guardar decisiones. Esta tarea sólo define y persiste el contenedor vacío.
+Smart Cut V1 materializa sugerencias aceptadas como `cuts` con `action: "remove"`, UUID determinista, razón y confianza. Antes de guardar valida que los tiempos sean enteros no negativos, que `endUs > startUs`, que el rango no exceda la fuente y que no se solape accidentalmente con otro corte. Sugerencias pendientes o rechazadas nunca pasan al EDL.
 
 ## Evolución
 

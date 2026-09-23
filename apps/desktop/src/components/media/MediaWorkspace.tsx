@@ -7,6 +7,7 @@ import { preferredPlaybackKind, type PlaybackPreference, type PlaybackSource, ty
 import { cancelProxy, createProxy, getProxyStatus, onProxyDiagnostic, onProxyProgress, playbackErrorMessage, resolvePlaybackSource } from "../../playback/service";
 import { Button } from "../Button";
 import { Card } from "../Card";
+import { SmartCutWorkspace } from "./SmartCutWorkspace";
 import { VideoPlayer } from "./VideoPlayer";
 import { TranscriptionWorkspace } from "./TranscriptionWorkspace";
 
@@ -132,6 +133,7 @@ export function MediaWorkspace({ bundle, onLog, onNotify }: MediaWorkspaceProps)
       </Card>
 
       <TranscriptionWorkspace bundle={bundle} onLog={onLog} onNotify={onNotify} onSeek={(timeUs) => setRequestedSeekUs(timeUs)} />
+      <SmartCutWorkspace bundle={bundle} onLog={onLog} onNotify={onNotify} onSeek={(timeUs) => setRequestedSeekUs(timeUs)} />
     </div>
   );
 }

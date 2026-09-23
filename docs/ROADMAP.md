@@ -22,9 +22,9 @@ Reproductor local controlado, timebase en microsegundos, selección original/pro
 
 Worker local faster-whisper/CTranslate2, inventario adaptativo de hardware, modelos bajo descarga explícita, fallback finito, cancelación, checkpoints y transcript v1 navegable desde el reproductor.
 
-## V0.6 — Smart Cut
+## V0.6 — Smart Cut (implementado)
 
-Detección y propuesta revisable de cortes.
+Propuestas locales y revisables para silencios, muletillas, repeticiones y falsos inicios; aceptación explícita y aplicación no destructiva al EDL.
 
 ## V0.7 — Smart Camera
 

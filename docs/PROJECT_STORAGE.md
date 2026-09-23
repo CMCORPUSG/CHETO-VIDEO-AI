@@ -10,7 +10,8 @@ Los proyectos no se guardan en el repositorio ni junto al video. El backend resu
 ├── source.json
 ├── edl.json
 ├── transcript.json              # sólo tras completar
-└── transcript.partial.json      # checkpoint recuperable
+├── transcript.partial.json      # checkpoint recuperable
+└── smart_cut.json               # propuestas y revisión persistente
 ```
 
 En Windows, con el identificador actual, la ubicación esperada es `%APPDATA%/com.chetovideoai.desktop/projects`. La aplicación obtiene este valor mediante `app.path().app_data_dir()`; React no construye ni recibe rutas arbitrarias de escritura.
@@ -88,6 +89,8 @@ Cada archivo tiene su propio `schemaVersion`. TASK-003/005 soporta únicamente l
 ## Transcript v1
 
 `transcript.json` conserva `projectId`, `sourceId`, snapshot de la fuente, fecha, motor/perfil efectivo, idioma, estadísticas y segmentos/palabras en microsegundos. Rust compara ID, tamaño y modificación del original para marcar resultados obsoletos. La escritura usa temporal y reemplazo seguro; un fallo o cancelación no destruye el transcript válido anterior. `transcript.partial.json` no se interpreta como resultado final y actualmente no permite reanudar a mitad de archivo.
+
+`smart_cut.json` conserva perfil, snapshot de fuente, estadísticas y sugerencias con estado de revisión. Se restaura al reabrir el proyecto y pasa a `stale` cuando cambia la fuente. No es una timeline paralela: al aplicar, sólo las sugerencias aceptadas se materializan en `edl.tracks.cuts`.
 
 ## Límites históricos de TASK-003
 

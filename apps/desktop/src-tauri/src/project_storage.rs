@@ -157,12 +157,12 @@ pub struct SourceManifest {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CutDecision {
-    id: String,
-    start_us: u64,
-    end_us: u64,
-    action: String,
-    reason: Option<String>,
-    confidence: Option<f64>,
+    pub(crate) id: String,
+    pub(crate) start_us: u64,
+    pub(crate) end_us: u64,
+    pub(crate) action: String,
+    pub(crate) reason: Option<String>,
+    pub(crate) confidence: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -216,7 +216,7 @@ pub struct AudioDecision {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct EdlTracks {
-    cuts: Vec<CutDecision>,
+    pub(crate) cuts: Vec<CutDecision>,
     camera: Vec<CameraDecision>,
     captions: Vec<CaptionDecision>,
     broll: Vec<BrollDecision>,
@@ -254,10 +254,10 @@ pub struct EdlManifest {
     project_id: String,
     source_id: String,
     timebase: EdlTimebase,
-    source_duration_us: Option<u64>,
-    tracks: EdlTracks,
+    pub(crate) source_duration_us: Option<u64>,
+    pub(crate) tracks: EdlTracks,
     output: EdlOutput,
-    updated_at: String,
+    pub(crate) updated_at: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -288,7 +288,7 @@ pub(crate) struct ProjectStorage {
 }
 
 impl ProjectStorage {
-    fn new(projects_root: PathBuf) -> Self {
+    pub(crate) fn new(projects_root: PathBuf) -> Self {
         Self { projects_root }
     }
 
@@ -436,6 +436,22 @@ impl ProjectStorage {
         Ok(bundle)
     }
 
+    pub(crate) fn update_smart_cut_workflow(
+        &self,
+        project_id: &str,
+        state: WorkflowState,
+        updated_at: String,
+    ) -> Result<ProjectBundle, ProjectStorageError> {
+        let mut bundle = self.load_project(project_id)?;
+        bundle.project.workflow.smart_cut = state;
+        bundle.project.updated_at = updated_at;
+        self.write_json(
+            &self.project_dir(project_id)?.join(PROJECT_FILE),
+            &bundle.project,
+        )?;
+        Ok(bundle)
+    }
+
     pub(crate) fn recover_interrupted_transcription(
         &self,
         project_id: &str,
@@ -519,7 +535,7 @@ impl ProjectStorage {
         Ok(bundle)
     }
 
-    fn write_json<T: Serialize>(
+    pub(crate) fn write_json<T: Serialize>(
         &self,
         destination: &Path,
         value: &T,
@@ -613,7 +629,10 @@ impl ProjectStorage {
         Ok(())
     }
 
-    fn read_json<T: DeserializeOwned>(&self, path: &Path) -> Result<T, ProjectStorageError> {
+    pub(crate) fn read_json<T: DeserializeOwned>(
+        &self,
+        path: &Path,
+    ) -> Result<T, ProjectStorageError> {
         let file = File::open(path).map_err(|error| {
             ProjectStorageError::new(
                 "project-file-unavailable",

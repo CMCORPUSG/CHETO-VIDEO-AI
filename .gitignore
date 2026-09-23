@@ -28,6 +28,7 @@ logs/*.log
 transcript.json
 transcript.json.tmp
 transcript.partial.json
+smart_cut.json
 audio-transcription-*.wav
 worker/build/
 worker/dist/

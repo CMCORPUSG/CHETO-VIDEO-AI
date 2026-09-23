@@ -61,6 +61,10 @@ Rust inventaría hardware mediante `sysinfo` y DXGI, confirma por separado si CT
 
 Al mover la aplicación a otra PC se vuelve a detectar hardware y a resolver backend; sólo se conserva la preferencia general de calidad, nunca una imposición incompatible de dispositivo. Los modelos locales válidos se reutilizan, los ausentes requieren confirmación de descarga y CPU permanece como ruta segura. AMD e Intel usan CPU en este backend inicial; la interfaz de motor permite sumar en el futuro whisper.cpp, DirectML, OpenVINO, Vulkan u otros motores sin cambiar el contrato del transcript.
 
+### Smart Cut
+
+Rust consume el transcript persistido y genera `smart_cut.json` como capa de propuestas revisables. El análisis es heurístico, local y parametrizado por perfil. Sólo sugerencias aceptadas explícitamente pasan al track `cuts` del EDL existente; el módulo no crea otra timeline ni modifica el medio. Consulta `SMART_CUT.md`.
+
 ### Engines
 
 Módulos independientes para ingest, audio, transcripción, escenas, visión, cursor, edición, subtítulos, render y calidad. Ingest ya define el límite funcional de metadata; los demás permanecen documentales.

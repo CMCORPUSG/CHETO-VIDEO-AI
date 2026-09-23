@@ -19,7 +19,7 @@ chrono = "0.4"
 sysinfo = "0.39.6"
 tauri = { version = "2", features = ["protocol-asset"] }
 tauri-plugin-dialog = "2"
-uuid = { version = "1", features = ["serde", "v4"] }
+uuid = { version = "1", features = ["serde", "v4", "v5"] }
 windows = { version = "0.61.3", features = ["Win32_Graphics_Dxgi", "Win32_Graphics_Dxgi_Common"] }
 
 [dev-dependencies]

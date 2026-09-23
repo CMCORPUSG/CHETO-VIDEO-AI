@@ -4,6 +4,7 @@ mod media_proxy;
 mod project_storage;
 mod proxy_ffmpeg;
 mod proxy_model;
+mod smart_cut;
 mod transcription;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -30,6 +31,10 @@ pub fn run() {
             project_storage::save_project_manifest,
             project_storage::save_project_edl,
             project_storage::update_project_source,
+            smart_cut::analyze_smart_cut,
+            smart_cut::apply_smart_cut_to_edl,
+            smart_cut::get_smart_cut,
+            smart_cut::review_smart_cut_suggestion,
             transcription::cancel_transcription,
             transcription::download_transcription_model,
             transcription::get_transcript_status,
