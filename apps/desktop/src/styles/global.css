@@ -54,7 +54,11 @@ button {
 ::-webkit-scrollbar-thumb {
   border: 3px solid var(--color-background);
   border-radius: 999px;
-  background: var(--color-border);
+  background: color-mix(in srgb, var(--color-border) 78%, transparent);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-bright);
 }
 
 .hero-grid {
@@ -89,6 +93,52 @@ button {
   background: linear-gradient(90deg, transparent, rgb(0 213 255 / 55%), transparent);
   content: "";
   pointer-events: none;
+}
+
+.page-enter {
+  animation: page-enter var(--motion-normal) var(--ease-standard) both;
+}
+
+.modal-backdrop-enter {
+  animation: backdrop-enter var(--motion-normal) ease-out both;
+}
+
+.modal-panel-enter {
+  animation: modal-enter var(--motion-slow) var(--ease-standard) both;
+}
+
+.menu-enter {
+  animation: menu-enter var(--motion-fast) var(--ease-standard) both;
+  transform-origin: top right;
+}
+
+.toast-enter {
+  animation: toast-enter var(--motion-normal) var(--ease-standard) both;
+}
+
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes backdrop-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modal-enter {
+  from { opacity: 0; transform: translateY(12px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes menu-enter {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes toast-enter {
+  from { opacity: 0; transform: translateX(14px) scale(0.98); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
 }
 
 @media (prefers-reduced-motion: reduce) {

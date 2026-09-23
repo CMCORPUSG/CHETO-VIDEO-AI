@@ -1,24 +1,26 @@
 import {
   Activity,
-  ArrowRight,
   Box,
   CloudOff,
   Cpu,
-  FileVideo,
   Microchip,
   Plus,
   type LucideIcon,
 } from "lucide-react";
-import type { ProjectDraft } from "../components/NewProjectModal";
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { EmptyState } from "../components/EmptyState";
 import { HeroCard } from "../components/HeroCard";
+import { ProjectCard } from "../components/ProjectCard";
 import { StatusBadge } from "../components/StatusBadge";
+import type { LocalProject } from "../types/project";
 
 interface HomePageProps {
+  onDeleteProject: (project: LocalProject) => void;
   onNewProject: () => void;
-  projects: ProjectDraft[];
+  onOpenProject: (project: LocalProject) => void;
+  onRenameProject: (project: LocalProject) => void;
+  projects: LocalProject[];
 }
 
 interface SystemStatusItem {
@@ -65,7 +67,13 @@ const systemStatus: SystemStatusItem[] = [
   },
 ];
 
-export function HomePage({ onNewProject, projects }: HomePageProps) {
+export function HomePage({
+  onDeleteProject,
+  onNewProject,
+  onOpenProject,
+  onRenameProject,
+  projects,
+}: HomePageProps) {
   return (
     <div className="space-y-10">
       <HeroCard onNewProject={onNewProject} />
@@ -93,21 +101,14 @@ export function HomePage({ onNewProject, projects }: HomePageProps) {
           />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {projects.map((project) => (
-              <Card className="group surface-shine p-5 transition duration-200 hover:-translate-y-0.5 hover:border-line-bright hover:shadow-card-hover" key={`${project.name}-${project.fileName}`}>
-                <div className="flex items-start justify-between gap-4">
-                  <span className="grid h-12 w-12 place-items-center rounded-lg border border-primary/20 bg-[var(--gradient-primary)] text-white shadow-glow">
-                    <FileVideo aria-hidden="true" size={20} />
-                  </span>
-                  <StatusBadge label="Sin procesar" />
-                </div>
-                <h3 className="mt-5 truncate text-base font-semibold text-ink">{project.name}</h3>
-                <p className="mt-1 truncate text-sm text-muted">{project.fileName}</p>
-                <div className="mt-5 flex items-center justify-between border-t border-line pt-4 text-xs text-muted">
-                  <span>Creado en esta sesión</span>
-                  <ArrowRight aria-hidden="true" className="transition group-hover:translate-x-1 group-hover:text-cyan" size={16} />
-                </div>
-              </Card>
+            {projects.slice(0, 3).map((project) => (
+              <ProjectCard
+                key={project.id}
+                onDelete={onDeleteProject}
+                onOpen={onOpenProject}
+                onRename={onRenameProject}
+                project={project}
+              />
             ))}
           </div>
         )}

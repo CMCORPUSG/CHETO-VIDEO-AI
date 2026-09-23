@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { cn } from "../lib/cn";
 
-type ButtonVariant = "primary" | "secondary" | "ghost";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
@@ -16,6 +16,8 @@ const variantStyles: Record<ButtonVariant, string> = {
     "border-line-bright/70 bg-elevated text-ink shadow-sm hover:border-cyan/50 hover:bg-card focus-visible:ring-cyan",
   ghost:
     "border-transparent bg-transparent text-muted hover:bg-card hover:text-ink focus-visible:ring-cyan",
+  danger:
+    "border-danger/50 bg-danger/10 text-danger hover:border-danger hover:bg-danger hover:text-white focus-visible:ring-danger",
 };
 
 export function Button({

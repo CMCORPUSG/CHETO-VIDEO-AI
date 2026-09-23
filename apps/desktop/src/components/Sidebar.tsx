@@ -8,11 +8,17 @@ import {
 } from "lucide-react";
 import { cn } from "../lib/cn";
 import type { PageId } from "../types/navigation";
+import type { LocalProfile } from "../types/profile";
 import { UserProfile } from "./UserProfile";
 
 interface SidebarProps {
   activePage: PageId;
   onNavigate: (page: PageId) => void;
+  onProfileAvatarChange: (avatar: string) => void;
+  onProfileAvatarRemove: () => void;
+  onProfileEdit: () => void;
+  onProfileError: (message: string) => void;
+  profile: LocalProfile;
 }
 
 interface NavigationItem {
@@ -28,7 +34,15 @@ const navigation: NavigationItem[] = [
   { id: "settings", label: "Configuración", icon: Settings },
 ];
 
-export function Sidebar({ activePage, onNavigate }: SidebarProps) {
+export function Sidebar({
+  activePage,
+  onNavigate,
+  onProfileAvatarChange,
+  onProfileAvatarRemove,
+  onProfileEdit,
+  onProfileError,
+  profile,
+}: SidebarProps) {
   return (
     <aside className="relative flex w-20 shrink-0 flex-col overflow-visible border-r border-line bg-[linear-gradient(180deg,var(--color-surface),#091422)] px-3 py-5 md:w-64 md:px-4">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-primary/10 to-transparent" />
@@ -81,7 +95,13 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
           <span className="h-1.5 w-1.5 rounded-full bg-success shadow-[0_0_8px_var(--color-success)]" />
           Sesión protegida
         </div>
-        <UserProfile />
+        <UserProfile
+          onAvatarChange={onProfileAvatarChange}
+          onAvatarRemove={onProfileAvatarRemove}
+          onEditName={onProfileEdit}
+          onError={onProfileError}
+          profile={profile}
+        />
       </div>
 
       <p className="relative mt-3 text-center font-mono text-[10px] text-muted/60 md:text-left md:pl-2">v0.1.0 · local</p>

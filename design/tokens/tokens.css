@@ -42,4 +42,9 @@
   --shadow-card-hover: 0 22px 55px rgb(2 9 22 / 34%);
   --shadow-glow: 0 0 44px rgb(47 107 255 / 15%);
   --shadow-modal: 0 32px 90px rgb(1 6 15 / 58%);
+
+  --motion-fast: 140ms;
+  --motion-normal: 200ms;
+  --motion-slow: 240ms;
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
 }

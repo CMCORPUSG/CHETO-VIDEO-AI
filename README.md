@@ -6,7 +6,7 @@ Aplicación de escritorio local para la edición inteligente y automática de vi
 
 **v0.1.0 — Bootstrap**
 
-Esta versión contiene únicamente la base del producto: shell de escritorio, interfaz inicial, navegación, design tokens, modal visual de proyecto, diagnóstico básico y documentación. No procesa ni reproduce video.
+Esta versión contiene la base del producto: shell de escritorio, interfaz inicial, navegación, design tokens, perfil local, referencias persistentes de proyectos, diagnóstico ligero y documentación. No procesa ni reproduce video.
 
 ## Arquitectura prevista
 
@@ -63,7 +63,7 @@ npm run build
 
 ## No implementado todavía
 
-No hay importación real, lectura de metadata, procesamiento, FFmpeg, reproducción avanzada, timeline, transcripción, IA, Smart Cut, Smart Camera, subtítulos, B-roll, render, APIs externas ni descarga de modelos. La API externa permanece desactivada por diseño.
+No hay importación real ni lectura técnica de metadata. La selección actual conserva únicamente nombre, extensión y tamaño como referencia local; nunca copia o procesa el video. Tampoco hay FFmpeg, reproducción avanzada, timeline, transcripción, IA, Smart Cut, Smart Camera, subtítulos, B-roll, render, APIs externas ni descarga de modelos. La API externa permanece desactivada por diseño.
 
 ## Roadmap resumido
 

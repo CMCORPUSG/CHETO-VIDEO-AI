@@ -25,7 +25,7 @@ Renderer
 
 ### Desktop UI
 
-Aplicación Tauri con React y TypeScript. Gestionará proyectos, configuración, diagnóstico y preview. En v0.1 sólo existe el shell visual y no se envían comandos de procesamiento.
+Aplicación Tauri con React y TypeScript. Gestiona referencias locales ligeras de proyectos, perfil, configuración y diagnóstico mediante almacenamiento local. En v0.1 no se envían comandos de procesamiento ni se leen contenidos de video.
 
 ### IPC futuro
 

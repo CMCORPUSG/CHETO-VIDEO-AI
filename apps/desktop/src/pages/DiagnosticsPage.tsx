@@ -1,83 +1,162 @@
-import { ClipboardCopy, Download, FileWarning, ListFilter } from "lucide-react";
-import { useState } from "react";
+import { CheckCircle2, ClipboardCopy, Download, FileWarning, ListFilter, TerminalSquare } from "lucide-react";
+import { useMemo, useState } from "react";
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { StatusBadge } from "../components/StatusBadge";
+import { cn } from "../lib/cn";
+import { formatLogTime, getOperatingSystem } from "../lib/format";
+import type { DiagnosticEvent, LogLevel } from "../types/diagnostics";
+import type { ToastTone } from "../types/toast";
 
-const startupLogs = [
-  "[INFO] Interfaz de escritorio iniciada.",
-  "[INFO] Workspace local preparado.",
-  "[INFO] Motor de procesamiento no iniciado.",
-  "[INFO] Integraciones externas desactivadas.",
+type LogFilter = "all" | LogLevel;
+
+interface DiagnosticsPageProps {
+  events: DiagnosticEvent[];
+  onNotify: (message: string, tone?: ToastTone) => void;
+}
+
+const filters: Array<{ id: LogFilter; label: string }> = [
+  { id: "all", label: "Todos" },
+  { id: "info", label: "Info" },
+  { id: "warning", label: "Warning" },
+  { id: "error", label: "Error" },
 ];
 
-export function DiagnosticsPage() {
-  const [feedback, setFeedback] = useState("");
+const levelStyles: Record<LogLevel, string> = {
+  info: "text-cyan",
+  warning: "text-warning",
+  error: "text-danger",
+};
 
-  const copyLogs = async (limit: number) => {
-    await navigator.clipboard.writeText(startupLogs.slice(-limit).join("\n"));
-    setFeedback(`Se copiaron ${Math.min(limit, startupLogs.length)} líneas.`);
+function formatEvent(event: DiagnosticEvent): string {
+  return `${formatLogTime(event.timestamp)} [${event.level.toUpperCase()}] ${event.message}`;
+}
+
+function diagnosticFileName(date: Date): string {
+  const digits = (value: number) => String(value).padStart(2, "0");
+  return `diagnostico_CHETO_${date.getFullYear()}${digits(date.getMonth() + 1)}${digits(date.getDate())}_${digits(date.getHours())}${digits(date.getMinutes())}${digits(date.getSeconds())}.txt`;
+}
+
+export function DiagnosticsPage({ events, onNotify }: DiagnosticsPageProps) {
+  const [activeFilter, setActiveFilter] = useState<LogFilter>("all");
+  const filteredEvents = useMemo(
+    () => activeFilter === "all" ? events : events.filter((event) => event.level === activeFilter),
+    [activeFilter, events],
+  );
+
+  const copyEvents = async (selectedEvents: DiagnosticEvent[], limit: number) => {
+    const text = selectedEvents.slice(-limit).map(formatEvent).join("\n");
+    if (!text) {
+      onNotify("No hay eventos para copiar", "info");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      onNotify("Copiado al portapapeles", "success");
+    } catch {
+      onNotify("No se pudo acceder al portapapeles", "error");
+    }
   };
 
-  const exportLogs = () => {
-    const blob = new Blob([startupLogs.join("\n")], { type: "text/plain;charset=utf-8" });
+  const exportDiagnostics = () => {
+    const now = new Date();
+    const content = [
+      "CHETO VIDEO AI — Diagnóstico local",
+      "Versión interna: 0.1.0",
+      `Sistema operativo: ${getOperatingSystem()}`,
+      `Fecha: ${now.toLocaleString("es-PE")}`,
+      "Tema: Oscuro",
+      "Idioma: Español",
+      "API externa: Desactivada",
+      "",
+      "Eventos:",
+      ...(events.length ? events.map(formatEvent) : ["Sin eventos registrados."]),
+    ].join("\n");
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = "cheto-video-ai-diagnostico.txt";
+    anchor.download = diagnosticFileName(now);
     anchor.click();
     URL.revokeObjectURL(url);
-    setFeedback("Diagnóstico exportado.");
+    onNotify("Diagnóstico exportado", "success");
   };
 
   return (
     <div className="space-y-6">
-      <Card className="p-5">
+      <Card className="surface-shine p-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 className="font-semibold text-ink">Resumen de ejecución</h2>
-            <p className="mt-1 text-sm text-muted">Información local de esta sesión de interfaz.</p>
+          <div className="flex items-center gap-4">
+            <span className="grid h-11 w-11 place-items-center rounded-lg border border-success/25 bg-success/10 text-success">
+              <CheckCircle2 aria-hidden="true" size={20} />
+            </span>
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted">Estado</p>
+              <h2 className="mt-1 font-bold text-ink">Aplicación operativa</h2>
+            </div>
           </div>
-          <StatusBadge label="Sin errores detectados" tone="success" />
+          <StatusBadge label="Sin errores activos" tone="success" />
         </div>
       </Card>
 
       <Card className="overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line px-5 py-4">
+        <div className="flex flex-wrap items-end justify-between gap-4 border-b border-line px-5 py-4">
           <div>
-            <h2 className="font-semibold text-ink">Registro de aplicación</h2>
-            <p className="mt-1 text-xs text-muted">Preparado para futuras líneas del worker y los motores.</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-cyan">Log local</p>
+            <h2 className="mt-1.5 font-bold text-ink">Eventos de la aplicación</h2>
           </div>
-          <span className="font-mono text-xs text-muted">{startupLogs.length} líneas</span>
+          <span className="font-mono text-xs text-muted">{events.length} eventos reales</span>
         </div>
 
-        <div className="min-h-72 bg-canvas p-5 font-mono text-sm leading-7" aria-label="Registro de diagnóstico">
-          {startupLogs.map((line, index) => (
-            <div className="flex gap-4" key={line}>
-              <span className="select-none text-muted/50">{String(index + 1).padStart(2, "0")}</span>
-              <span className="text-muted">{line}</span>
-            </div>
+        <div className="flex flex-wrap gap-2 border-b border-line bg-surface px-5 py-3">
+          {filters.map((filter) => (
+            <button
+              aria-pressed={activeFilter === filter.id}
+              className={cn(
+                "rounded-full border px-3 py-1.5 text-xs font-semibold transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan",
+                activeFilter === filter.id
+                  ? "border-primary/60 bg-primary/15 text-cyan"
+                  : "border-line bg-card/50 text-muted hover:border-line-bright hover:text-ink",
+              )}
+              key={filter.id}
+              onClick={() => setActiveFilter(filter.id)}
+              type="button"
+            >
+              {filter.label}
+            </button>
           ))}
-          <div className="mt-2 flex items-center gap-2 text-cyan">
-            <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-cyan" />
-            <span>Esperando actividad</span>
-          </div>
+        </div>
+
+        <div className="min-h-80 max-h-[440px] overflow-auto bg-canvas p-5 font-mono text-xs leading-7" aria-label="Registro de diagnóstico">
+          {filteredEvents.length ? filteredEvents.map((event, index) => (
+            <div className="grid grid-cols-[2rem_4.5rem_4.5rem_1fr] gap-2" key={event.id}>
+              <span className="select-none text-muted/35">{String(index + 1).padStart(2, "0")}</span>
+              <span className="text-muted/70">{formatLogTime(event.timestamp)}</span>
+              <span className={cn("font-bold", levelStyles[event.level])}>[{event.level.toUpperCase()}]</span>
+              <span className="text-muted">{event.message}</span>
+            </div>
+          )) : (
+            <div className="flex min-h-64 flex-col items-center justify-center text-center">
+              <TerminalSquare aria-hidden="true" className="text-muted/60" size={28} />
+              <p className="mt-3 font-sans text-sm font-semibold text-ink">No hay eventos en este filtro</p>
+              <p className="mt-1 font-sans text-xs text-muted">Los eventos reales aparecerán aquí.</p>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-3 border-t border-line bg-surface px-5 py-4">
-          <Button icon={<ClipboardCopy aria-hidden="true" size={16} />} onClick={() => void copyLogs(100)} variant="secondary">
-            Copiar últimas 100
+          <Button icon={<ClipboardCopy aria-hidden="true" size={16} />} onClick={() => void copyEvents(events, 100)} variant="secondary">
+            Copiar 100
           </Button>
-          <Button icon={<ListFilter aria-hidden="true" size={16} />} onClick={() => void copyLogs(200)} variant="secondary">
-            Copiar últimas 200
+          <Button icon={<ListFilter aria-hidden="true" size={16} />} onClick={() => void copyEvents(events, 200)} variant="secondary">
+            Copiar 200
           </Button>
-          <Button disabled icon={<FileWarning aria-hidden="true" size={16} />} variant="secondary">
+          <Button icon={<FileWarning aria-hidden="true" size={16} />} onClick={() => void copyEvents(events.filter((event) => event.level === "error"), 200)} variant="secondary">
             Copiar errores
           </Button>
-          <Button icon={<Download aria-hidden="true" size={16} />} onClick={exportLogs} variant="secondary">
+          <Button icon={<Download aria-hidden="true" size={16} />} onClick={exportDiagnostics} variant="secondary">
             Exportar diagnóstico
           </Button>
-          {feedback ? <span className="ml-auto text-xs text-success" role="status">{feedback}</span> : null}
         </div>
       </Card>
     </div>
