@@ -13,6 +13,19 @@ import { HomePage } from "./pages/HomePage";
 import { ProjectDetailPage } from "./pages/ProjectDetailPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { replaceBundleSource } from "./project/conversion";
+import type { ProjectBundle } from "./project/contracts";
+import {
+  createProjectBundle,
+  ensureProjectBundle,
+  initializeProjectStorage,
+  isNativeProjectStorage,
+  loadProjectBundle,
+  projectManifestExists,
+  projectStorageErrorMessage,
+  saveProjectManifest,
+  updateProjectSource,
+} from "./project/service";
 import type { DiagnosticEvent, LogLevel, MediaDiagnosticState } from "./types/diagnostics";
 import type { PageId } from "./types/navigation";
 import type { LocalProfile } from "./types/profile";
@@ -33,6 +46,14 @@ const storageKeys = {
   logs: "cheto-video-ai.diagnostics.v1",
 };
 
+function manifestIndex(bundle: ProjectBundle) {
+  return {
+    edlSchemaVersion: bundle.edl.schemaVersion,
+    projectSchemaVersion: bundle.project.schemaVersion,
+    sourceId: bundle.source.sourceId,
+  };
+}
+
 export function App() {
   const [activePage, setActivePage] = useState<PageId>("home");
   const [isNewProjectOpen, setIsNewProjectOpen] = useState(false);
@@ -40,6 +61,9 @@ export function App() {
   const [projectToRename, setProjectToRename] = useState<LocalProject | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [isRelocating, setIsRelocating] = useState(false);
+  const [projectBundles, setProjectBundles] = useState<Record<string, ProjectBundle>>({});
+  const [projectStorageErrors, setProjectStorageErrors] = useState<Record<string, string>>({});
+  const [projectStorageLoading, setProjectStorageLoading] = useState<Record<string, boolean>>({});
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [projects, setProjects] = useLocalStorage<LocalProject[]>(storageKeys.projects, loadProjects);
   const [mediaDiagnostics, setMediaDiagnostics] = useState<MediaDiagnosticState>({
@@ -56,6 +80,7 @@ export function App() {
   const [events, setEvents] = useLocalStorage<DiagnosticEvent[]>(storageKeys.logs, []);
   const hasLoggedStartup = useRef(false);
   const hasCheckedFfprobe = useRef(false);
+  const hasInitializedProjectStorage = useRef(false);
 
   const notify = useCallback((message: string, tone: ToastTone = "success") => {
     setToasts((current) => [...current.slice(-3), { id: createId(), message, tone }]);
@@ -106,24 +131,68 @@ export function App() {
     });
   }, [addLog]);
 
-  const createProject = (draft: ProjectDraft, probeMs: number) => {
+  useEffect(() => {
+    if (hasInitializedProjectStorage.current || !isNativeProjectStorage()) return;
+    hasInitializedProjectStorage.current = true;
+    void initializeProjectStorage().then(() => {
+      addLog("PROJECT_STORAGE_INITIALIZED");
+    }).catch((error) => {
+      addLog(`PROJECT_STORAGE_ERROR: ${projectStorageErrorMessage(error)}`, "error");
+    });
+  }, [addLog]);
+
+  const createProject = async (draft: ProjectDraft, probeMs: number) => {
     const project: LocalProject = {
       ...draft,
       id: createId(),
       createdAt: new Date().toISOString(),
+      manifest: null,
       schemaVersion: 2,
       status: "ready",
     };
-    setProjects((current) => [project, ...current]);
-    setMediaDiagnostics((current) => ({ ...current, lastFileName: project.source.fileName, lastProbeMs: probeMs }));
-    addLog(`Proyecto creado: ${project.name}.`);
-    notify("Proyecto creado");
+    try {
+      const bundle = await createProjectBundle(project);
+      const persistedProject = { ...project, manifest: manifestIndex(bundle) };
+      setProjects((current) => [persistedProject, ...current]);
+      setProjectBundles((current) => ({ ...current, [project.id]: bundle }));
+      setMediaDiagnostics((current) => ({ ...current, lastFileName: project.source.fileName, lastProbeMs: probeMs }));
+      addLog("PROJECT_MANIFEST_CREATED");
+      addLog("PROJECT_EDL_CREATED");
+      addLog(`Proyecto creado: ${project.name}.`);
+      notify("Proyecto creado y guardado");
+    } catch (error) {
+      const message = projectStorageErrorMessage(error);
+      addLog(`PROJECT_STORAGE_ERROR: ${message}`, "error");
+      notify(message, "error");
+      throw new Error(message, { cause: error });
+    }
+  };
+
+  const prepareProjectBundle = async (project: LocalProject) => {
+    if (!isNativeProjectStorage() || !project.metadata || !project.source.path) return;
+    setProjectStorageLoading((current) => ({ ...current, [project.id]: true }));
+    setProjectStorageErrors((current) => ({ ...current, [project.id]: "" }));
+    try {
+      const { bundle, created } = await ensureProjectBundle(project);
+      setProjectBundles((current) => ({ ...current, [project.id]: bundle }));
+      setProjects((current) => current.map((entry) => entry.id === project.id ? { ...entry, manifest: manifestIndex(bundle) } : entry));
+      addLog(created ? "PROJECT_MANIFEST_CREATED" : "PROJECT_MANIFEST_LOADED");
+      addLog(created ? "PROJECT_EDL_CREATED" : "PROJECT_EDL_LOADED");
+    } catch (error) {
+      const message = projectStorageErrorMessage(error);
+      setProjectStorageErrors((current) => ({ ...current, [project.id]: message }));
+      addLog(`PROJECT_STORAGE_ERROR: ${message}`, "error");
+      notify(message, "error");
+    } finally {
+      setProjectStorageLoading((current) => ({ ...current, [project.id]: false }));
+    }
   };
 
   const openProject = (project: LocalProject) => {
     setSelectedProjectId(project.id);
     setActivePage("project");
     addLog(`Proyecto abierto: ${project.name}.`);
+    void prepareProjectBundle(project);
     if (!project.source.path) return;
     void checkVideoSource(project.source.path, project.source.sizeBytes, project.source.lastModifiedMs).then((check) => {
       const status = !check.exists ? "source-missing" : check.changed ? "source-changed" : "ready";
@@ -140,8 +209,8 @@ export function App() {
       if (!path) return;
       addLog(`Reubicando fuente de ${project.name}.`);
       const result = await probeVideo(path);
-      setProjects((current) => current.map((entry) => entry.id === project.id ? {
-        ...entry,
+      const updatedProject: LocalProject = {
+        ...project,
         metadata: result.metadata,
         source: {
           fileName: result.metadata.fileName,
@@ -150,28 +219,54 @@ export function App() {
           sizeBytes: result.metadata.sizeBytes,
         },
         status: "ready",
-      } : entry));
+      };
+      let bundle: ProjectBundle;
+      if (await projectManifestExists(project.id)) {
+        const existing = projectBundles[project.id] ?? await loadProjectBundle(project.id);
+        bundle = await updateProjectSource(replaceBundleSource(existing, updatedProject));
+        addLog("PROJECT_EDL_SAVED");
+      } else {
+        bundle = await createProjectBundle(updatedProject);
+        addLog("PROJECT_MANIFEST_CREATED");
+        addLog("PROJECT_EDL_CREATED");
+      }
+      const persistedProject = { ...updatedProject, manifest: manifestIndex(bundle) };
+      setProjects((current) => current.map((entry) => entry.id === project.id ? persistedProject : entry));
+      setProjectBundles((current) => ({ ...current, [project.id]: bundle }));
       setMediaDiagnostics((current) => ({ ...current, lastFileName: result.metadata.fileName, lastProbeMs: result.elapsedMs }));
       addLog(`Metadata completada en ${(result.elapsedMs / 1_000).toFixed(2)} s.`);
       notify("Fuente localizada y validada");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "No se pudo localizar y validar el archivo.";
-      addLog(message, "error");
+      const message = projectStorageErrorMessage(error);
+      addLog(`PROJECT_STORAGE_ERROR: ${message}`, "error");
       notify(message, "error");
     } finally {
       setIsRelocating(false);
     }
   };
 
-  const renameProject = (name: string) => {
+  const renameProject = async (name: string) => {
     if (!projectToRename) return;
     const previousName = projectToRename.name;
-    setProjects((current) => current.map((project) => (
-      project.id === projectToRename.id ? { ...project, name } : project
-    )));
-    setProjectToRename(null);
-    addLog(`Proyecto renombrado: ${previousName} → ${name}.`);
-    notify("Proyecto renombrado");
+    try {
+      let persistedManifest = projectToRename.manifest;
+      if (isNativeProjectStorage() && projectToRename.metadata && projectToRename.source.path) {
+        const { bundle, created } = await ensureProjectBundle(projectToRename);
+        const manifest = await saveProjectManifest({ ...bundle.project, name, updatedAt: new Date().toISOString() });
+        setProjectBundles((current) => ({ ...current, [projectToRename.id]: { ...bundle, project: manifest } }));
+        persistedManifest = manifestIndex({ ...bundle, project: manifest });
+        addLog(created ? "PROJECT_MANIFEST_CREATED" : "PROJECT_MANIFEST_LOADED");
+        addLog(created ? "PROJECT_EDL_CREATED" : "PROJECT_EDL_LOADED");
+      }
+      setProjects((current) => current.map((project) => project.id === projectToRename.id ? { ...project, name, manifest: persistedManifest } : project));
+      setProjectToRename(null);
+      addLog(`Proyecto renombrado: ${previousName} → ${name}.`);
+      notify("Proyecto renombrado");
+    } catch (error) {
+      const message = projectStorageErrorMessage(error);
+      addLog(`PROJECT_STORAGE_ERROR: ${message}`, "error");
+      notify(message, "error");
+    }
   };
 
   const deleteProject = () => {
@@ -224,6 +319,9 @@ export function App() {
         onDelete={setProjectToDelete}
         onRelocate={(project) => void relocateProject(project)}
         project={selectedProject}
+        projectBundle={projectBundles[selectedProject.id] ?? null}
+        storageError={projectStorageErrors[selectedProject.id] || null}
+        storageLoading={projectStorageLoading[selectedProject.id] ?? false}
       />
     ) : <ProjectsPage {...sharedProjectProps} />,
     diagnostics: <DiagnosticsPage events={events} media={mediaDiagnostics} onNotify={notify} />,
@@ -264,7 +362,7 @@ export function App() {
       <RenameProjectModal
         key={projectToRename?.id ?? "closed"}
         onClose={() => setProjectToRename(null)}
-        onRename={renameProject}
+        onRename={(name) => void renameProject(name)}
         project={projectToRename}
       />
       <ConfirmDeleteModal

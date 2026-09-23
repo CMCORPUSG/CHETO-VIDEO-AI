@@ -20,6 +20,10 @@ function isProjectV2(value: unknown): value is LocalProject {
   return candidate.schemaVersion === 2 && typeof candidate.id === "string" && typeof candidate.name === "string" && Boolean(candidate.source);
 }
 
+function normalizeProject(project: LocalProject): LocalProject {
+  return { ...project, manifest: project.manifest ?? null };
+}
+
 export function migrateLegacyProjects(raw: unknown): LocalProject[] {
   if (!Array.isArray(raw)) return [];
   return raw.flatMap((entry): LocalProject[] => {
@@ -39,6 +43,7 @@ export function migrateLegacyProjects(raw: unknown): LocalProject[] {
         lastModifiedMs: null,
       },
       metadata: null,
+      manifest: null,
       status: "legacy",
     }];
   });
@@ -49,7 +54,7 @@ export function loadProjects(): LocalProject[] {
     const current = localStorage.getItem(projectStorageKeys.current);
     if (current) {
       const parsed = JSON.parse(current) as unknown;
-      return Array.isArray(parsed) ? parsed.filter(isProjectV2) : [];
+      return Array.isArray(parsed) ? parsed.filter(isProjectV2).map(normalizeProject) : [];
     }
     const legacy = localStorage.getItem(projectStorageKeys.legacy);
     return legacy ? migrateLegacyProjects(JSON.parse(legacy) as unknown) : [];

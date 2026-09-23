@@ -12,6 +12,11 @@ export interface ProjectSource {
 export interface LocalProject {
   createdAt: string;
   id: string;
+  manifest: {
+    edlSchemaVersion: 1;
+    projectSchemaVersion: 1;
+    sourceId: string;
+  } | null;
   metadata: VideoMetadata | null;
   name: string;
   schemaVersion: 2;

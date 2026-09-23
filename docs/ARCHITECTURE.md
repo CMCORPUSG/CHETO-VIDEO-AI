@@ -16,7 +16,9 @@ Tauri IPC
     ↓ ruta absoluta
 Metadata service / FFprobe
     ↓ modelo normalizado
-Project Store v2
+Rust Project Storage
+    ↓ JSON versionado en AppData
+project.json + source.json + edl.json
     ↓
 Python Worker (futuro)
     ↓
@@ -39,9 +41,11 @@ Los comandos `detect_ffprobe`, `probe_media` y `check_media_source` validan ruta
 
 FFprobe produce JSON técnico. `apps/desktop/src/media` lo convierte en un modelo estricto con duración, contenedor, streams, video, audio, FPS racional, bitrate, aspecto y rotación. React no invoca comandos de sistema ni expone el JSON bruto.
 
-### Project Store v2
+### Persistencia de proyecto
 
-`cheto-video-ai.projects.v2` conserva sólo ruta, snapshot básico y metadata. La migración lee v1 sin borrarlo; las referencias antiguas quedan marcadas como `legacy` hasta relocalizar su fuente.
+Rust centraliza el almacenamiento físico en `<appDataDir>/projects/<projectId>`. Valida UUID, evita path traversal y escribe `project.json`, `source.json` y `edl.json` mediante temporales y reemplazo seguro. React solicita operaciones por IPC y no escribe rutas arbitrarias.
+
+`cheto-video-ai.projects.v2` se conserva como índice ligero. Al abrir una entrada con metadata válida pero sin manifest, se inicializa el bundle de disco reutilizando la metadata existente, sin ejecutar FFprobe de nuevo y sin alterar el nombre personalizado.
 
 ### Python Worker
 
@@ -53,7 +57,7 @@ Módulos independientes para ingest, audio, transcripción, escenas, visión, cu
 
 ### JSON/EDL
 
-Formato intermedio futuro que conservará decisiones, tiempos, fuentes y parámetros. Permitirá revisar un plan antes de renderizarlo.
+`project.json` describe identidad, referencias y workflow; `source.json` conserva una instantánea de FFprobe; `edl.json` define decisiones editables con microsegundos enteros como timebase. EDL v1 empieza con todos los tracks vacíos. Consulta `PROJECT_STORAGE.md` y `EDL_SCHEMA.md`.
 
 ### Renderer
 

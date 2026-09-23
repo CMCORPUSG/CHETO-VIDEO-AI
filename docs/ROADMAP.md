@@ -10,9 +10,9 @@ Shell Tauri/React, sistema visual, navegación, diagnóstico inicial y documenta
 
 Selección local nativa, validación segura, FFprobe, metadata normalizada, persistencia v2 y detalle técnico sin edición automática. Pendiente de distribución: sidecar y abrir ubicación.
 
-## V0.3 — Proyecto + JSON/EDL
+## V0.3 — Proyecto + JSON/EDL (implementado)
 
-Persistencia local de proyectos y primera especificación versionada de decisiones.
+Persistencia administrada por Rust, manifests versionados, migración progresiva desde el índice v2 y primera especificación EDL vacía en microsegundos.
 
 ## V0.4 — Transcripción
 

@@ -12,7 +12,7 @@ import { Modal } from "./Modal";
 interface NewProjectModalProps {
   ffprobeAvailable: boolean;
   onClose: () => void;
-  onCreate: (project: ProjectDraft, probeMs: number) => void;
+  onCreate: (project: ProjectDraft, probeMs: number) => Promise<void>;
   onError: (message: string) => void;
   onLog: (message: string, level?: LogLevel) => void;
   open: boolean;
@@ -29,12 +29,14 @@ export function NewProjectModal({ ffprobeAvailable, onClose, onCreate, onError, 
   const [probe, setProbe] = useState<ProbeResult | null>(null);
   const [fileError, setFileError] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
   const reset = () => {
     setName("");
     setProbe(null);
     setFileError("");
     setIsAnalyzing(false);
+    setIsCreating(false);
   };
 
   const closeAndReset = () => {
@@ -67,28 +69,36 @@ export function NewProjectModal({ ffprobeAvailable, onClose, onCreate, onError, 
     }
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!name.trim() || !probe) return;
     const { metadata } = probe;
-    onCreate({
-      name: name.trim(),
-      metadata,
-      source: {
-        fileName: metadata.fileName,
-        lastModifiedMs: metadata.lastModifiedMs,
-        path: metadata.path,
-        sizeBytes: metadata.sizeBytes,
-      },
-    }, probe.elapsedMs);
-    closeAndReset();
+    setIsCreating(true);
+    setFileError("");
+    try {
+      await onCreate({
+        name: name.trim(),
+        metadata,
+        source: {
+          fileName: metadata.fileName,
+          lastModifiedMs: metadata.lastModifiedMs,
+          path: metadata.path,
+          sizeBytes: metadata.sizeBytes,
+        },
+      }, probe.elapsedMs);
+      closeAndReset();
+    } catch (error) {
+      setFileError(errorMessage(error));
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const metadata = probe?.metadata;
 
   return (
     <Modal description="Selecciona una referencia local y valida su metadata técnica sin copiar el video." onClose={closeAndReset} open={open} size="large" title="Nuevo proyecto">
-      <form className="space-y-6 p-6" onSubmit={handleSubmit}>
+      <form className="space-y-6 p-6" onSubmit={(event) => void handleSubmit(event)}>
         <div>
           <label className="mb-2 block text-sm font-semibold text-ink" htmlFor="project-name">Nombre del proyecto</label>
           <input autoFocus className="h-12 w-full rounded-md border border-line bg-canvas px-4 text-sm text-ink outline-none transition duration-150 placeholder:text-muted/60 focus:border-primary focus:ring-2 focus:ring-primary/25" id="project-name" maxLength={80} onChange={(event) => setName(event.target.value)} placeholder="Mi nuevo proyecto" type="text" value={name} />
@@ -143,7 +153,7 @@ export function NewProjectModal({ ffprobeAvailable, onClose, onCreate, onError, 
 
         <div className="flex justify-end gap-3 border-t border-line pt-5">
           <Button onClick={closeAndReset} variant="secondary">Cancelar</Button>
-          <Button disabled={!name.trim() || !probe || isAnalyzing} type="submit">Crear proyecto</Button>
+          <Button disabled={!name.trim() || !probe || isAnalyzing || isCreating} type="submit">{isCreating ? "Guardando…" : "Crear proyecto"}</Button>
         </div>
       </form>
     </Modal>

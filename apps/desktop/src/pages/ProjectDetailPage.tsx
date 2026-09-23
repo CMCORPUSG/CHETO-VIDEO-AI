@@ -1,10 +1,12 @@
-import { AlertTriangle, ArrowLeft, Clock3, FileSearch, FileVideo, HardDrive, Layers3, Trash2, Volume2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Clock3, Database, FileJson2, FileSearch, FileVideo, HardDrive, Layers3, Trash2, Volume2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { StatusBadge } from "../components/StatusBadge";
 import { formatFileSize } from "../lib/format";
 import { formatBitrate, formatChannels, formatCodec, formatDuration, formatFps, formatSampleRate } from "../media/format";
+import { countEdlTracks } from "../project/conversion";
+import type { ProjectBundle } from "../project/contracts";
 import type { LocalProject } from "../types/project";
 
 interface ProjectDetailPageProps {
@@ -13,11 +15,15 @@ interface ProjectDetailPageProps {
   onDelete: (project: LocalProject) => void;
   onRelocate: (project: LocalProject) => void;
   project: LocalProject;
+  projectBundle: ProjectBundle | null;
+  storageError: string | null;
+  storageLoading: boolean;
 }
 
-export function ProjectDetailPage({ isRelocating, onBack, onDelete, onRelocate, project }: ProjectDetailPageProps) {
+export function ProjectDetailPage({ isRelocating, onBack, onDelete, onRelocate, project, projectBundle, storageError, storageLoading }: ProjectDetailPageProps) {
   const metadata = project.metadata;
   const sourceUnavailable = project.status === "source-missing" || project.status === "legacy";
+  const trackCounts = countEdlTracks(projectBundle);
 
   return (
     <div className="space-y-6">
@@ -50,6 +56,29 @@ export function ProjectDetailPage({ isRelocating, onBack, onDelete, onRelocate, 
           <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg border border-primary/25 bg-primary/10 text-cyan"><FileVideo aria-hidden="true" size={21} /></span>
           <div className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted">Fuente</p><h3 className="mt-1 truncate font-bold text-ink">{project.source.fileName}</h3><p className="mt-1 break-all text-xs text-muted">{project.source.path ?? "Ruta original no disponible (proyecto migrado desde v1)"}</p></div>
         </div>
+      </Card>
+
+      <Card className="p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-4">
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-cyan"><Database aria-hidden="true" size={18} /></span>
+            <div><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan">Datos del proyecto</p><h3 className="mt-1 font-bold text-ink">{storageLoading ? "Preparando almacenamiento…" : projectBundle ? "Proyecto local preparado" : storageError ? "Error de almacenamiento" : "Manifest pendiente"}</h3></div>
+          </div>
+          {projectBundle ? <StatusBadge label="Schemas válidos" tone="success" /> : <StatusBadge label={storageError ? "Revisar diagnóstico" : "Pendiente"} tone="warning" />}
+        </div>
+        {storageError ? <p className="mt-4 flex items-start gap-2 text-sm text-danger"><AlertTriangle aria-hidden="true" className="mt-0.5 shrink-0" size={16} />{storageError}</p> : null}
+        <div className="mt-5 grid gap-4 sm:grid-cols-3">
+          <ManifestFile label="Manifest" name="project.json" ready={Boolean(projectBundle)} />
+          <ManifestFile label="Fuente" name="source.json" ready={Boolean(projectBundle)} />
+          <ManifestFile label="EDL" name="edl.json" ready={Boolean(projectBundle)} />
+        </div>
+        <div className="mt-5 grid grid-cols-2 gap-4 border-t border-line pt-5 sm:grid-cols-4">
+          <Detail label="Cortes" value={String(trackCounts.cuts)} />
+          <Detail label="Cámara" value={String(trackCounts.camera)} />
+          <Detail label="Subtítulos" value={String(trackCounts.captions)} />
+          <Detail label="B-roll" value={String(trackCounts.broll)} />
+        </div>
+        <p className="mt-5 text-xs text-muted">Schema: Project v{projectBundle?.project.schemaVersion ?? 1} · Source v{projectBundle?.source.schemaVersion ?? 1} · EDL v{projectBundle?.edl.schemaVersion ?? 1} · Tiempo en microsegundos</p>
       </Card>
 
       {metadata ? (
@@ -101,4 +130,8 @@ function MetadataCard({ children, icon, title }: { children: ReactNode; icon: Re
 
 function Detail({ label, value }: { label: string; value: string }) {
   return <div><p className="text-[10px] font-bold uppercase tracking-[0.13em] text-muted/70">{label}</p><p className="mt-1 text-sm font-semibold text-ink">{value}</p></div>;
+}
+
+function ManifestFile({ label, name, ready }: { label: string; name: string; ready: boolean }) {
+  return <div className="flex items-center gap-3 rounded-lg border border-line bg-canvas/55 p-3"><FileJson2 aria-hidden="true" className={ready ? "text-success" : "text-muted"} size={17} /><div><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted/70">{label}</p><p className="mt-0.5 font-mono text-xs font-semibold text-ink">{name}</p></div></div>;
 }

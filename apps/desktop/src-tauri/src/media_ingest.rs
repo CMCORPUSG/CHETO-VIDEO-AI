@@ -21,7 +21,11 @@ pub struct MediaCommandError {
 
 impl MediaCommandError {
     fn new(code: &str, message: impl Into<String>) -> Self {
-        Self { code: code.into(), message: message.into(), stderr: None }
+        Self {
+            code: code.into(),
+            message: message.into(),
+            stderr: None,
+        }
     }
 
     fn with_stderr(code: &str, message: impl Into<String>, stderr: String) -> Self {
@@ -90,17 +94,32 @@ fn hide_console_window(command: &mut Command) {
 #[cfg(not(windows))]
 fn hide_console_window(_command: &mut Command) {}
 
-fn run_with_timeout(mut command: Command, timeout: Duration) -> Result<ProcessOutput, MediaCommandError> {
-    command.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped());
+fn run_with_timeout(
+    mut command: Command,
+    timeout: Duration,
+) -> Result<ProcessOutput, MediaCommandError> {
+    command
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
     hide_console_window(&mut command);
     let mut child = command.spawn().map_err(|error| {
-        MediaCommandError::new("ffprobe-unavailable", format!("No se pudo iniciar FFprobe: {error}"))
+        MediaCommandError::new(
+            "ffprobe-unavailable",
+            format!("No se pudo iniciar FFprobe: {error}"),
+        )
     })?;
     let stdout_pipe = child.stdout.take().ok_or_else(|| {
-        MediaCommandError::new("ffprobe-output-failed", "No se pudo capturar stdout de FFprobe.")
+        MediaCommandError::new(
+            "ffprobe-output-failed",
+            "No se pudo capturar stdout de FFprobe.",
+        )
     })?;
     let stderr_pipe = child.stderr.take().ok_or_else(|| {
-        MediaCommandError::new("ffprobe-output-failed", "No se pudo capturar stderr de FFprobe.")
+        MediaCommandError::new(
+            "ffprobe-output-failed",
+            "No se pudo capturar stderr de FFprobe.",
+        )
     })?;
     let stdout_reader = thread::spawn(move || read_pipe(stdout_pipe));
     let stderr_reader = thread::spawn(move || read_pipe(stderr_pipe));
@@ -117,7 +136,10 @@ fn run_with_timeout(mut command: Command, timeout: Duration) -> Result<ProcessOu
                 let _ = stderr_reader.join();
                 return Err(MediaCommandError::new(
                     "ffprobe-timeout",
-                    format!("FFprobe excedió el tiempo límite de {} segundos.", timeout.as_secs()),
+                    format!(
+                        "FFprobe excedió el tiempo límite de {} segundos.",
+                        timeout.as_secs()
+                    ),
                 ));
             }
             Err(error) => {
@@ -133,41 +155,90 @@ fn run_with_timeout(mut command: Command, timeout: Duration) -> Result<ProcessOu
         }
     };
 
-    let stdout = stdout_reader.join().map_err(|_| {
-        MediaCommandError::new("ffprobe-output-failed", "Falló el lector de stdout de FFprobe.")
-    })?.map_err(|error| {
-        MediaCommandError::new("ffprobe-output-failed", format!("No se pudo leer la salida de FFprobe: {error}"))
-    })?;
-    let stderr = stderr_reader.join().map_err(|_| {
-        MediaCommandError::new("ffprobe-output-failed", "Falló el lector de stderr de FFprobe.")
-    })?.map_err(|error| {
-        MediaCommandError::new("ffprobe-output-failed", format!("No se pudo leer el error de FFprobe: {error}"))
-    })?;
+    let stdout = stdout_reader
+        .join()
+        .map_err(|_| {
+            MediaCommandError::new(
+                "ffprobe-output-failed",
+                "Falló el lector de stdout de FFprobe.",
+            )
+        })?
+        .map_err(|error| {
+            MediaCommandError::new(
+                "ffprobe-output-failed",
+                format!("No se pudo leer la salida de FFprobe: {error}"),
+            )
+        })?;
+    let stderr = stderr_reader
+        .join()
+        .map_err(|_| {
+            MediaCommandError::new(
+                "ffprobe-output-failed",
+                "Falló el lector de stderr de FFprobe.",
+            )
+        })?
+        .map_err(|error| {
+            MediaCommandError::new(
+                "ffprobe-output-failed",
+                format!("No se pudo leer el error de FFprobe: {error}"),
+            )
+        })?;
 
-    Ok(ProcessOutput { exit_code: status.code(), stderr, stdout })
+    Ok(ProcessOutput {
+        exit_code: status.code(),
+        stderr,
+        stdout,
+    })
 }
 
 fn modified_ms(metadata: &fs::Metadata) -> Option<u64> {
-    metadata.modified().ok()?.duration_since(UNIX_EPOCH).ok().map(|duration| duration.as_millis() as u64)
+    metadata
+        .modified()
+        .ok()?
+        .duration_since(UNIX_EPOCH)
+        .ok()
+        .map(|duration| duration.as_millis() as u64)
 }
 
 fn inspect_source(path: &Path) -> Result<SourceSnapshot, MediaCommandError> {
     if !path.is_absolute() {
-        return Err(MediaCommandError::new("invalid-path", "La ruta seleccionada no es absoluta."));
+        return Err(MediaCommandError::new(
+            "invalid-path",
+            "La ruta seleccionada no es absoluta.",
+        ));
     }
     let metadata = fs::metadata(path).map_err(|error| {
-        let code = if error.kind() == std::io::ErrorKind::NotFound { "source-missing" } else { "source-inaccessible" };
-        MediaCommandError::new(code, format!("No se puede acceder al archivo fuente: {error}"))
+        let code = if error.kind() == std::io::ErrorKind::NotFound {
+            "source-missing"
+        } else {
+            "source-inaccessible"
+        };
+        MediaCommandError::new(
+            code,
+            format!("No se puede acceder al archivo fuente: {error}"),
+        )
     })?;
     if !metadata.is_file() {
-        return Err(MediaCommandError::new("invalid-source", "La ruta seleccionada no es un archivo."));
+        return Err(MediaCommandError::new(
+            "invalid-source",
+            "La ruta seleccionada no es un archivo.",
+        ));
     }
     if metadata.len() == 0 {
-        return Err(MediaCommandError::new("empty-source", "El archivo está vacío."));
+        return Err(MediaCommandError::new(
+            "empty-source",
+            "El archivo está vacío.",
+        ));
     }
-    let file_name = path.file_name().and_then(|name| name.to_str()).ok_or_else(|| {
-        MediaCommandError::new("invalid-file-name", "El nombre del archivo no es Unicode válido.")
-    })?;
+    let file_name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or_else(|| {
+            MediaCommandError::new(
+                "invalid-file-name",
+                "El nombre del archivo no es Unicode válido.",
+            )
+        })?;
     Ok(SourceSnapshot {
         file_name: file_name.to_owned(),
         last_modified_ms: modified_ms(&metadata),
@@ -182,12 +253,27 @@ pub fn detect_ffprobe() -> FfprobeStatus {
     command.arg("-version");
     match run_with_timeout(command, DETECTION_TIMEOUT) {
         Ok(output) if output.exit_code == Some(0) => {
-            let version = output.stdout.lines().next().map(str::trim).filter(|line| !line.is_empty()).map(str::to_owned);
-            FfprobeStatus { available: true, detail: None, executable: "ffprobe".into(), version }
+            let version = output
+                .stdout
+                .lines()
+                .next()
+                .map(str::trim)
+                .filter(|line| !line.is_empty())
+                .map(str::to_owned);
+            FfprobeStatus {
+                available: true,
+                detail: None,
+                executable: "ffprobe".into(),
+                version,
+            }
         }
         Ok(output) => FfprobeStatus {
             available: false,
-            detail: Some(if output.stderr.trim().is_empty() { "FFprobe respondió con error.".into() } else { output.stderr.trim().into() }),
+            detail: Some(if output.stderr.trim().is_empty() {
+                "FFprobe respondió con error.".into()
+            } else {
+                output.stderr.trim().into()
+            }),
             executable: "ffprobe".into(),
             version: None,
         },
@@ -240,7 +326,9 @@ pub fn check_media_source(
         Ok(metadata) if metadata.is_file() => {
             let current_modified = modified_ms(&metadata);
             let changed = metadata.len() != expected_size_bytes
-                || expected_last_modified_ms.zip(current_modified).is_some_and(|(expected, current)| expected != current);
+                || expected_last_modified_ms
+                    .zip(current_modified)
+                    .is_some_and(|(expected, current)| expected != current);
             SourceCheck {
                 changed,
                 exists: true,
@@ -248,6 +336,11 @@ pub fn check_media_source(
                 size_bytes: Some(metadata.len()),
             }
         }
-        _ => SourceCheck { changed: false, exists: false, last_modified_ms: None, size_bytes: None },
+        _ => SourceCheck {
+            changed: false,
+            exists: false,
+            last_modified_ms: None,
+            size_bytes: None,
+        },
     }
 }
