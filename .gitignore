@@ -51,3 +51,9 @@ playwright-report/
 test-results/
 
 apps/desktop/src-tauri/gen/
+
+# TASK-005 local debug artifacts
+*.bak-task005a
+/debug-transcript.json.tmp
+/debug-transcript.partial.json
+/test_transcription_debug.py

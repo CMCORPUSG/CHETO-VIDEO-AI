@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 import sys
@@ -55,7 +55,7 @@ def probe() -> dict:
         elif usable_count:
             reason = "CUDA y runtime validados"
         else:
-            reason = "CTranslate2 no detectó dispositivos CUDA"
+            reason = "CTranslate2 no detectÃ³ dispositivos CUDA"
         return {"installed": True, "physicalCudaDeviceCount": physical_count, "cudaDeviceCount": usable_count, "cudaComputeTypes": types if usable_count else (), "version": ctranslate2.__version__, "reason": reason}
     except Exception as error:
         return {"installed": False, "cudaDeviceCount": 0, "cudaComputeTypes": (), "version": None, "reason": f"{type(error).__name__}: {error}"}
@@ -72,8 +72,10 @@ def listen_cancel(cancel: threading.Event) -> None:
 
 
 def run(request: dict) -> int:
+    # Cancellation is controlled by the Rust parent process.
+    # Rust terminates the worker process on cancellation, so the worker
+    # must not keep a secondary thread blocked reading stdin.
     cancel = threading.Event()
-    threading.Thread(target=listen_cancel, args=(cancel,), daemon=True).start()
     profile = ExecutionProfile(**request["profile"])
     emit("START", {"profile": request["profile"]})
     last_error = None
@@ -137,3 +139,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

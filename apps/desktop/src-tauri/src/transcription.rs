@@ -149,12 +149,14 @@ fn worker_command() -> Command {
     command
         .current_dir(&repo)
         .env("PYTHONPATH", repo.join("worker"))
+        .env("PYTHONUTF8", "1")
+        .env("PYTHONIOENCODING", "utf-8")
         .args(["-m", "transcription.main"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         // The worker protocol lives exclusively on stdout. Discard stderr here so
         // verbose decoder logs can never fill an unread pipe and stall a job.
-        .stderr(Stdio::null());
+        .stderr(Stdio::inherit());
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
@@ -277,7 +279,7 @@ fn source_snapshot_is_stale(
 
 fn parse_worker_event(line: &str) -> Result<(String, Value), TranscriptionError> {
     let event: Value = serde_json::from_str(line)
-        .map_err(|_| TranscriptionError::new("invalid-worker-protocol", "JSONL inválido"))?;
+        .map_err(|_| TranscriptionError::new("invalid-worker-protocol", "JSONL invÃƒÆ’Ã‚Â¡lido"))?;
     let name = event
         .get("event")
         .and_then(Value::as_str)
@@ -294,7 +296,7 @@ fn transcript_status_impl(
     project_id: &str,
 ) -> Result<TranscriptStatus, TranscriptionError> {
     ProjectStorage::validate_id(project_id, "projectId")
-        .map_err(|_| TranscriptionError::new("invalid-project-id", "projectId inválido"))?;
+        .map_err(|_| TranscriptionError::new("invalid-project-id", "projectId invÃƒÆ’Ã‚Â¡lido"))?;
     if manager
         .active
         .lock()
@@ -327,7 +329,7 @@ fn transcript_status_impl(
     let duration = bundle.source.duration_us.unwrap_or(0);
     let path = storage
         .project_dir(project_id)
-        .map_err(|_| TranscriptionError::new("invalid-project-id", "projectId inválido"))?
+        .map_err(|_| TranscriptionError::new("invalid-project-id", "projectId invÃƒÆ’Ã‚Â¡lido"))?
         .join("transcript.json");
     if !path.is_file() {
         return Ok(TranscriptStatus {
@@ -380,7 +382,7 @@ fn transcript_status_impl(
             .map(str::to_owned),
         engine: value.get("engine").cloned(),
         message: if stale {
-            Some("El video original cambió. Se requiere retranscribir.".into())
+            Some("El video original cambiÃƒÆ’Ã‚Â³. Se requiere retranscribir.".into())
         } else {
             None
         },
@@ -449,7 +451,7 @@ fn run_transcription(
     if hardware.ram_available_bytes < 512 * 1024_u64.pow(2) {
         return Err(TranscriptionError::new(
             "insufficient-memory",
-            "La memoria disponible es insuficiente para iniciar la transcripción.",
+            "La memoria disponible es insuficiente para iniciar la transcripciÃƒÆ’Ã‚Â³n.",
         ));
     }
     let profile =
@@ -479,12 +481,12 @@ fn run_transcription(
     if active.is_some() {
         return Err(TranscriptionError::new(
             "transcription-busy",
-            "Ya existe una transcripción global activa.",
+            "Ya existe una transcripciÃƒÆ’Ã‚Â³n global activa.",
         ));
     }
     let project_dir = storage
         .project_dir(&request.project_id)
-        .map_err(|_| TranscriptionError::new("invalid-project-id", "projectId inválido"))?;
+        .map_err(|_| TranscriptionError::new("invalid-project-id", "projectId invÃƒÆ’Ã‚Â¡lido"))?;
     let transcript = project_dir.join("transcript.json");
     let temporary = project_dir.join("transcript.json.tmp");
     let checkpoint = project_dir.join("transcript.partial.json");
@@ -517,11 +519,19 @@ fn run_transcription(
         LanguageMode::En => json!("en"),
     };
     let message = json!({"command":"START","request":{"sourcePath":source_path,"modelsRoot":models_root(&app)?,"temporaryPath":temporary,"checkpointPath":checkpoint,"language":language,"profile":{"device":profile.device,"compute_type":profile.compute_type,"model":profile.model,"cpu_threads":profile.cpu_threads,"workers":profile.workers,"reason":profile.reason,"automatic":profile.automatic},"transcriptBase":{"schemaVersion":1,"projectId":request.project_id,"sourceId":bundle.source.source_id,"createdAt":now,"updatedAt":now,"source":{"durationUs":duration,"fileSizeBytes":bundle.source.file_size_bytes,"modifiedAt":file_modified_at(&source_path)}}}});
-    stdin
-        .lock()
-        .map_err(|_| TranscriptionError::new("worker-protocol", "stdin bloqueado"))?
-        .write_all(format!("{message}\n").as_bytes())
-        .map_err(|error| TranscriptionError::new("worker-protocol", error.to_string()))?;
+    {
+        let mut worker_stdin = stdin
+            .lock()
+            .map_err(|_| TranscriptionError::new("worker-protocol", "stdin bloqueado"))?;
+
+        worker_stdin
+            .write_all(format!("{message}\n").as_bytes())
+            .map_err(|error| TranscriptionError::new("worker-protocol", error.to_string()))?;
+
+        worker_stdin
+            .flush()
+            .map_err(|error| TranscriptionError::new("worker-protocol", error.to_string()))?;
+    }
     storage
         .update_transcription_workflow(
             &request.project_id,
@@ -537,15 +547,56 @@ fn run_transcription(
     );
     let mut completed = false;
     let mut cancelled = false;
-    for line in BufReader::new(stdout).lines().map_while(Result::ok) {
-        let Ok((name, payload)) = parse_worker_event(&line) else {
-            emit(
-                &app,
-                &request.project_id,
-                "TRANSCRIPTION_FAILED",
-                json!({"code":"invalid-worker-protocol"}),
-            );
-            break;
+    let mut reader = BufReader::new(stdout);
+    let mut raw_line = Vec::new();
+
+    loop {
+        raw_line.clear();
+
+        match reader.read_until(b'\n', &mut raw_line) {
+            Ok(0) => break,
+            Ok(_) => {}
+            Err(error) => {
+                eprintln!("[CHETO][TRANSCRIPTION][STDOUT_READ_ERROR] {}", error);
+                emit(
+                    &app,
+                    &request.project_id,
+                    "TRANSCRIPTION_WORKER_READ_ERROR",
+                    json!({"message": error.to_string()}),
+                );
+                break;
+            }
+        }
+
+        let line = String::from_utf8_lossy(&raw_line)
+            .trim_end_matches(['\r', '\n'])
+            .to_owned();
+
+        if line.is_empty() {
+            continue;
+        }
+
+        let (name, payload) = match parse_worker_event(&line) {
+            Ok(event) => event,
+            Err(error) => {
+                eprintln!(
+                    "[CHETO][TRANSCRIPTION][IGNORED_STDOUT] {} | {}",
+                    error.message,
+                    line.chars().take(300).collect::<String>()
+                );
+
+                emit(
+                    &app,
+                    &request.project_id,
+                    "TRANSCRIPTION_WORKER_OUTPUT_IGNORED",
+                    json!({
+                        "code": error.code,
+                        "message": error.message
+                    }),
+                );
+
+                continue;
+            }
         };
         if name == "COMPLETED" {
             completed = true;
@@ -648,7 +699,7 @@ pub fn cancel_transcription(
     project_id: String,
 ) -> Result<TranscriptStatus, TranscriptionError> {
     ProjectStorage::validate_id(&project_id, "projectId")
-        .map_err(|_| TranscriptionError::new("invalid-project-id", "projectId inválido"))?;
+        .map_err(|_| TranscriptionError::new("invalid-project-id", "projectId invÃƒÆ’Ã‚Â¡lido"))?;
     let task = state
         .active
         .lock()
@@ -660,7 +711,7 @@ pub fn cancel_transcription(
     if task.project_id != project_id {
         return Err(TranscriptionError::new(
             "different-task-active",
-            "Otra transcripción está activa.",
+            "Otra transcripciÃƒÆ’Ã‚Â³n estÃƒÆ’Ã‚Â¡ activa.",
         ));
     }
     task.stdin
@@ -679,7 +730,7 @@ pub fn cancel_transcription(
         word_count: 0,
         language: None,
         engine: None,
-        message: Some("Cancelación solicitada".into()),
+        message: Some("CancelaciÃƒÆ’Ã‚Â³n solicitada".into()),
         segments: vec![],
     })
 }
