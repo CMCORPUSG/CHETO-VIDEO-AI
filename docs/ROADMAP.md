@@ -6,9 +6,9 @@ El roadmap expresa dirección, no una promesa de fechas o alcance cerrado.
 
 Shell Tauri/React, sistema visual, navegación, diagnóstico inicial y documentación.
 
-## V0.2 — Importación y metadata
+## V0.2 — Importación y metadata (implementado)
 
-Selección local de video, validación segura y lectura de metadata sin iniciar edición automática.
+Selección local nativa, validación segura, FFprobe, metadata normalizada, persistencia v2 y detalle técnico sin edición automática. Pendiente de distribución: sidecar y abrir ubicación.
 
 ## V0.3 — Proyecto + JSON/EDL
 

@@ -1,0 +1,32 @@
+{
+  "streams": [
+    {
+      "codec_name": "h264",
+      "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+      "codec_type": "video",
+      "width": 1920,
+      "height": 1080,
+      "pix_fmt": "yuv420p",
+      "display_aspect_ratio": "16:9",
+      "avg_frame_rate": "60000/1001",
+      "r_frame_rate": "60000/1001",
+      "bit_rate": "14800000"
+    },
+    {
+      "codec_name": "aac",
+      "codec_long_name": "AAC (Advanced Audio Coding)",
+      "codec_type": "audio",
+      "sample_rate": "48000",
+      "channels": 2,
+      "channel_layout": "stereo",
+      "bit_rate": "192000"
+    }
+  ],
+  "format": {
+    "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+    "format_long_name": "QuickTime / MOV",
+    "duration": "6137.245",
+    "size": "9040901734",
+    "bit_rate": "14992000"
+  }
+}

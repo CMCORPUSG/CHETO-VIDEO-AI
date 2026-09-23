@@ -11,10 +11,14 @@
 
 ```text
 Desktop UI
+    ↓ selector nativo
+Tauri IPC
+    ↓ ruta absoluta
+Metadata service / FFprobe
+    ↓ modelo normalizado
+Project Store v2
     ↓
-IPC futuro
-    ↓
-Python Worker
+Python Worker (futuro)
     ↓
 Engines
     ↓
@@ -25,11 +29,19 @@ Renderer
 
 ### Desktop UI
 
-Aplicación Tauri con React y TypeScript. Gestiona referencias locales ligeras de proyectos, perfil, configuración y diagnóstico mediante almacenamiento local. En v0.1 no se envían comandos de procesamiento ni se leen contenidos de video.
+Aplicación Tauri con React y TypeScript. Gestiona referencias locales ligeras, muestra metadata ya normalizada y nunca recibe el contenido completo del video.
 
-### IPC futuro
+### IPC Tauri
 
-Contrato tipado entre Tauri y el worker. Definirá comandos, progreso, cancelación y errores sin acoplar la UI a implementaciones concretas.
+Los comandos `detect_ffprobe`, `probe_media` y `check_media_source` validan rutas, ejecutan procesos sin shell y devuelven resultados serializables. `probe_media` aplica un timeout de 20 segundos y captura stdout, stderr, código de salida y duración.
+
+### Metadata service
+
+FFprobe produce JSON técnico. `apps/desktop/src/media` lo convierte en un modelo estricto con duración, contenedor, streams, video, audio, FPS racional, bitrate, aspecto y rotación. React no invoca comandos de sistema ni expone el JSON bruto.
+
+### Project Store v2
+
+`cheto-video-ai.projects.v2` conserva sólo ruta, snapshot básico y metadata. La migración lee v1 sin borrarlo; las referencias antiguas quedan marcadas como `legacy` hasta relocalizar su fuente.
 
 ### Python Worker
 
@@ -37,7 +49,7 @@ Proceso local futuro responsable de orquestar tareas de análisis. El directorio
 
 ### Engines
 
-Módulos independientes para ingest, audio, transcripción, escenas, visión, cursor, edición, subtítulos, render y calidad. En esta versión sólo existen descripciones de propósito.
+Módulos independientes para ingest, audio, transcripción, escenas, visión, cursor, edición, subtítulos, render y calidad. Ingest ya define el límite funcional de metadata; los demás permanecen documentales.
 
 ### JSON/EDL
 

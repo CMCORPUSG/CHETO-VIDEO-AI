@@ -14,8 +14,10 @@ import { HeroCard } from "../components/HeroCard";
 import { ProjectCard } from "../components/ProjectCard";
 import { StatusBadge } from "../components/StatusBadge";
 import type { LocalProject } from "../types/project";
+import type { MediaDiagnosticState } from "../types/diagnostics";
 
 interface HomePageProps {
+  mediaDiagnostics: MediaDiagnosticState;
   onDeleteProject: (project: LocalProject) => void;
   onNewProject: () => void;
   onOpenProject: (project: LocalProject) => void;
@@ -32,15 +34,7 @@ interface SystemStatusItem {
   value: string;
 }
 
-const systemStatus: SystemStatusItem[] = [
-  {
-    label: "Motor",
-    value: "Inactivo",
-    description: "Listo para una fase futura",
-    tone: "neutral",
-    icon: Activity,
-    accent: "bg-primary/15 text-cyan",
-  },
+const staticSystemStatus: SystemStatusItem[] = [
   {
     label: "GPU",
     value: "Pendiente",
@@ -50,7 +44,7 @@ const systemStatus: SystemStatusItem[] = [
     accent: "bg-warning/10 text-warning",
   },
   {
-    label: "Modelos",
+    label: "Modelos IA",
     value: "No instalados",
     description: "Sin descargas locales",
     tone: "neutral",
@@ -68,12 +62,24 @@ const systemStatus: SystemStatusItem[] = [
 ];
 
 export function HomePage({
+  mediaDiagnostics,
   onDeleteProject,
   onNewProject,
   onOpenProject,
   onRenameProject,
   projects,
 }: HomePageProps) {
+  const systemStatus: SystemStatusItem[] = [
+    {
+      label: "Motor multimedia",
+      value: mediaDiagnostics.ffprobeAvailable ? "Disponible" : "No disponible",
+      description: mediaDiagnostics.ffprobeAvailable ? `FFprobe: ${mediaDiagnostics.ffprobeVersion ?? "detectado"}` : "FFprobe no detectado",
+      tone: mediaDiagnostics.ffprobeAvailable ? "success" : "warning",
+      icon: Activity,
+      accent: mediaDiagnostics.ffprobeAvailable ? "bg-success/10 text-success" : "bg-warning/10 text-warning",
+    },
+    ...staticSystemStatus,
+  ];
   return (
     <div className="space-y-10">
       <HeroCard onNewProject={onNewProject} />
@@ -96,7 +102,7 @@ export function HomePage({
                 Crear el primero
               </Button>
             }
-            description="Crea un proyecto para preparar tu material. En esta fase el archivo se conserva sólo como referencia visual y nunca sale de tu equipo."
+            description="Crea un proyecto para leer metadata técnica y conservar una referencia local. El video nunca sale de tu equipo."
             title="Tu próxima edición empieza aquí"
           />
         ) : (

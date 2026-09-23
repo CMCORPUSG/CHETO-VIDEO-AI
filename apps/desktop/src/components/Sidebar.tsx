@@ -104,7 +104,7 @@ export function Sidebar({
         />
       </div>
 
-      <p className="relative mt-3 text-center font-mono text-[10px] text-muted/60 md:text-left md:pl-2">v0.1.0 · local</p>
+      <p className="relative mt-3 text-center font-mono text-[10px] text-muted/60 md:text-left md:pl-2">v0.2.0 · local</p>
     </aside>
   );
 }

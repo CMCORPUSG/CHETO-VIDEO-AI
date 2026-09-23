@@ -4,18 +4,20 @@ Aplicación de escritorio local para la edición inteligente y automática de vi
 
 ## Estado actual
 
-**v0.1.0 — Bootstrap**
+**v0.2.0 — Importación local y metadata**
 
-Esta versión contiene la base del producto: shell de escritorio, interfaz inicial, navegación, design tokens, perfil local, referencias persistentes de proyectos, diagnóstico ligero y documentación. No procesa ni reproduce video.
+La aplicación ya puede seleccionar un video mediante el diálogo nativo, entregar su ruta al backend Tauri, consultar FFprobe y persistir metadata normalizada. El archivo original permanece en su ubicación: no se copia, modifica, sube ni carga completo en memoria.
 
 ## Arquitectura prevista
 
 ```text
 Desktop UI (Tauri + React)
           ↓
-       IPC futuro
+       IPC Tauri
           ↓
-     Python Worker
+   FFprobe (metadata)
+          ↓
+ Python Worker (futuro)
           ↓
        Engines
           ↓
@@ -24,7 +26,7 @@ Desktop UI (Tauri + React)
        Renderer
 ```
 
-El frontend vive en `apps/desktop`. `worker` y `engine` son límites arquitectónicos reservados; no contienen implementación funcional en esta fase.
+El frontend vive en `apps/desktop`; el comando nativo está en `apps/desktop/src-tauri` y la normalización tipada en `apps/desktop/src/media`. `worker` continúa reservado para análisis futuros.
 
 ## Stack
 
@@ -32,7 +34,7 @@ El frontend vive en `apps/desktop`. `worker` y `engine` son límites arquitectó
 - React y TypeScript estricto para la interfaz.
 - Vite para desarrollo y build.
 - Tailwind CSS y custom properties para estilos y tokens.
-- Rust como requisito del contenedor Tauri, sin motor de video todavía.
+- Rust como backend nativo y FFprobe como motor de metadata.
 
 ## Desarrollo
 
@@ -40,7 +42,7 @@ Requisitos:
 
 - Node.js 20.19 o superior.
 - npm 10 o superior.
-- Para ejecutar la ventana nativa: Rust estable y los prerrequisitos de Tauri para Windows.
+- Para ejecutar la ventana nativa: Rust estable, los prerrequisitos de Tauri para Windows y `ffprobe` disponible en `PATH`.
 
 ```powershell
 npm install
@@ -59,11 +61,12 @@ Validaciones:
 npm run typecheck
 npm run lint
 npm run build
+npm test
 ```
 
-## No implementado todavía
+## Límites actuales
 
-No hay importación real ni lectura técnica de metadata. La selección actual conserva únicamente nombre, extensión y tamaño como referencia local; nunca copia o procesa el video. Tampoco hay FFmpeg, reproducción avanzada, timeline, transcripción, IA, Smart Cut, Smart Camera, subtítulos, B-roll, render, APIs externas ni descarga de modelos. La API externa permanece desactivada por diseño.
+No hay reproducción avanzada, timeline, transcripción, IA, Smart Cut, Smart Camera, subtítulos, B-roll ni render. FFprobe se detecta, pero el repositorio no lo descarga ni lo instala silenciosamente. “Abrir ubicación” y el empaquetado como sidecar quedan preparados para una fase posterior. La API externa permanece desactivada.
 
 ## Roadmap resumido
 

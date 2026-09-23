@@ -6,11 +6,14 @@ import { RenameProjectModal } from "./components/RenameProjectModal";
 import { ToastRegion } from "./components/ToastRegion";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { createId } from "./lib/id";
+import { loadProjects, projectStorageKeys } from "./lib/projectStore";
+import { checkVideoSource, detectFfprobe, probeVideo, selectVideoPath } from "./media/service";
 import { DiagnosticsPage } from "./pages/DiagnosticsPage";
 import { HomePage } from "./pages/HomePage";
+import { ProjectDetailPage } from "./pages/ProjectDetailPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { SettingsPage } from "./pages/SettingsPage";
-import type { DiagnosticEvent, LogLevel } from "./types/diagnostics";
+import type { DiagnosticEvent, LogLevel, MediaDiagnosticState } from "./types/diagnostics";
 import type { PageId } from "./types/navigation";
 import type { LocalProfile } from "./types/profile";
 import type { LocalProject, ProjectDraft } from "./types/project";
@@ -19,12 +22,13 @@ import type { ToastMessage, ToastTone } from "./types/toast";
 const pageTitles: Record<PageId, string> = {
   home: "Inicio",
   projects: "Proyectos",
+  project: "Detalle del proyecto",
   diagnostics: "Diagnóstico",
   settings: "Configuración",
 };
 
 const storageKeys = {
-  projects: "cheto-video-ai.projects.v1",
+  projects: projectStorageKeys.current,
   profile: "cheto-video-ai.profile.v1",
   logs: "cheto-video-ai.diagnostics.v1",
 };
@@ -34,14 +38,24 @@ export function App() {
   const [isNewProjectOpen, setIsNewProjectOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<LocalProject | null>(null);
   const [projectToRename, setProjectToRename] = useState<LocalProject | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [isRelocating, setIsRelocating] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
-  const [projects, setProjects] = useLocalStorage<LocalProject[]>(storageKeys.projects, []);
+  const [projects, setProjects] = useLocalStorage<LocalProject[]>(storageKeys.projects, loadProjects);
+  const [mediaDiagnostics, setMediaDiagnostics] = useState<MediaDiagnosticState>({
+    ffprobeAvailable: false,
+    ffprobeDetail: "Comprobación pendiente",
+    ffprobeVersion: null,
+    lastFileName: null,
+    lastProbeMs: null,
+  });
   const [profile, setProfile] = useLocalStorage<LocalProfile>(storageKeys.profile, () => ({
     name: "Usuario",
     avatar: localStorage.getItem("cheto-video-ai.profile-avatar"),
   }));
   const [events, setEvents] = useLocalStorage<DiagnosticEvent[]>(storageKeys.logs, []);
   const hasLoggedStartup = useRef(false);
+  const hasCheckedFfprobe = useRef(false);
 
   const notify = useCallback((message: string, tone: ToastTone = "success") => {
     setToasts((current) => [...current.slice(-3), { id: createId(), message, tone }]);
@@ -75,21 +89,78 @@ export function App() {
     ].slice(-500));
   }, [setEvents]);
 
-  const createProject = (draft: ProjectDraft) => {
+  useEffect(() => {
+    if (hasCheckedFfprobe.current) return;
+    hasCheckedFfprobe.current = true;
+    void detectFfprobe().then((status) => {
+      setMediaDiagnostics((current) => ({
+        ...current,
+        ffprobeAvailable: status.available,
+        ffprobeDetail: status.detail,
+        ffprobeVersion: status.version,
+      }));
+      addLog(status.available ? `FFprobe detectado: ${status.version ?? "versión no informada"}.` : "FFprobe no disponible.", status.available ? "info" : "warning");
+    }).catch(() => {
+      setMediaDiagnostics((current) => ({ ...current, ffprobeDetail: "No se pudo completar la detección." }));
+      addLog("No se pudo comprobar FFprobe.", "error");
+    });
+  }, [addLog]);
+
+  const createProject = (draft: ProjectDraft, probeMs: number) => {
     const project: LocalProject = {
       ...draft,
       id: createId(),
       createdAt: new Date().toISOString(),
-      status: "created",
+      schemaVersion: 2,
+      status: "ready",
     };
     setProjects((current) => [project, ...current]);
+    setMediaDiagnostics((current) => ({ ...current, lastFileName: project.source.fileName, lastProbeMs: probeMs }));
     addLog(`Proyecto creado: ${project.name}.`);
     notify("Proyecto creado");
   };
 
   const openProject = (project: LocalProject) => {
+    setSelectedProjectId(project.id);
+    setActivePage("project");
     addLog(`Proyecto abierto: ${project.name}.`);
-    notify("Proyecto preparado para próximas fases", "info");
+    if (!project.source.path) return;
+    void checkVideoSource(project.source.path, project.source.sizeBytes, project.source.lastModifiedMs).then((check) => {
+      const status = !check.exists ? "source-missing" : check.changed ? "source-changed" : "ready";
+      setProjects((current) => current.map((entry) => entry.id === project.id ? { ...entry, status } : entry));
+      if (!check.exists) addLog(`Archivo fuente no encontrado: ${project.source.fileName}.`, "warning");
+      else if (check.changed) addLog(`El archivo fuente podría haber cambiado: ${project.source.fileName}.`, "warning");
+    }).catch(() => addLog(`No se pudo verificar la fuente: ${project.source.fileName}.`, "warning"));
+  };
+
+  const relocateProject = async (project: LocalProject) => {
+    setIsRelocating(true);
+    try {
+      const path = await selectVideoPath();
+      if (!path) return;
+      addLog(`Reubicando fuente de ${project.name}.`);
+      const result = await probeVideo(path);
+      setProjects((current) => current.map((entry) => entry.id === project.id ? {
+        ...entry,
+        metadata: result.metadata,
+        source: {
+          fileName: result.metadata.fileName,
+          lastModifiedMs: result.metadata.lastModifiedMs,
+          path: result.metadata.path,
+          sizeBytes: result.metadata.sizeBytes,
+        },
+        status: "ready",
+      } : entry));
+      setMediaDiagnostics((current) => ({ ...current, lastFileName: result.metadata.fileName, lastProbeMs: result.elapsedMs }));
+      addLog(`Metadata completada en ${(result.elapsedMs / 1_000).toFixed(2)} s.`);
+      notify("Fuente localizada y validada");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No se pudo localizar y validar el archivo.";
+      addLog(message, "error");
+      notify(message, "error");
+    } finally {
+      setIsRelocating(false);
+    }
   };
 
   const renameProject = (name: string) => {
@@ -108,6 +179,10 @@ export function App() {
     setProjects((current) => current.filter((project) => project.id !== projectToDelete.id));
     addLog(`Referencia de proyecto eliminada: ${projectToDelete.name}.`);
     setProjectToDelete(null);
+    if (selectedProjectId === projectToDelete.id) {
+      setSelectedProjectId(null);
+      setActivePage("projects");
+    }
     notify("Referencia eliminada");
   };
 
@@ -137,10 +212,21 @@ export function App() {
     projects,
   };
 
+  const selectedProject = projects.find((project) => project.id === selectedProjectId) ?? null;
+
   const pageContent: Record<PageId, ReactNode> = {
-    home: <HomePage {...sharedProjectProps} />,
+    home: <HomePage {...sharedProjectProps} mediaDiagnostics={mediaDiagnostics} />,
     projects: <ProjectsPage {...sharedProjectProps} />,
-    diagnostics: <DiagnosticsPage events={events} onNotify={notify} />,
+    project: selectedProject ? (
+      <ProjectDetailPage
+        isRelocating={isRelocating}
+        onBack={() => setActivePage("projects")}
+        onDelete={setProjectToDelete}
+        onRelocate={(project) => void relocateProject(project)}
+        project={selectedProject}
+      />
+    ) : <ProjectsPage {...sharedProjectProps} />,
+    diagnostics: <DiagnosticsPage events={events} media={mediaDiagnostics} onNotify={notify} />,
     settings: (
       <SettingsPage
         onAvatarChange={updateAvatar}
@@ -168,9 +254,11 @@ export function App() {
       </AppShell>
 
       <NewProjectModal
+        ffprobeAvailable={mediaDiagnostics.ffprobeAvailable}
         onClose={() => setIsNewProjectOpen(false)}
         onCreate={createProject}
         onError={(message) => notify(message, "error")}
+        onLog={addLog}
         open={isNewProjectOpen}
       />
       <RenameProjectModal

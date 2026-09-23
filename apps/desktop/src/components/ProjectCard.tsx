@@ -82,12 +82,17 @@ export function ProjectCard({ onDelete, onOpen, onRename, project }: ProjectCard
       </div>
 
       <h3 className="mt-5 truncate text-base font-bold text-ink">{project.name}</h3>
-      <p className="mt-1.5 truncate text-sm text-muted" title={project.fileName}>{project.fileName}</p>
-      <p className="mt-1 text-xs text-muted/70">{formatFileSize(project.fileSize)} · {project.fileExtension.toUpperCase()}</p>
+      <p className="mt-1.5 truncate text-sm text-muted" title={project.source.fileName}>{project.source.fileName}</p>
+      <p className="mt-1 text-xs text-muted/70">
+        {formatFileSize(project.source.sizeBytes)} · {project.metadata?.extension.toUpperCase() || "REFERENCIA LEGACY"}
+      </p>
 
       <div className="mt-5 flex items-end justify-between gap-4 border-t border-line pt-4">
         <div>
-          <StatusBadge label="Preparado" tone="success" />
+          <StatusBadge
+            label={project.status === "ready" ? "Metadata lista" : project.status === "source-missing" ? "Fuente ausente" : project.status === "source-changed" ? "Fuente cambió" : "Reubicar fuente"}
+            tone={project.status === "ready" ? "success" : "warning"}
+          />
           <p className="mt-2 text-[11px] text-muted">{formatProjectDate(project.createdAt)}</p>
         </div>
         <Button

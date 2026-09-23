@@ -1,17 +1,18 @@
-import { CheckCircle2, ClipboardCopy, Download, FileWarning, ListFilter, TerminalSquare } from "lucide-react";
+import { CheckCircle2, ClipboardCopy, Download, FileWarning, ListFilter, ScanSearch, TerminalSquare } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { StatusBadge } from "../components/StatusBadge";
 import { cn } from "../lib/cn";
 import { formatLogTime, getOperatingSystem } from "../lib/format";
-import type { DiagnosticEvent, LogLevel } from "../types/diagnostics";
+import type { DiagnosticEvent, LogLevel, MediaDiagnosticState } from "../types/diagnostics";
 import type { ToastTone } from "../types/toast";
 
 type LogFilter = "all" | LogLevel;
 
 interface DiagnosticsPageProps {
   events: DiagnosticEvent[];
+  media: MediaDiagnosticState;
   onNotify: (message: string, tone?: ToastTone) => void;
 }
 
@@ -37,7 +38,7 @@ function diagnosticFileName(date: Date): string {
   return `diagnostico_CHETO_${date.getFullYear()}${digits(date.getMonth() + 1)}${digits(date.getDate())}_${digits(date.getHours())}${digits(date.getMinutes())}${digits(date.getSeconds())}.txt`;
 }
 
-export function DiagnosticsPage({ events, onNotify }: DiagnosticsPageProps) {
+export function DiagnosticsPage({ events, media, onNotify }: DiagnosticsPageProps) {
   const [activeFilter, setActiveFilter] = useState<LogFilter>("all");
   const filteredEvents = useMemo(
     () => activeFilter === "all" ? events : events.filter((event) => event.level === activeFilter),
@@ -62,12 +63,15 @@ export function DiagnosticsPage({ events, onNotify }: DiagnosticsPageProps) {
     const now = new Date();
     const content = [
       "CHETO VIDEO AI — Diagnóstico local",
-      "Versión interna: 0.1.0",
+      "Versión interna: 0.2.0",
       `Sistema operativo: ${getOperatingSystem()}`,
       `Fecha: ${now.toLocaleString("es-PE")}`,
       "Tema: Oscuro",
       "Idioma: Español",
       "API externa: Desactivada",
+      `FFprobe: ${media.ffprobeAvailable ? media.ffprobeVersion ?? "Detectado" : "No disponible"}`,
+      `Última lectura: ${media.lastProbeMs === null ? "No disponible" : `${(media.lastProbeMs / 1_000).toFixed(2)} s`}`,
+      `Último archivo: ${media.lastFileName ?? "No disponible"}`,
       "",
       "Eventos:",
       ...(events.length ? events.map(formatEvent) : ["Sin eventos registrados."]),
@@ -96,6 +100,19 @@ export function DiagnosticsPage({ events, onNotify }: DiagnosticsPageProps) {
             </div>
           </div>
           <StatusBadge label="Sin errores activos" tone="success" />
+        </div>
+      </Card>
+
+      <Card className="p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <span className={`grid h-11 w-11 place-items-center rounded-lg border ${media.ffprobeAvailable ? "border-success/25 bg-success/10 text-success" : "border-warning/25 bg-warning/10 text-warning"}`}><ScanSearch aria-hidden="true" size={20} /></span>
+            <div><p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted">Motor multimedia</p><h2 className="mt-1 font-bold text-ink">FFprobe · {media.ffprobeAvailable ? "Detectado" : "No disponible"}</h2><p className="mt-1 text-xs text-muted">{media.ffprobeVersion ?? media.ffprobeDetail ?? "Sin información de versión"}</p></div>
+          </div>
+          <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-right">
+            <div><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted/70">Última lectura</p><p className="mt-1 text-sm font-semibold text-ink">{media.lastProbeMs === null ? "—" : `${(media.lastProbeMs / 1_000).toFixed(2)} s`}</p></div>
+            <div><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted/70">Archivo</p><p className="mt-1 max-w-44 truncate text-sm font-semibold text-ink" title={media.lastFileName ?? undefined}>{media.lastFileName ?? "—"}</p></div>
+          </div>
         </div>
       </Card>
 

@@ -1,17 +1,22 @@
-export type ProjectStatus = "created";
+import type { VideoMetadata } from "../media/models";
+
+export type ProjectStatus = "ready" | "source-changed" | "source-missing" | "legacy";
+
+export interface ProjectSource {
+  fileName: string;
+  lastModifiedMs: number | null;
+  path: string | null;
+  sizeBytes: number;
+}
 
 export interface LocalProject {
   createdAt: string;
-  fileExtension: string;
-  fileName: string;
-  fileSize: number;
   id: string;
+  metadata: VideoMetadata | null;
   name: string;
-  sourcePath: string;
+  schemaVersion: 2;
+  source: ProjectSource;
   status: ProjectStatus;
 }
 
-export type ProjectDraft = Pick<
-  LocalProject,
-  "fileExtension" | "fileName" | "fileSize" | "name" | "sourcePath"
->;
+export type ProjectDraft = Pick<LocalProject, "metadata" | "name" | "source">;

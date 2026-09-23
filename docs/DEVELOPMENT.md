@@ -5,6 +5,7 @@
 - Windows 10 u 11.
 - Node.js 20.19 o superior.
 - npm 10 o superior.
+- FFprobe disponible en `PATH` para lectura real de metadata.
 
 Para ejecutar sólo el frontend:
 
@@ -38,6 +39,16 @@ Después ejecuta:
 npm run tauri -- dev
 ```
 
+## FFprobe
+
+La aplicación busca el ejecutable `ffprobe` en `PATH` y registra su primera línea de versión. No se descarga ni instala automáticamente. Verifica el entorno con:
+
+```powershell
+ffprobe -version
+```
+
+La ausencia del binario no bloquea el arranque: Diagnóstico mostrará **No disponible** y el modal explicará por qué no puede completar el análisis. En distribución futura podrá resolverse `ffprobe` como sidecar firmado sin cambiar el contrato de metadata.
+
 ## Comandos
 
 | Comando | Propósito |
@@ -46,6 +57,7 @@ npm run tauri -- dev
 | `npm run typecheck` | TypeScript estricto |
 | `npm run lint` | Reglas estáticas |
 | `npm run build` | Build frontend de producción |
+| `npm test` | Tests unitarios de normalización de metadata |
 | `npm run tauri -- dev` | Aplicación nativa en desarrollo |
 
 ## Convenciones
@@ -56,6 +68,6 @@ npm run tauri -- dev
 - Nada de claves, videos personales, modelos, temporales o logs privados en Git.
 - APIs externas apagadas por defecto y sin actividad en background.
 
-## Límites de v0.1
+## Límites de v0.2
 
-No se instala FFmpeg, Python, modelos ni librerías de IA. Las carpetas del motor y worker son documentación de arquitectura, no implementaciones.
+No se instala automáticamente FFmpeg, Python, modelos ni librerías de IA. El backend no usa shell, no lee el archivo completo y sólo conserva metadata y una referencia a la ruta. Para una descripción detallada, consulta `docs/MEDIA_INGEST.md`.
