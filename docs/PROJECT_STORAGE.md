@@ -8,7 +8,9 @@ Los proyectos no se guardan en el repositorio ni junto al video. El backend resu
 <appDataDir>/projects/<projectId>/
 ├── project.json
 ├── source.json
-└── edl.json
+├── edl.json
+├── transcript.json              # sólo tras completar
+└── transcript.partial.json      # checkpoint recuperable
 ```
 
 En Windows, con el identificador actual, la ubicación esperada es `%APPDATA%/com.chetovideoai.desktop/projects`. La aplicación obtiene este valor mediante `app.path().app_data_dir()`; React no construye ni recibe rutas arbitrarias de escritura.
@@ -81,8 +83,12 @@ La forma exacta de `edl.json` está documentada en `EDL_SCHEMA.md`.
 
 ## Compatibilidad de schemas
 
-Cada archivo tiene su propio `schemaVersion`. TASK-003 soporta únicamente la versión 1 y rechaza versiones incompatibles con un error controlado. Las futuras versiones deben incorporar migraciones explícitas; nunca deben reinterpretar ni sobrescribir silenciosamente un schema desconocido.
+Cada archivo tiene su propio `schemaVersion`. TASK-003/005 soporta únicamente la versión 1 y rechaza versiones incompatibles con un error controlado. Las futuras versiones deben incorporar migraciones explícitas; nunca deben reinterpretar ni sobrescribir silenciosamente un schema desconocido.
 
-## Límites de TASK-003
+## Transcript v1
 
-No se crean archivos vacíos para transcripción, escenas, cámara, subtítulos o análisis. Tampoco se copia, mueve, modifica, reproduce ni procesa el video original. No hay IA, red, proxies ni render.
+`transcript.json` conserva `projectId`, `sourceId`, snapshot de la fuente, fecha, motor/perfil efectivo, idioma, estadísticas y segmentos/palabras en microsegundos. Rust compara ID, tamaño y modificación del original para marcar resultados obsoletos. La escritura usa temporal y reemplazo seguro; un fallo o cancelación no destruye el transcript válido anterior. `transcript.partial.json` no se interpreta como resultado final y actualmente no permite reanudar a mitad de archivo.
+
+## Límites históricos de TASK-003
+
+TASK-003 no creaba archivos vacíos para análisis. TASK-005 añade el transcript únicamente cuando existe contenido real y mantiene el video original inmutable.

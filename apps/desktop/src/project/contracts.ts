@@ -1,4 +1,4 @@
-export type WorkflowState = "completed" | "not_started";
+export type WorkflowState = "cancelled" | "completed" | "error" | "not_started" | "preparing" | "running";
 
 export interface ProjectManifest {
   createdAt: string;

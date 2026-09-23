@@ -22,7 +22,7 @@ project.json + source.json + edl.json
     ↓ reproducción / proxy explícito
 Media Player + Rust Proxy Pipeline
     ↓
-Python Worker (futuro)
+    Python Worker aislado (JSONL)
     ↓
 Engines
     ↓
@@ -55,9 +55,11 @@ React controla el estado efímero del player y convierte segundos DOM a microseg
 
 `media_proxy.rs` resuelve almacenamiento e IPC; `proxy_ffmpeg.rs` administra proceso, progreso y cancelación; `proxy_model.rs` contiene contratos y lógica pura de dimensiones, vigencia y selección de encoder. Cada proyecto puede tener un proxy H.264/AAC dentro de `media/`, mientras el original continúa siendo la fuente maestra. Consulta `MEDIA_PLAYBACK.md` y `PROXY_PIPELINE.md`.
 
-### Python Worker
+### Transcripción local y Python Worker
 
-Proceso local futuro responsable de orquestar tareas de análisis. El directorio existe como límite arquitectónico, sin dependencias ni código ejecutable en v0.1.
+Rust inventaría hardware mediante `sysinfo` y DXGI, confirma por separado si CTranslate2 puede usar CUDA y selecciona un perfil reproducible. El worker Python se ejecuta como proceso hijo aislado, reserva stdout para JSONL y encapsula `faster-whisper` detrás de `TranscriptionEngine`. Descarga modelos sólo por una acción explícita, produce checkpoints y entrega un transcript atómico con timestamps en microsegundos. Consulta `TRANSCRIPTION_PIPELINE.md`, `HARDWARE_PROFILING.md` y `MODEL_MANAGEMENT.md`.
+
+Al mover la aplicación a otra PC se vuelve a detectar hardware y a resolver backend; sólo se conserva la preferencia general de calidad, nunca una imposición incompatible de dispositivo. Los modelos locales válidos se reutilizan, los ausentes requieren confirmación de descarga y CPU permanece como ruta segura. AMD e Intel usan CPU en este backend inicial; la interfaz de motor permite sumar en el futuro whisper.cpp, DirectML, OpenVINO, Vulkan u otros motores sin cambiar el contrato del transcript.
 
 ### Engines
 
@@ -73,4 +75,4 @@ Etapa futura que aplicará un EDL validado y producirá el archivo final conserv
 
 ## Integraciones externas
 
-`engine/integrations` queda reservado. Las integraciones estarán apagadas por defecto, nunca realizarán llamadas en segundo plano y sólo podrán activarse explícitamente para una función que las requiera. v0.1 no incluye clientes, claves ni llamadas de red.
+`engine/integrations` queda reservado. Las integraciones estarán apagadas por defecto, nunca realizarán llamadas en segundo plano y sólo podrán activarse explícitamente para una función que las requiera. La transcripción no usa APIs ni claves: únicamente la descarga explícita inicial del modelo necesita red; la inferencia es local.

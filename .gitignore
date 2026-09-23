@@ -11,14 +11,26 @@ node_modules/
 dist/
 target/
 *.tsbuildinfo
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
 
 # Local runtime data
 models/
+model-cache/
 temp/
 cache/
 output/
 projects/local/
 logs/*.log
+transcript.json
+transcript.json.tmp
+transcript.partial.json
+audio-transcription-*.wav
+worker/build/
+worker/dist/
 
 # Personal media
 *.mp4

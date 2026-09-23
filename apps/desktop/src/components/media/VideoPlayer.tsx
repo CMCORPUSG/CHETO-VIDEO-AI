@@ -12,6 +12,7 @@ interface VideoPlayerProps {
   kind: PlaybackKind;
   onError: (message: string) => void;
   path: string;
+  seekToUs?: number | null;
 }
 
 function isTypingTarget(target: EventTarget | null): boolean {
@@ -19,7 +20,7 @@ function isTypingTarget(target: EventTarget | null): boolean {
   return target.matches("input, textarea, select") || target.isContentEditable;
 }
 
-export function VideoPlayer({ durationUs, kind, onError, path }: VideoPlayerProps) {
+export function VideoPlayer({ durationUs, kind, onError, path, seekToUs }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [playbackState, setPlaybackState] = useState<PlaybackState>("idle");
@@ -66,6 +67,11 @@ export function VideoPlayer({ durationUs, kind, onError, path }: VideoPlayerProp
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [playheadUs, seek, togglePlayback]);
+
+  useEffect(() => {
+    if (seekToUs === null || seekToUs === undefined || !videoRef.current) return;
+    videoRef.current.currentTime = usToSeconds(clampTimelineUs(seekToUs, durationUs));
+  }, [durationUs, seekToUs]);
 
   const changeVolume = (value: number) => {
     const next = Math.min(1, Math.max(0, value));

@@ -18,9 +18,9 @@ Persistencia administrada por Rust, manifests versionados, migración progresiva
 
 Reproductor local controlado, timebase en microsegundos, selección original/proxy, generación FFmpeg cancelable, progreso real y fallback NVENC→libx264.
 
-## V0.5 — Transcripción
+## V0.5 — Transcripción (implementado)
 
-Pipeline local de audio y transcripción, sujeto a evaluación técnica y de recursos.
+Worker local faster-whisper/CTranslate2, inventario adaptativo de hardware, modelos bajo descarga explícita, fallback finito, cancelación, checkpoints y transcript v1 navegable desde el reproductor.
 
 ## V0.6 — Smart Cut
 

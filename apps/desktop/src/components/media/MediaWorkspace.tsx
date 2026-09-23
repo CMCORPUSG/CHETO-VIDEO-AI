@@ -8,6 +8,7 @@ import { cancelProxy, createProxy, getProxyStatus, onProxyDiagnostic, onProxyPro
 import { Button } from "../Button";
 import { Card } from "../Card";
 import { VideoPlayer } from "./VideoPlayer";
+import { TranscriptionWorkspace } from "./TranscriptionWorkspace";
 
 interface MediaWorkspaceProps {
   bundle: ProjectBundle;
@@ -22,6 +23,7 @@ export function MediaWorkspace({ bundle, onLog, onNotify }: MediaWorkspaceProps)
   const [status, setStatus] = useState<ProxyStatus>(initialStatus);
   const [source, setSource] = useState<PlaybackSource | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [requestedSeekUs, setRequestedSeekUs] = useState<number | null>(null);
   const progressBucket = useRef(-1);
 
   const resolveSource = useCallback(async (nextPreference: PlaybackPreference, currentStatus?: ProxyStatus) => {
@@ -105,7 +107,7 @@ export function MediaWorkspace({ bundle, onLog, onNotify }: MediaWorkspaceProps)
           <div><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan">Preview multimedia</p><h3 className="mt-1 text-lg font-bold text-ink">Reproductor del proyecto</h3></div>
           <span className="rounded-md border border-line bg-canvas px-2.5 py-1 text-[10px] font-bold tracking-[0.15em] text-ink">{source?.kind.toUpperCase() ?? "CARGANDO"}</span>
         </div>
-        {source ? <VideoPlayer durationUs={source.durationUs} key={source.path} kind={source.kind} onError={(message) => { setError(message); onLog("PLAYBACK_ERROR", "error"); }} path={source.path} /> : <div className="grid aspect-video place-items-center rounded-xl border border-line bg-black"><LoaderCircle className="animate-spin text-cyan" size={26} /></div>}
+        {source ? <VideoPlayer durationUs={source.durationUs} key={source.path} kind={source.kind} onError={(message) => { setError(message); onLog("PLAYBACK_ERROR", "error"); }} path={source.path} seekToUs={requestedSeekUs} /> : <div className="grid aspect-video place-items-center rounded-xl border border-line bg-black"><LoaderCircle className="animate-spin text-cyan" size={26} /></div>}
         {error ? <p className="mt-3 flex items-start gap-2 text-sm text-danger"><AlertTriangle className="mt-0.5 shrink-0" size={16} />{error}</p> : null}
       </Card>
 
@@ -128,6 +130,8 @@ export function MediaWorkspace({ bundle, onLog, onNotify }: MediaWorkspaceProps)
         </div>
         <p className="mt-5 text-xs text-muted">{recommend ? "Crear un proxy de trabajo puede mejorar la fluidez de edición." : "El archivo original puede reproducirse directamente."} El original siempre permanece como fuente maestra.</p>
       </Card>
+
+      <TranscriptionWorkspace bundle={bundle} onLog={onLog} onNotify={onNotify} onSeek={(timeUs) => setRequestedSeekUs(timeUs)} />
     </div>
   );
 }

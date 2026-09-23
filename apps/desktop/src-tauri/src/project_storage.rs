@@ -48,9 +48,13 @@ pub struct EdlReference {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "snake_case")]
-pub enum WorkflowState {
+pub(crate) enum WorkflowState {
     NotStarted,
+    Preparing,
+    Running,
     Completed,
+    Cancelled,
+    Error,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -414,6 +418,43 @@ impl ProjectStorage {
         };
         Self::validate_bundle(&bundle, false)?;
         Ok(bundle)
+    }
+
+    pub(crate) fn update_transcription_workflow(
+        &self,
+        project_id: &str,
+        state: WorkflowState,
+        updated_at: String,
+    ) -> Result<ProjectBundle, ProjectStorageError> {
+        let mut bundle = self.load_project(project_id)?;
+        bundle.project.workflow.transcription = state;
+        bundle.project.updated_at = updated_at;
+        self.write_json(
+            &self.project_dir(project_id)?.join(PROJECT_FILE),
+            &bundle.project,
+        )?;
+        Ok(bundle)
+    }
+
+    pub(crate) fn recover_interrupted_transcription(
+        &self,
+        project_id: &str,
+        updated_at: String,
+    ) -> Result<bool, ProjectStorageError> {
+        let mut bundle = self.load_project(project_id)?;
+        if !matches!(
+            bundle.project.workflow.transcription,
+            WorkflowState::Preparing | WorkflowState::Running
+        ) {
+            return Ok(false);
+        }
+        bundle.project.workflow.transcription = WorkflowState::Error;
+        bundle.project.updated_at = updated_at;
+        self.write_json(
+            &self.project_dir(project_id)?.join(PROJECT_FILE),
+            &bundle.project,
+        )?;
+        Ok(true)
     }
 
     fn save_project(
