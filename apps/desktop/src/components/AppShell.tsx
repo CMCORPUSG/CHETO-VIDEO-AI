@@ -12,12 +12,12 @@ interface AppShellProps {
 
 export function AppShell({ activePage, children, onNavigate, title }: AppShellProps) {
   return (
-    <div className="flex min-h-screen bg-canvas text-ink">
+    <div className="flex h-screen overflow-hidden bg-transparent text-ink">
       <Sidebar activePage={activePage} onNavigate={onNavigate} />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar title={title} />
         <main className="min-h-0 flex-1 overflow-auto">
-          <div className="mx-auto w-full max-w-[1440px] p-6 lg:p-8">{children}</div>
+          <div className="mx-auto w-full max-w-[1480px] p-6 lg:p-8 xl:p-10">{children}</div>
         </main>
       </div>
     </div>

@@ -30,7 +30,7 @@ export function Modal({ children, description, onClose, open, title }: ModalProp
 
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-canvas/85 p-5 backdrop-blur-sm"
+      className="fixed inset-0 z-50 grid place-items-center bg-canvas/80 p-5 backdrop-blur-md"
       onMouseDown={(event) => {
         if (event.currentTarget === event.target) onClose();
       }}
@@ -39,10 +39,10 @@ export function Modal({ children, description, onClose, open, title }: ModalProp
         aria-describedby={description ? "modal-description" : undefined}
         aria-labelledby="modal-title"
         aria-modal="true"
-        className="w-full max-w-lg rounded-lg border border-line bg-surface shadow-modal"
+        className="surface-shine w-full max-w-lg overflow-hidden rounded-xl border border-line-bright bg-surface shadow-modal"
         role="dialog"
       >
-        <header className="flex items-start justify-between border-b border-line px-6 py-5">
+        <header className="flex items-start justify-between border-b border-line bg-[linear-gradient(120deg,rgba(47,107,255,.09),transparent_55%)] px-6 py-5">
           <div>
             <p className="mb-1 text-xs font-semibold uppercase tracking-[0.2em] text-cyan">
               Proyecto local

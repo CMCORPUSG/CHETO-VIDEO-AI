@@ -1,8 +1,19 @@
-import { ArrowRight, Clapperboard, Cpu, FileVideo, Plus, Sparkles } from "lucide-react";
+import {
+  Activity,
+  ArrowRight,
+  Box,
+  CloudOff,
+  Cpu,
+  FileVideo,
+  Microchip,
+  Plus,
+  type LucideIcon,
+} from "lucide-react";
 import type { ProjectDraft } from "../components/NewProjectModal";
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { EmptyState } from "../components/EmptyState";
+import { HeroCard } from "../components/HeroCard";
 import { StatusBadge } from "../components/StatusBadge";
 
 interface HomePageProps {
@@ -10,46 +21,64 @@ interface HomePageProps {
   projects: ProjectDraft[];
 }
 
-const systemStatus = [
-  { label: "Motor", value: "No iniciado", tone: "neutral" as const },
-  { label: "GPU", value: "Pendiente de detección", tone: "warning" as const },
-  { label: "Modelos", value: "No instalados", tone: "neutral" as const },
-  { label: "API externa", value: "Desactivada", tone: "success" as const },
+interface SystemStatusItem {
+  accent: string;
+  description: string;
+  icon: LucideIcon;
+  label: string;
+  tone: "neutral" | "success" | "warning";
+  value: string;
+}
+
+const systemStatus: SystemStatusItem[] = [
+  {
+    label: "Motor",
+    value: "Inactivo",
+    description: "Listo para una fase futura",
+    tone: "neutral",
+    icon: Activity,
+    accent: "bg-primary/15 text-cyan",
+  },
+  {
+    label: "GPU",
+    value: "Pendiente",
+    description: "Detección aún no iniciada",
+    tone: "warning",
+    icon: Microchip,
+    accent: "bg-warning/10 text-warning",
+  },
+  {
+    label: "Modelos",
+    value: "No instalados",
+    description: "Sin descargas locales",
+    tone: "neutral",
+    icon: Box,
+    accent: "bg-violet/15 text-violet",
+  },
+  {
+    label: "API externa",
+    value: "Desactivada",
+    description: "Privacidad local activa",
+    tone: "success",
+    icon: CloudOff,
+    accent: "bg-success/10 text-success",
+  },
 ];
 
 export function HomePage({ onNewProject, projects }: HomePageProps) {
   return (
-    <div className="space-y-8">
-      <section className="hero-grid relative overflow-hidden rounded-lg border border-line bg-surface p-7 shadow-card lg:p-10">
-        <div className="relative z-10 max-w-2xl">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-sm border border-primary/25 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-cyan">
-            <Sparkles aria-hidden="true" size={14} />
-            Base Desktop · v0.1.0
-          </div>
-          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-cyan">CHETO VIDEO AI</p>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight text-ink sm:text-4xl">
-            Editor inteligente de video
-          </h2>
-          <p className="mt-4 max-w-xl text-base leading-7 text-muted">
-            Un espacio local preparado para convertir videos largos en ediciones claras, revisables y profesionales.
-          </p>
-          <Button className="mt-7 px-5" icon={<Plus aria-hidden="true" size={18} />} onClick={onNewProject}>
-            Nuevo proyecto
-          </Button>
-        </div>
-
-        <div className="absolute -bottom-16 -right-12 hidden h-64 w-64 rotate-12 items-center justify-center rounded-lg border border-primary/20 bg-primary/5 lg:flex">
-          <Clapperboard aria-hidden="true" className="text-primary/20" size={112} strokeWidth={1.2} />
-        </div>
-      </section>
+    <div className="space-y-10">
+      <HeroCard onNewProject={onNewProject} />
 
       <section>
-        <div className="mb-4 flex items-end justify-between gap-4">
+        <div className="mb-5 flex items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted">Workspace</p>
-            <h2 className="mt-1 text-xl font-semibold text-ink">Proyectos recientes</h2>
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-cyan">Workspace</p>
+            <h2 className="mt-1.5 text-2xl font-bold tracking-tight text-ink">Proyectos recientes</h2>
           </div>
-          <span className="text-xs text-muted">Sólo esta sesión</span>
+          <span className="rounded-full border border-line bg-surface px-3 py-1.5 text-[11px] font-semibold text-muted">
+            Sólo esta sesión
+          </span>
         </div>
 
         {projects.length === 0 ? (
@@ -59,20 +88,20 @@ export function HomePage({ onNewProject, projects }: HomePageProps) {
                 Crear el primero
               </Button>
             }
-            description="Todavía no hay proyectos. Crea una referencia local sin iniciar procesamiento de video."
-            title="Tu workspace está listo"
+            description="Crea un proyecto para preparar tu material. En esta fase el archivo se conserva sólo como referencia visual y nunca sale de tu equipo."
+            title="Tu próxima edición empieza aquí"
           />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {projects.map((project) => (
-              <Card className="group p-5" key={`${project.name}-${project.fileName}`}>
+              <Card className="group surface-shine p-5 transition duration-200 hover:-translate-y-0.5 hover:border-line-bright hover:shadow-card-hover" key={`${project.name}-${project.fileName}`}>
                 <div className="flex items-start justify-between gap-4">
-                  <span className="grid h-11 w-11 place-items-center rounded-md bg-primary/10 text-cyan">
+                  <span className="grid h-12 w-12 place-items-center rounded-lg border border-primary/20 bg-[var(--gradient-primary)] text-white shadow-glow">
                     <FileVideo aria-hidden="true" size={20} />
                   </span>
                   <StatusBadge label="Sin procesar" />
                 </div>
-                <h3 className="mt-5 truncate font-semibold text-ink">{project.name}</h3>
+                <h3 className="mt-5 truncate text-base font-semibold text-ink">{project.name}</h3>
                 <p className="mt-1 truncate text-sm text-muted">{project.fileName}</p>
                 <div className="mt-5 flex items-center justify-between border-t border-line pt-4 text-xs text-muted">
                   <span>Creado en esta sesión</span>
@@ -85,17 +114,28 @@ export function HomePage({ onNewProject, projects }: HomePageProps) {
       </section>
 
       <section>
-        <div className="mb-4 flex items-center gap-2">
-          <Cpu aria-hidden="true" className="text-cyan" size={19} />
-          <h2 className="text-xl font-semibold text-ink">Estado del sistema</h2>
+        <div className="mb-5 flex items-end justify-between gap-4">
+          <div>
+            <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-cyan">
+              <Cpu aria-hidden="true" size={14} />
+              Entorno local
+            </p>
+            <h2 className="mt-1.5 text-2xl font-bold tracking-tight text-ink">Estado del sistema</h2>
+          </div>
+          <p className="hidden text-xs text-muted sm:block">Sin procesos pesados activos</p>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {systemStatus.map((status) => (
-            <Card className="p-4" key={status.label}>
-              <p className="text-xs font-medium uppercase tracking-wide text-muted">{status.label}</p>
-              <div className="mt-3">
+            <Card className="group relative overflow-hidden p-5 transition duration-200 hover:border-line-bright hover:shadow-card-hover" key={status.label}>
+              <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-primary/5 blur-2xl transition group-hover:bg-primary/10" />
+              <div className="relative flex items-start justify-between gap-3">
+                <span className={`grid h-10 w-10 place-items-center rounded-lg ${status.accent}`}>
+                  <status.icon aria-hidden="true" size={18} />
+                </span>
                 <StatusBadge label={status.value} tone={status.tone} />
               </div>
+              <h3 className="relative mt-5 text-sm font-bold uppercase tracking-[0.1em] text-ink">{status.label}</h3>
+              <p className="relative mt-1.5 text-xs leading-5 text-muted">{status.description}</p>
             </Card>
           ))}
         </div>
