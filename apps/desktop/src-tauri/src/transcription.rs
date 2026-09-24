@@ -279,7 +279,7 @@ fn source_snapshot_is_stale(
 
 fn parse_worker_event(line: &str) -> Result<(String, Value), TranscriptionError> {
     let event: Value = serde_json::from_str(line)
-        .map_err(|_| TranscriptionError::new("invalid-worker-protocol", "JSONL invÃƒÆ’Ã‚Â¡lido"))?;
+        .map_err(|_| TranscriptionError::new("invalid-worker-protocol", "JSONL inválido"))?;
     let name = event
         .get("event")
         .and_then(Value::as_str)
@@ -296,7 +296,7 @@ fn transcript_status_impl(
     project_id: &str,
 ) -> Result<TranscriptStatus, TranscriptionError> {
     ProjectStorage::validate_id(project_id, "projectId")
-        .map_err(|_| TranscriptionError::new("invalid-project-id", "projectId invÃƒÆ’Ã‚Â¡lido"))?;
+        .map_err(|_| TranscriptionError::new("invalid-project-id", "projectId inválido"))?;
     if manager
         .active
         .lock()
@@ -329,7 +329,7 @@ fn transcript_status_impl(
     let duration = bundle.source.duration_us.unwrap_or(0);
     let path = storage
         .project_dir(project_id)
-        .map_err(|_| TranscriptionError::new("invalid-project-id", "projectId invÃƒÆ’Ã‚Â¡lido"))?
+        .map_err(|_| TranscriptionError::new("invalid-project-id", "projectId inválido"))?
         .join("transcript.json");
     if !path.is_file() {
         return Ok(TranscriptStatus {
@@ -382,7 +382,7 @@ fn transcript_status_impl(
             .map(str::to_owned),
         engine: value.get("engine").cloned(),
         message: if stale {
-            Some("El video original cambiÃƒÆ’Ã‚Â³. Se requiere retranscribir.".into())
+            Some("El video original cambió. Se requiere retranscribir.".into())
         } else {
             None
         },
@@ -451,7 +451,7 @@ fn run_transcription(
     if hardware.ram_available_bytes < 512 * 1024_u64.pow(2) {
         return Err(TranscriptionError::new(
             "insufficient-memory",
-            "La memoria disponible es insuficiente para iniciar la transcripciÃƒÆ’Ã‚Â³n.",
+            "La memoria disponible es insuficiente para iniciar la transcripción.",
         ));
     }
     let profile =
@@ -481,12 +481,12 @@ fn run_transcription(
     if active.is_some() {
         return Err(TranscriptionError::new(
             "transcription-busy",
-            "Ya existe una transcripciÃƒÆ’Ã‚Â³n global activa.",
+            "Ya existe una transcripción global activa.",
         ));
     }
     let project_dir = storage
         .project_dir(&request.project_id)
-        .map_err(|_| TranscriptionError::new("invalid-project-id", "projectId invÃƒÆ’Ã‚Â¡lido"))?;
+        .map_err(|_| TranscriptionError::new("invalid-project-id", "projectId inválido"))?;
     let transcript = project_dir.join("transcript.json");
     let temporary = project_dir.join("transcript.json.tmp");
     let checkpoint = project_dir.join("transcript.partial.json");
@@ -699,7 +699,7 @@ pub fn cancel_transcription(
     project_id: String,
 ) -> Result<TranscriptStatus, TranscriptionError> {
     ProjectStorage::validate_id(&project_id, "projectId")
-        .map_err(|_| TranscriptionError::new("invalid-project-id", "projectId invÃƒÆ’Ã‚Â¡lido"))?;
+        .map_err(|_| TranscriptionError::new("invalid-project-id", "projectId inválido"))?;
     let task = state
         .active
         .lock()
@@ -711,7 +711,7 @@ pub fn cancel_transcription(
     if task.project_id != project_id {
         return Err(TranscriptionError::new(
             "different-task-active",
-            "Otra transcripciÃƒÆ’Ã‚Â³n estÃƒÆ’Ã‚Â¡ activa.",
+            "Otra transcripción está activa.",
         ));
     }
     task.stdin
@@ -730,7 +730,7 @@ pub fn cancel_transcription(
         word_count: 0,
         language: None,
         engine: None,
-        message: Some("CancelaciÃƒÆ’Ã‚Â³n solicitada".into()),
+        message: Some("Cancelación solicitada".into()),
         segments: vec![],
     })
 }
