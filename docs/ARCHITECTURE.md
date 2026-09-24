@@ -65,9 +65,15 @@ Al mover la aplicación a otra PC se vuelve a detectar hardware y a resolver bac
 
 Rust consume el transcript persistido y genera `smart_cut.json` como capa de propuestas revisables. El análisis es heurístico, local y parametrizado por perfil. Sólo sugerencias aceptadas explícitamente pasan al track `cuts` del EDL existente; el módulo no crea otra timeline ni modifica el medio. Consulta `SMART_CUT.md`.
 
+### Smart Camera
+
+Rust ejecuta FFmpeg sin shell y recibe por pipe muestras grises de 160×90 a baja frecuencia. Calcula cambios entre frames y el centro ponderado de la actividad para generar propuestas deterministas de `zoom`, `focus` y `reset`. Los perfiles ajustan frecuencia, umbral, duración y zoom; la consolidación prioriza confianza, duración y tipo, elimina solapes y limita el jitter.
+
+`smart_camera.json` conserva las propuestas y su revisión. El player React puede previsualizar una propuesta en su intervalo sin renderizar ni modificar archivos. Sólo las aceptadas pasan de forma idempotente a `edl.tracks.camera`; `edl.tracks.cuts` se preserva. Consulta `SMART_CAMERA.md`.
+
 ### Engines
 
-Módulos independientes para ingest, audio, transcripción, escenas, visión, cursor, edición, subtítulos, render y calidad. Ingest ya define el límite funcional de metadata; los demás permanecen documentales.
+Módulos independientes para ingest, audio, transcripción, escenas, visión, cursor, edición, subtítulos, render y calidad. Ingest, transcripción, Smart Cut y Smart Camera ya tienen implementación local; las etapas posteriores permanecen desacopladas.
 
 ### JSON/EDL
 

@@ -4,6 +4,7 @@ mod media_proxy;
 mod project_storage;
 mod proxy_ffmpeg;
 mod proxy_model;
+mod smart_camera;
 mod smart_cut;
 mod transcription;
 
@@ -11,6 +12,7 @@ mod transcription;
 pub fn run() {
     tauri::Builder::default()
         .manage(proxy_ffmpeg::ProxyManager::default())
+        .manage(smart_camera::SmartCameraManager::default())
         .manage(transcription::TranscriptionManager::default())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
@@ -31,6 +33,11 @@ pub fn run() {
             project_storage::save_project_manifest,
             project_storage::save_project_edl,
             project_storage::update_project_source,
+            smart_camera::analyze_smart_camera,
+            smart_camera::apply_smart_camera_to_edl,
+            smart_camera::cancel_smart_camera,
+            smart_camera::get_smart_camera,
+            smart_camera::review_smart_camera,
             smart_cut::analyze_smart_cut,
             smart_cut::apply_smart_cut_to_edl,
             smart_cut::get_smart_cut,

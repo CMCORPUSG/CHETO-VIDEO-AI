@@ -11,7 +11,8 @@ Los proyectos no se guardan en el repositorio ni junto al video. El backend resu
 ├── edl.json
 ├── transcript.json              # sólo tras completar
 ├── transcript.partial.json      # checkpoint recuperable
-└── smart_cut.json               # propuestas y revisión persistente
+├── smart_cut.json               # propuestas de corte y revisión persistente
+└── smart_camera.json            # propuestas de cámara y revisión persistente
 ```
 
 En Windows, con el identificador actual, la ubicación esperada es `%APPDATA%/com.chetovideoai.desktop/projects`. La aplicación obtiene este valor mediante `app.path().app_data_dir()`; React no construye ni recibe rutas arbitrarias de escritura.
@@ -91,6 +92,8 @@ Cada archivo tiene su propio `schemaVersion`. TASK-003/005 soporta únicamente l
 `transcript.json` conserva `projectId`, `sourceId`, snapshot de la fuente, fecha, motor/perfil efectivo, idioma, estadísticas y segmentos/palabras en microsegundos. Rust compara ID, tamaño y modificación del original para marcar resultados obsoletos. La escritura usa temporal y reemplazo seguro; un fallo o cancelación no destruye el transcript válido anterior. `transcript.partial.json` no se interpreta como resultado final y actualmente no permite reanudar a mitad de archivo.
 
 `smart_cut.json` conserva perfil, snapshot de fuente, estadísticas y sugerencias con estado de revisión. Se restaura al reabrir el proyecto y pasa a `stale` cuando cambia la fuente. No es una timeline paralela: al aplicar, sólo las sugerencias aceptadas se materializan en `edl.tracks.cuts`.
+
+`smart_camera.json` sigue el mismo principio: schema v1, perfil, snapshot de la fuente, estadísticas y propuestas `pending`, `accepted` o `rejected`. Se escribe atómicamente y se marca `stale` si cambian el ID, tamaño o fecha de la fuente. Sólo las aceptadas se incorporan de forma idempotente a `edl.tracks.camera`; el documento no sustituye al EDL ni modifica cortes.
 
 ## Límites históricos de TASK-003
 

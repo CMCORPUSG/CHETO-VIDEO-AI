@@ -26,9 +26,9 @@ Worker local faster-whisper/CTranslate2, inventario adaptativo de hardware, mode
 
 Propuestas locales y revisables para silencios, muletillas, repeticiones y falsos inicios; aceptación explícita y aplicación no destructiva al EDL.
 
-## V0.7 — Smart Camera
+## V0.7 — Smart Camera (implementado)
 
-Decisiones de zoom, paneo, seguimiento y reencuadre.
+Análisis visual local de baja resolución, propuestas revisables de zoom y reencuadre, preview temporal y aplicación explícita al track `camera` del EDL.
 
 ## V0.8 — Subtítulos
 

@@ -41,6 +41,8 @@ Los tipos TypeScript y Rust reservan los siguientes contratos futuros:
 
 Smart Cut V1 materializa sugerencias aceptadas como `cuts` con `action: "remove"`, UUID determinista, razón y confianza. Antes de guardar valida que los tiempos sean enteros no negativos, que `endUs > startUs`, que el rango no exceda la fuente y que no se solape accidentalmente con otro corte. Sugerencias pendientes o rechazadas nunca pasan al EDL.
 
+Smart Camera V1 materializa únicamente propuestas aceptadas como entradas `camera`. `mode` es `zoom`, `focus` o `reset`; `zoom` permanece entre 1.0 y 1.5; `centerX` y `centerY` son coordenadas normalizadas entre 0 y 1; `easing` usa `ease_in_out`. Los intervalos se expresan sobre la timeline original en microsegundos. Los UUID son deterministas, de modo que aplicar dos veces es idempotente. Un movimiento no puede solaparse con otro movimiento ya persistido y aplicar cámara nunca altera el track `cuts`.
+
 ## Evolución
 
 `schemaVersion` cambia únicamente cuando una modificación rompe compatibilidad. Los lectores deben reconocer la versión antes de interpretar tracks. Una migración futura debe producir un documento nuevo válido, preservar el original hasta completar la escritura atómica y actualizar `updatedAt`.

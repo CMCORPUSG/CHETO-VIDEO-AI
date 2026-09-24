@@ -4,10 +4,12 @@ import type { PlaybackKind, PlaybackState } from "../../playback/models";
 import { nextPlaybackState } from "../../playback/models";
 import { playbackAssetUrl } from "../../playback/service";
 import { clampTimelineUs, formatPlaybackTime, SEEK_STEP_US, usToSeconds, secondsToUs } from "../../playback/time";
+import { activeCameraAt, type CameraPreview } from "../../smart-camera/models";
 
 const PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
 
 interface VideoPlayerProps {
+  cameraPreview?: CameraPreview | null;
   durationUs: number;
   kind: PlaybackKind;
   onError: (message: string) => void;
@@ -20,7 +22,7 @@ function isTypingTarget(target: EventTarget | null): boolean {
   return target.matches("input, textarea, select") || target.isContentEditable;
 }
 
-export function VideoPlayer({ durationUs, kind, onError, path, seekToUs }: VideoPlayerProps) {
+export function VideoPlayer({ cameraPreview, durationUs, kind, onError, path, seekToUs }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [playbackState, setPlaybackState] = useState<PlaybackState>("idle");
@@ -70,8 +72,8 @@ export function VideoPlayer({ durationUs, kind, onError, path, seekToUs }: Video
 
   useEffect(() => {
     if (seekToUs === null || seekToUs === undefined || !videoRef.current) return;
-    videoRef.current.currentTime = usToSeconds(clampTimelineUs(seekToUs, durationUs));
-  }, [durationUs, seekToUs]);
+    seek(seekToUs);
+  }, [seek, seekToUs]);
 
   const changeVolume = (value: number) => {
     const next = Math.min(1, Math.max(0, value));
@@ -100,6 +102,7 @@ export function VideoPlayer({ durationUs, kind, onError, path, seekToUs }: Video
   };
 
   const VolumeIcon = muted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
+  const activeCamera = activeCameraAt(cameraPreview ?? null, playheadUs);
 
   return (
     <div className="overflow-hidden rounded-xl border border-line bg-black shadow-2xl" ref={containerRef}>
@@ -117,9 +120,15 @@ export function VideoPlayer({ durationUs, kind, onError, path, seekToUs }: Video
           preload="metadata"
           ref={videoRef}
           src={assetUrl}
+          style={{
+            transform: `scale(${activeCamera?.zoom ?? 1})`,
+            transformOrigin: `${(activeCamera?.centerX ?? 0.5) * 100}% ${(activeCamera?.centerY ?? 0.5) * 100}%`,
+            transition: `transform ${Math.max(0, activeCamera?.transitionUs ?? cameraPreview?.transitionUs ?? 0) / 1_000_000}s ease-in-out`,
+          }}
         />
         <span className="absolute left-4 top-4 rounded-md border border-white/15 bg-black/65 px-2.5 py-1 text-[10px] font-bold tracking-[0.16em] text-white backdrop-blur">{kind.toUpperCase()}</span>
         {playbackState === "loading" ? <span className="absolute rounded-full bg-black/70 px-4 py-2 text-xs font-semibold text-white">Cargando…</span> : null}
+        {activeCamera ? <span className="absolute right-4 top-4 rounded-md border border-cyan/30 bg-black/65 px-2.5 py-1 text-[10px] font-bold tracking-[0.12em] text-cyan backdrop-blur">SMART CAMERA {activeCamera.zoom.toFixed(2)}×</span> : null}
       </div>
       <div className="border-t border-white/10 bg-surface px-4 py-3">
         <input

@@ -5,9 +5,11 @@ import type { ProjectBundle } from "../../project/contracts";
 import type { LogLevel } from "../../types/diagnostics";
 import { preferredPlaybackKind, type PlaybackPreference, type PlaybackSource, type ProxyStatus } from "../../playback/models";
 import { cancelProxy, createProxy, getProxyStatus, onProxyDiagnostic, onProxyProgress, playbackErrorMessage, resolvePlaybackSource } from "../../playback/service";
+import type { CameraPreview } from "../../smart-camera/models";
 import { Button } from "../Button";
 import { Card } from "../Card";
 import { SmartCutWorkspace } from "./SmartCutWorkspace";
+import { SmartCameraWorkspace } from "./SmartCameraWorkspace";
 import { VideoPlayer } from "./VideoPlayer";
 import { TranscriptionWorkspace } from "./TranscriptionWorkspace";
 
@@ -25,6 +27,7 @@ export function MediaWorkspace({ bundle, onLog, onNotify }: MediaWorkspaceProps)
   const [source, setSource] = useState<PlaybackSource | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [requestedSeekUs, setRequestedSeekUs] = useState<number | null>(null);
+  const [cameraPreview, setCameraPreview] = useState<CameraPreview | null>(null);
   const progressBucket = useRef(-1);
 
   const resolveSource = useCallback(async (nextPreference: PlaybackPreference, currentStatus?: ProxyStatus) => {
@@ -108,7 +111,7 @@ export function MediaWorkspace({ bundle, onLog, onNotify }: MediaWorkspaceProps)
           <div><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan">Preview multimedia</p><h3 className="mt-1 text-lg font-bold text-ink">Reproductor del proyecto</h3></div>
           <span className="rounded-md border border-line bg-canvas px-2.5 py-1 text-[10px] font-bold tracking-[0.15em] text-ink">{source?.kind.toUpperCase() ?? "CARGANDO"}</span>
         </div>
-        {source ? <VideoPlayer durationUs={source.durationUs} key={source.path} kind={source.kind} onError={(message) => { setError(message); onLog("PLAYBACK_ERROR", "error"); }} path={source.path} seekToUs={requestedSeekUs} /> : <div className="grid aspect-video place-items-center rounded-xl border border-line bg-black"><LoaderCircle className="animate-spin text-cyan" size={26} /></div>}
+        {source ? <VideoPlayer cameraPreview={cameraPreview} durationUs={source.durationUs} key={source.path} kind={source.kind} onError={(message) => { setError(message); onLog("PLAYBACK_ERROR", "error"); }} path={source.path} seekToUs={requestedSeekUs} /> : <div className="grid aspect-video place-items-center rounded-xl border border-line bg-black"><LoaderCircle className="animate-spin text-cyan" size={26} /></div>}
         {error ? <p className="mt-3 flex items-start gap-2 text-sm text-danger"><AlertTriangle className="mt-0.5 shrink-0" size={16} />{error}</p> : null}
       </Card>
 
@@ -134,6 +137,7 @@ export function MediaWorkspace({ bundle, onLog, onNotify }: MediaWorkspaceProps)
 
       <TranscriptionWorkspace bundle={bundle} onLog={onLog} onNotify={onNotify} onSeek={(timeUs) => setRequestedSeekUs(timeUs)} />
       <SmartCutWorkspace bundle={bundle} onLog={onLog} onNotify={onNotify} onSeek={(timeUs) => setRequestedSeekUs(timeUs)} />
+      <SmartCameraWorkspace bundle={bundle} onLog={onLog} onNotify={onNotify} onPreview={setCameraPreview} onSeek={(timeUs) => setRequestedSeekUs(timeUs)} />
     </div>
   );
 }
