@@ -1,0 +1,630 @@
+﻿===== VideoPlayer.tsx =====
+import { Expand, Pause, Play, RotateCcw, RotateCw, SkipBack, SkipForward, Volume1, Volume2, VolumeX } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import type { PlaybackKind, PlaybackState } from "../../playback/models";
+import { nextPlaybackState } from "../../playback/models";
+import { playbackAssetUrl } from "../../playback/service";
+import { clampTimelineUs, formatPlaybackTime, SEEK_STEP_US, usToSeconds, secondsToUs } from "../../playback/time";
+import { activeCameraAt, type CameraPreview } from "../../smart-camera/models";
+import type { EdlManifest } from "../../project/contracts";
+import { activeCameraAt as activeEdlCameraAt, cutAt, editedDurationUs, editedToSourceUs, effectiveTracks, sourceToEditedUs, type DraftTracks, type PreviewRange } from "../../editor/edl";
+
+const PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
+
+interface VideoPlayerProps {
+  cameraPreview?: CameraPreview | null;
+  draftRange?: PreviewRange | null;
+  draftTracks?: DraftTracks | null;
+  durationUs: number;
+  edl: EdlManifest;
+  kind: PlaybackKind;
+  onError: (message: string) => void;
+  path: string;
+  mode: "original" | "result";
+  onTimeChange?: (sourceUs: number) => void;
+  seekToUs?: number | null;
+}
+
+function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return target.matches("input, textarea, select") || target.isContentEditable;
+}
+
+export function VideoPlayer({ cameraPreview, draftRange, draftTracks, durationUs, edl, kind, mode, onError, onTimeChange, path, seekToUs }: VideoPlayerProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [playbackState, setPlaybackState] = useState<PlaybackState>("idle");
+  const [playheadUs, setPlayheadUs] = useState(0);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const [volume, setVolume] = useState(1);
+  const [muted, setMuted] = useState(false);
+  const assetUrl = playbackAssetUrl(path);
+  const tracks = useMemo(() => effectiveTracks(edl, draftTracks ?? null, draftRange ?? null), [draftRange, draftTracks, edl]);
+  const resultDurationUs = mode === "result" ? editedDurationUs(durationUs, tracks.cuts) : durationUs;
+
+  const seek = useCallback((targetUs: number) => {
+    const video = videoRef.current;
+    if (!video) return;
+    const clamped = clampTimelineUs(targetUs, durationUs);
+    video.currentTime = usToSeconds(clamped);
+    setPlayheadUs(clamped);
+    onTimeChange?.(clamped);
+  }, [durationUs, onTimeChange]);
+
+  const seekTimeline = useCallback((targetUs: number) => seek(mode === "result" ? editedToSourceUs(targetUs, tracks.cuts, durationUs) : targetUs), [durationUs, mode, seek, tracks.cuts]);
+
+  const togglePlayback = useCallback(async () => {
+    const video = videoRef.current;
+    if (!video) return;
+    try {
+      if (video.paused || video.ended) await video.play();
+      else video.pause();
+    } catch {
+      setPlaybackState(nextPlaybackState(playbackState, "fail"));
+      onError("El WebView no pudo iniciar la reproducciÃ³n del archivo local.");
+    }
+  }, [onError, playbackState]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (isTypingTarget(event.target)) return;
+      if (event.code === "Space") {
+        event.preventDefault();
+        void togglePlayback();
+      } else if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        seekTimeline((mode === "result" ? sourceToEditedUs(playheadUs, tracks.cuts, durationUs) ?? 0 : playheadUs) - SEEK_STEP_US);
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        seekTimeline((mode === "result" ? sourceToEditedUs(playheadUs, tracks.cuts, durationUs) ?? 0 : playheadUs) + SEEK_STEP_US);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [durationUs, mode, playheadUs, seekTimeline, togglePlayback, tracks.cuts]);
+
+  useEffect(() => {
+    if (seekToUs === null || seekToUs === undefined || !videoRef.current) return;
+    seek(seekToUs);
+  }, [seek, seekToUs]);
+
+  const changeVolume = (value: number) => {
+    const next = Math.min(1, Math.max(0, value));
+    setVolume(next);
+    setMuted(next === 0);
+    if (videoRef.current) {
+      videoRef.current.volume = next;
+      videoRef.current.muted = next === 0;
+    }
+  };
+
+  const toggleMute = () => {
+    const next = !muted;
+    setMuted(next);
+    if (videoRef.current) videoRef.current.muted = next;
+  };
+
+  const changeRate = (rate: number) => {
+    setPlaybackRate(rate);
+    if (videoRef.current) videoRef.current.playbackRate = rate;
+  };
+
+  const requestFullscreen = async () => {
+    try { await containerRef.current?.requestFullscreen(); }
+    catch { onError("El modo de pantalla completa no estÃ¡ disponible en este WebView."); }
+  };
+
+  const VolumeIcon = muted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
+  const previewCamera = activeCameraAt(cameraPreview ?? null, playheadUs);
+  const edlCamera = mode === "result" ? activeEdlCameraAt(tracks.camera, playheadUs) : null;
+  const activeCamera = previewCamera ?? (edlCamera ? { centerX: edlCamera.centerX ?? .5, centerY: edlCamera.centerY ?? .5, endUs: edlCamera.endUs, id: edlCamera.id, startUs: edlCamera.startUs, transitionUs: 500_000, zoom: edlCamera.zoom ?? 1 } : null);
+  const timelineUs = mode === "result" ? sourceToEditedUs(playheadUs, tracks.cuts, durationUs) ?? 0 : playheadUs;
+
+  const updatePlayhead = (sourceUs: number, video: HTMLVideoElement) => {
+    if (mode === "result") {
+      const removed = cutAt(tracks.cuts, sourceUs, durationUs);
+      if (removed) { video.currentTime = usToSeconds(removed.endUs); sourceUs = removed.endUs; }
+      if (draftRange && sourceUs >= draftRange.endUs) { video.pause(); sourceUs = draftRange.endUs; video.currentTime = usToSeconds(sourceUs); }
+    }
+    const value = clampTimelineUs(sourceUs, durationUs); setPlayheadUs(value); onTimeChange?.(value);
+  };
+
+  return (
+    <div className="overflow-hidden rounded-xl border border-line bg-black shadow-2xl" ref={containerRef}>
+      <div className="relative grid aspect-video place-items-center bg-black">
+        <video
+          className="h-full w-full object-contain"
+          onClick={() => void togglePlayback()}
+          onEnded={() => setPlaybackState(nextPlaybackState(playbackState, "end"))}
+          onError={() => { setPlaybackState("error"); onError("No se pudo decodificar la fuente de reproducciÃ³n."); }}
+          onLoadedMetadata={() => setPlaybackState(nextPlaybackState(playbackState, "ready"))}
+          onPause={() => { if (!videoRef.current?.ended) setPlaybackState(nextPlaybackState(playbackState, "pause")); }}
+          onPlay={() => setPlaybackState(nextPlaybackState(playbackState, "play"))}
+          onTimeUpdate={(event) => updatePlayhead(secondsToUs(event.currentTarget.currentTime), event.currentTarget)}
+          onWaiting={() => setPlaybackState("loading")}
+          preload="metadata"
+          ref={videoRef}
+          src={assetUrl}
+          style={{
+            transform: `scale(${activeCamera?.zoom ?? 1})`,
+            transformOrigin: `${(activeCamera?.centerX ?? 0.5) * 100}% ${(activeCamera?.centerY ?? 0.5) * 100}%`,
+            transition: `transform ${Math.max(0, activeCamera?.transitionUs ?? cameraPreview?.transitionUs ?? 0) / 1_000_000}s ease-in-out`,
+          }}
+        />
+        <span className="absolute left-4 top-4 rounded-md border border-white/15 bg-black/65 px-2.5 py-1 text-[10px] font-bold tracking-[0.16em] text-white backdrop-blur">{kind.toUpperCase()}</span>
+        {playbackState === "loading" ? <span className="absolute rounded-full bg-black/70 px-4 py-2 text-xs font-semibold text-white">Cargandoâ€¦</span> : null}
+        {activeCamera ? <span className="absolute right-4 top-4 rounded-md border border-cyan/30 bg-black/65 px-2.5 py-1 text-[10px] font-bold tracking-[0.12em] text-cyan backdrop-blur">ENCUADRE {activeCamera.zoom.toFixed(2)}Ã—</span> : null}
+      </div>
+      <div className="border-t border-white/10 bg-surface px-4 py-3">
+        <input
+          aria-label="PosiciÃ³n del video"
+          className="h-1.5 w-full cursor-pointer accent-cyan"
+          max={Math.max(1, resultDurationUs)}
+          min="0"
+          onChange={(event) => seekTimeline(Number(event.currentTarget.value))}
+          step="1000"
+          type="range"
+          value={timelineUs}
+        />
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <PlayerButton label="Inicio" onClick={() => seekTimeline(0)}><SkipBack size={17} /></PlayerButton>
+          <PlayerButton label="Retroceder 5 segundos" onClick={() => seekTimeline(timelineUs - SEEK_STEP_US)}><RotateCcw size={17} /></PlayerButton>
+          <button aria-label={playbackState === "playing" ? "Pausar" : "Reproducir"} className="grid h-9 w-9 place-items-center rounded-full bg-primary text-white transition hover:bg-primary-hover" onClick={() => void togglePlayback()} type="button">
+            {playbackState === "playing" ? <Pause fill="currentColor" size={17} /> : <Play fill="currentColor" size={17} />}
+          </button>
+          <PlayerButton label="Avanzar 5 segundos" onClick={() => seekTimeline(timelineUs + SEEK_STEP_US)}><RotateCw size={17} /></PlayerButton>
+          <PlayerButton label="Final" onClick={() => seekTimeline(resultDurationUs)}><SkipForward size={17} /></PlayerButton>
+          <span className="ml-1 min-w-[145px] font-mono text-xs font-semibold text-ink">{formatPlaybackTime(timelineUs)} / {formatPlaybackTime(resultDurationUs)}</span>
+          <div className="ml-auto flex items-center gap-2">
+            <PlayerButton label={muted ? "Activar sonido" : "Silenciar"} onClick={toggleMute}><VolumeIcon size={17} /></PlayerButton>
+            <input aria-label="Volumen" className="w-20 accent-cyan" max="1" min="0" onChange={(event) => changeVolume(Number(event.currentTarget.value))} step="0.01" type="range" value={muted ? 0 : volume} />
+            <select aria-label="Velocidad de preview" className="rounded-md border border-line bg-canvas px-2 py-1.5 text-xs font-semibold text-ink" onChange={(event) => changeRate(Number(event.currentTarget.value))} value={playbackRate}>
+              {PLAYBACK_RATES.map((rate) => <option key={rate} value={rate}>{rate}x</option>)}
+            </select>
+            <PlayerButton label="Pantalla completa" onClick={() => void requestFullscreen()}><Expand size={17} /></PlayerButton>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PlayerButton({ children, label, onClick }: { children: ReactNode; label: string; onClick: () => void }) {
+  return <button aria-label={label} className="grid h-8 w-8 place-items-center rounded-md text-muted transition hover:bg-white/5 hover:text-ink" onClick={onClick} title={label} type="button">{children}</button>;
+}
+
+
+===== MediaWorkspace.tsx =====
+import { Camera, CheckCircle2, Cpu, FileVideo, Film, Gauge, LoaderCircle, Scissors } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { formatFileSize } from "../../lib/format";
+import type { ProjectBundle } from "../../project/contracts";
+import type { LogLevel } from "../../types/diagnostics";
+import { preferredPlaybackKind, type PlaybackPreference, type PlaybackSource, type ProxyStatus } from "../../playback/models";
+import { cancelProxy, createProxy, getProxyStatus, onProxyDiagnostic, onProxyProgress, playbackErrorMessage, resolvePlaybackSource } from "../../playback/service";
+import type { CameraPreview } from "../../smart-camera/models";
+import { editedDurationUs, previewRange, removedDurationUs, selectionRange, type DraftTracks, type PreviewRange } from "../../editor/edl";
+import type { EdlManifest } from "../../project/contracts";
+import { Button } from "../Button";
+import { Card } from "../Card";
+import { SmartCutWorkspace } from "./SmartCutWorkspace";
+import { SmartCameraWorkspace } from "./SmartCameraWorkspace";
+import { VideoPlayer } from "./VideoPlayer";
+
+interface MediaWorkspaceProps {
+  bundle: ProjectBundle;
+  onLog: (message: string, level?: LogLevel) => void;
+  onNotify: (message: string, tone?: "success" | "error" | "info") => void;
+}
+
+const initialStatus: ProxyStatus = { message: null, metadata: null, processedUs: null, progress: null, state: "not_created" };
+
+export function MediaWorkspace({ bundle, onLog, onNotify }: MediaWorkspaceProps) {
+  const projectId = bundle.project.projectId;
+  const [status, setStatus] = useState<ProxyStatus>(initialStatus);
+  const [source, setSource] = useState<PlaybackSource | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [requestedSeekUs, setRequestedSeekUs] = useState<number | null>(null);
+  const [cameraPreview, setCameraPreview] = useState<CameraPreview | null>(null);
+  const [edl, setEdl] = useState<EdlManifest>(bundle.edl);
+  const [activeTool, setActiveTool] = useState<"project"|"cut"|"camera">("project");
+  const [previewMode, setPreviewMode] = useState<"original"|"result">("result");
+  const [previewSize, setPreviewSize] = useState<"small"|"medium"|"large">("medium");
+  const playheadUs = useRef(0);
+  const [draftTracks, setDraftTracks] = useState<DraftTracks|null>(null);
+  const [draftRange, setDraftRange] = useState<PreviewRange|null>(null);
+  const [selectionInUs, setSelectionInUs] = useState<number|null>(null);
+  const [selectionOutUs, setSelectionOutUs] = useState<number|null>(null);
+  const progressBucket = useRef(-1);
+
+  const resolveSource = useCallback(async (nextPreference: PlaybackPreference, currentStatus?: ProxyStatus) => {
+    try {
+      const effective = nextPreference === "proxy" && currentStatus && preferredPlaybackKind(currentStatus, nextPreference) === "original" ? "original" : nextPreference;
+      const resolved = await resolvePlaybackSource(projectId, effective);
+      setSource(resolved);
+      setError(null);
+    } catch (reason) {
+      const message = playbackErrorMessage(reason);
+      setError(message);
+      onLog("PLAYBACK_ERROR", "error");
+    }
+  }, [onLog, projectId]);
+
+  useEffect(() => {
+    let disposed = false;
+    let cleanup: (() => void)[] = [];
+    void Promise.all([
+      onProxyProgress((progress) => {
+        if (progress.projectId !== projectId) return;
+        setStatus((current) => ({ ...current, state: progress.status, progress: progress.progress, processedUs: progress.processedUs }));
+        const bucket = Math.floor(progress.progress / 25);
+        if (bucket > progressBucket.current && progress.status === "generating") {
+          progressBucket.current = bucket;
+          onLog("PROXY_PROGRESS");
+        }
+      }),
+      onProxyDiagnostic((diagnostic) => {
+        if (diagnostic.projectId === projectId) onLog(diagnostic.event, diagnostic.event.includes("FAILED") ? "error" : diagnostic.event.includes("FALLBACK") || diagnostic.event.includes("STALE") ? "warning" : "info");
+      }),
+    ]).then((unlisteners) => {
+      if (disposed) unlisteners.forEach((unlisten) => unlisten());
+      else cleanup = unlisteners;
+    });
+    void getProxyStatus(projectId).then((next) => {
+      if (disposed) return;
+      setStatus(next);
+      if (next.state === "stale") onLog("PROXY_STALE", "warning");
+      return resolveSource("auto", next);
+    }).catch((reason) => {
+      if (!disposed) setError(playbackErrorMessage(reason));
+    });
+    return () => { disposed = true; cleanup.forEach((unlisten) => unlisten()); };
+  }, [onLog, projectId, resolveSource]);
+
+  const startProxy = async () => {
+    setError(null);
+    setStatus((current) => ({ ...current, state: "preparing", progress: 0 }));
+    progressBucket.current = -1;
+    try {
+      const next = await createProxy(projectId);
+      setStatus(next);
+      if (next.state === "available") {
+        await resolveSource("proxy", next);
+        onNotify("Proxy de trabajo disponible");
+      }
+    } catch (reason) {
+      const message = playbackErrorMessage(reason);
+      setStatus((current) => ({ ...current, message, state: "error" }));
+      setError(message);
+      onNotify(message, "error");
+    }
+  };
+
+  const stopProxy = async () => {
+    try { setStatus(await cancelProxy(projectId)); onNotify("CancelaciÃ³n solicitada", "info"); }
+    catch (reason) { onNotify(playbackErrorMessage(reason), "error"); }
+  };
+
+  const durationUs = bundle.source.durationUs ?? 0;
+  const recommend = durationUs >= 30 * 60 * 1_000_000 || bundle.source.fileSizeBytes >= 1_000_000_000;
+  const isGenerating = status.state === "preparing" || status.state === "generating";
+  const proxyAvailable = status.state === "available";
+  const proxy = status.metadata?.proxy;
+  const removedUs=removedDurationUs(edl.tracks.cuts,durationUs);
+  const resultUs=editedDurationUs(durationUs,edl.tracks.cuts);
+  const runPreview=(seconds:10|30)=>{const current=playheadUs.current;setDraftRange(previewRange(current,seconds,durationUs));setPreviewMode("result");setRequestedSeekUs(current);};
+  const runSelection=()=>{const range=selectionRange(selectionInUs,selectionOutUs,durationUs);if(range){setDraftRange(range);setPreviewMode("result");setRequestedSeekUs(range.startUs);}};
+  const updatePlayhead=useCallback((value:number)=>{playheadUs.current=value;},[]);
+  const handlePlaybackError=useCallback((message:string)=>{setError(message);onLog("PLAYBACK_ERROR","error");},[onLog]);
+
+  const proxyPanel=<Card className="p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-4">
+          <div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-cyan"><Film size={18} /></span><div><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan">Proxy de trabajo</p><h3 className="mt-1 font-bold text-ink">{proxyStateLabel(status.state)}</h3></div></div>
+          <div className="flex flex-wrap gap-2">
+            {!isGenerating && !proxyAvailable ? <Button onClick={() => void startProxy()}>{status.state === "stale" || status.state === "error" ? "Regenerar" : "Crear proxy"}</Button> : null}
+            {isGenerating ? <Button onClick={() => void stopProxy()} variant="secondary">Cancelar</Button> : null}
+            {source?.kind === "proxy" ? <Button onClick={() => void resolveSource("original")} variant="secondary">Usar original</Button> : null}
+            {proxyAvailable && source?.kind !== "proxy" ? <Button onClick={() => void resolveSource("proxy", status)} variant="secondary">Usar proxy</Button> : null}
+          </div>
+        </div>
+        {isGenerating ? <div className="mt-5"><div className="mb-2 flex justify-between text-xs font-semibold text-muted"><span>{status.state === "preparing" ? "Preparando" : "Generando"}</span><span>{status.progress === null ? "â€”" : `${Math.floor(status.progress)} %`}</span></div><div className="h-2 overflow-hidden rounded-full bg-canvas"><div className="h-full rounded-full bg-cyan transition-[width]" style={{ width: `${status.progress ?? 0}%` }} /></div></div> : null}
+        <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <ProxyDetail icon={<CheckCircle2 size={15} />} label="Estado" value={proxyStateLabel(status.state)} />
+          <ProxyDetail icon={<Gauge size={15} />} label="ResoluciÃ³n" value={proxy ? `${proxy.width} Ã— ${proxy.height}` : "â€”"} />
+          <ProxyDetail icon={<Cpu size={15} />} label="Encoder" value={proxy?.encoder ?? "â€”"} />
+          <ProxyDetail icon={<Film size={15} />} label="TamaÃ±o" value={proxy ? formatFileSize(proxy.fileSizeBytes) : "â€”"} />
+        </div>
+        <p className="mt-5 text-xs text-muted">{recommend ? "Crear un proxy de trabajo puede mejorar la fluidez de ediciÃ³n." : "El archivo original puede reproducirse directamente."} El original siempre permanece como fuente maestra.</p>
+      </Card>;
+  const panel=activeTool==="project"?proxyPanel:activeTool==="cut"?<SmartCutWorkspace bundle={bundle} edl={edl} onDraftChange={(cuts)=>setDraftTracks(current=>({camera:current?.camera??[],cuts}))} onEdlChange={setEdl} onLog={onLog} onNotify={onNotify} onSeek={setRequestedSeekUs}/>:<SmartCameraWorkspace bundle={bundle} edl={edl} onDraftChange={(camera)=>setDraftTracks(current=>({camera,cuts:current?.cuts??[]}))} onEdlChange={setEdl} onLog={onLog} onNotify={onNotify} onPreview={setCameraPreview} onSeek={setRequestedSeekUs}/>;
+  const tools=[{id:"project" as const,label:"Proyecto",icon:<FileVideo size={18}/>},{id:"cut" as const,label:"Cortes",icon:<Scissors size={18}/>},{id:"camera" as const,label:"Encuadre",icon:<Camera size={18}/>}];
+  return <div className="grid h-[calc(100vh-9rem)] min-h-[620px] overflow-hidden rounded-xl border border-line bg-surface shadow-2xl xl:grid-cols-[112px_minmax(480px,1fr)_390px] xl:grid-rows-[minmax(0,1fr)_190px]">
+    <nav className="flex gap-2 overflow-x-auto border-b border-line bg-canvas/60 p-2 xl:row-span-2 xl:flex-col xl:overflow-visible xl:border-b-0 xl:border-r"><p className="hidden px-2 py-3 text-[10px] font-bold uppercase tracking-[.15em] text-muted xl:block">Herramientas</p>{tools.map(tool=><button className={`flex min-w-24 flex-col items-center gap-1 rounded-lg px-2 py-3 text-[10px] font-semibold transition ${activeTool===tool.id?"bg-primary/15 text-cyan":"text-muted hover:bg-card hover:text-ink"}`} key={tool.id} onClick={()=>setActiveTool(tool.id)} type="button">{tool.icon}{tool.label}</button>)}</nav>
+    <section className="min-h-0 overflow-auto bg-black/40 p-3 xl:col-start-2 xl:row-start-1"><div className="mb-3 flex flex-wrap items-center justify-between gap-2"><div className="flex items-center rounded-lg border border-line bg-canvas p-1"><button className={`rounded-md px-3 py-1.5 text-xs font-bold ${previewMode==="original"?"bg-primary text-white":"text-muted"}`} onClick={()=>setPreviewMode("original")} title="Reproduce el archivo fuente sin aplicar decisiones.">ORIGINAL</button><button className={`rounded-md px-3 py-1.5 text-xs font-bold ${previewMode==="result"?"bg-primary text-white":"text-muted"}`} onClick={()=>setPreviewMode("result")} title="Reproduce virtualmente los cambios guardados en el EDL.">RESULTADO â“˜</button></div><div className="flex gap-1">{(["small","medium","large"] as const).map(size=><button className={`rounded border border-line px-2 py-1 text-[10px] font-bold uppercase ${previewSize===size?"text-cyan":"text-muted"}`} key={size} onClick={()=>setPreviewSize(size)}>{size==="small"?"PequeÃ±o":size==="medium"?"Medio":"Grande"}</button>)}</div></div><div className={`mx-auto transition-[max-width] ${previewSize==="small"?"max-w-lg":previewSize==="medium"?"max-w-3xl":"max-w-5xl"}`}>{source?<VideoPlayer cameraPreview={cameraPreview} draftRange={draftRange} draftTracks={draftTracks} durationUs={source.durationUs} edl={edl} key={source.path} kind={source.kind} mode={previewMode} onError={handlePlaybackError} onTimeChange={updatePlayhead} path={source.path} seekToUs={requestedSeekUs}/>:<div className="grid aspect-video place-items-center rounded-xl bg-black"><LoaderCircle className="animate-spin text-cyan"/></div>}</div>{error?<p className="mt-2 text-sm text-danger">{error}</p>:null}</section>
+    <aside className="min-h-0 overflow-auto border-l border-line bg-canvas/30 p-3 xl:col-start-3 xl:row-span-2 xl:row-start-1">{panel}</aside>
+    <section className="overflow-auto border-t border-line bg-canvas/65 p-3 xl:col-start-2 xl:row-start-2"><div className="grid gap-3 lg:grid-cols-[1fr_auto]"><div><p className="text-[10px] font-bold uppercase tracking-[.14em] text-cyan" title="EDL: lista no destructiva de decisiones de ediciÃ³n.">EdiciÃ³n â“˜ Â· {previewMode==="result"?"Resultado":"Original"}</p><div className="mt-2 grid grid-cols-4 gap-2 text-xs"><Metric label="Cortes" value={String(edl.tracks.cuts.length)}/><Metric label="Tiempo eliminado" value={formatShort(removedUs)}/><Metric label="Encuadres" value={String(edl.tracks.camera.length)}/><Metric label="DuraciÃ³n final" value={formatShort(resultUs)}/></div></div><div className="flex max-w-[30rem] flex-wrap content-center justify-end gap-2" title="Prueba: simula cambios todavÃ­a no aplicados."><Button onClick={()=>setSelectionInUs(playheadUs.current)} variant="secondary">Inicio {selectionInUs===null?"â€”":formatShort(selectionInUs)}</Button><Button onClick={()=>setSelectionOutUs(playheadUs.current)} variant="secondary">Fin {selectionOutUs===null?"â€”":formatShort(selectionOutUs)}</Button><Button onClick={()=>runPreview(10)}>Probar 10 s</Button><Button onClick={()=>runPreview(30)} variant="secondary">Probar 30 s</Button><Button disabled={!selectionRange(selectionInUs,selectionOutUs,durationUs)} onClick={runSelection} variant="secondary">Probar selecciÃ³n</Button>{draftRange?<Button onClick={()=>setDraftRange(null)} variant="ghost">Cerrar prueba</Button>:null}</div></div></section>
+  </div>;
+}
+
+function Metric({label,value}:{label:string;value:string}){return <div className="rounded-md border border-line bg-panel/40 p-2"><p className="text-[9px] font-bold uppercase text-muted">{label}</p><p className="mt-1 font-mono font-semibold text-ink">{value}</p></div>}
+function formatShort(us:number){const total=Math.max(0,Math.floor(us/1_000_000));return `${String(Math.floor(total/60)).padStart(2,"0")}:${String(total%60).padStart(2,"0")}`}
+
+function proxyStateLabel(state: ProxyStatus["state"]): string {
+  return { available: "Disponible", cancelled: "Cancelado", error: "Error", generating: "Generando", not_created: "No creado", preparing: "Preparando", stale: "Desactualizado" }[state];
+}
+
+function ProxyDetail({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+  return <div className="rounded-lg border border-line bg-canvas/55 p-3"><div className="flex items-center gap-2 text-muted">{icon}<p className="text-[10px] font-bold uppercase tracking-[0.12em]">{label}</p></div><p className="mt-2 truncate text-sm font-semibold text-ink">{value}</p></div>;
+}
+
+
+===== SmartCameraWorkspace.tsx =====
+import { Camera, Check, Eye, ExternalLink, ShieldAlert, Sparkles, Square, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { formatPlaybackTime } from "../../playback/time";
+import type { CameraDecision, EdlManifest, ProjectBundle } from "../../project/contracts";
+import { acceptedCameraSuggestions, cameraProgressPercent, toCameraPreview, type CameraPreview, type CameraProfile, type CameraSuggestion, type CameraSuggestionStatus, type CameraSuggestionType, type SmartCameraDocument, type SmartCameraProgress } from "../../smart-camera/models";
+import { analyzeSmartCamera, applySmartCameraToEdl, cancelSmartCamera, getSmartCamera, onSmartCameraProgress, reviewSmartCamera, smartCameraErrorMessage } from "../../smart-camera/service";
+import type { LogLevel } from "../../types/diagnostics";
+import type { ToastTone } from "../../types/toast";
+import { Button } from "../Button";
+import { Card } from "../Card";
+
+interface Props {
+  bundle: ProjectBundle;
+  edl: EdlManifest;
+  onDraftChange: (camera: CameraDecision[]) => void;
+  onEdlChange: (edl: EdlManifest) => void;
+  onLog: (message: string, level?: LogLevel) => void;
+  onNotify: (message: string, tone?: ToastTone) => void;
+  onPreview: (preview: CameraPreview | null) => void;
+  onSeek: (timeUs: number) => void;
+}
+
+export function SmartCameraWorkspace({ bundle, edl, onDraftChange, onEdlChange, onLog, onNotify, onPreview, onSeek }: Props) {
+  const projectId = bundle.project.projectId;
+  const [profile, setProfile] = useState<CameraProfile>("normal");
+  const [document, setDocument] = useState<SmartCameraDocument | null>(null);
+  const [progress, setProgress] = useState<SmartCameraProgress | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string[]>([]);
+
+  useEffect(() => {
+    let disposed = false;
+    let unlisten: (() => void) | undefined;
+    void onSmartCameraProgress((event) => {
+      if (event.projectId !== projectId) return;
+      setProgress(event);
+      onLog(`SMART_CAMERA_${event.stage.toUpperCase()}`, event.stage === "error" ? "error" : "info");
+    }).then((value) => { if (disposed) value(); else unlisten = value; });
+    void getSmartCamera(projectId).then((value) => {
+      if (disposed) return;
+      setDocument(value);
+      if (value) setProfile(value.profile);
+      if (value?.status === "stale") onLog("SMART_CAMERA_STALE", "warning");
+    }).catch((reason) => { if (!disposed) setError(smartCameraErrorMessage(reason)); });
+    return () => { disposed = true; unlisten?.(); onPreview(null); };
+  }, [onLog, onPreview, projectId]);
+
+  const analyze = async () => {
+    setBusy(true); setError(null); setProgress({ durationUs: bundle.source.durationUs ?? 0, processedUs: 0, progress: 0, projectId, stage: "extracting_samples" }); onPreview(null);
+    try { setDocument(await analyzeSmartCamera(projectId, profile, "auto")); onNotify("Propuestas de encuadre listas para revisar"); }
+    catch (reason) { const message = smartCameraErrorMessage(reason); if (message.toLowerCase().includes("cancelado")) onNotify(message, "info"); else { setError(message); onNotify(message, "error"); } }
+    finally { setBusy(false); }
+  };
+
+  const cancel = async () => {
+    try { await cancelSmartCamera(projectId); onNotify("CancelaciÃ³n solicitada", "info"); }
+    catch (reason) { onNotify(smartCameraErrorMessage(reason), "error"); }
+  };
+
+  const review = async (item: CameraSuggestion, status: CameraSuggestionStatus) => {
+    try { setDocument(await reviewSmartCamera(projectId, item.id, status)); }
+    catch (reason) { const message = smartCameraErrorMessage(reason); setError(message); onNotify(message, "error"); }
+  };
+
+  const preview = (item: CameraSuggestion) => {
+    onPreview(toCameraPreview(item));
+    onSeek(item.startUs);
+    onLog("SMART_CAMERA_PREVIEW");
+  };
+
+  const apply = async () => {
+    setBusy(true); setError(null);
+    try { const result = await applySmartCameraToEdl(projectId); setDocument(result.document); onEdlChange(result.edl); const added=result.edl.tracks.camera.filter(item=>!edl.tracks.camera.some(current=>current.id===item.id));const zooms=added.filter(item=>item.mode!=="reset").length;const resets=added.filter(item=>item.mode==="reset").length;onNotify(result.appliedCount?`âœ“ EDL actualizado Â· ${zooms} zoom/enfoque Â· ${resets} restablecimientos Â· ${result.appliedCount} nuevos`:`EDL sin cambios Â· 0 nuevos`); onLog("SMART_CAMERA_APPLIED_TO_EDL"); }
+    catch (reason) { const message = smartCameraErrorMessage(reason); setError(message); onNotify(message, "error"); }
+    finally { setBusy(false); }
+  };
+
+  const acceptedCount = acceptedCameraSuggestions(document).length;
+  const stale = document?.status === "stale";
+  const toggleDraft=(item:CameraSuggestion)=>{const next=selected.includes(item.id)?selected.filter(id=>id!==item.id):[...selected,item.id];setSelected(next);const byId=new Set(next);onDraftChange((document?.suggestions??[]).filter(value=>byId.has(value.id)).map(value=>({centerX:value.centerX,centerY:value.centerY,confidence:value.confidence,easing:"ease_in_out",endUs:value.endUs,id:`draft-${value.id}`,mode:value.suggestionType,reason:value.reason,startUs:value.startUs,zoom:value.zoom})));};
+  return <Card className="p-5">
+    <div className="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-4">
+      <div className="flex items-center gap-3" title="Analiza el video para proponer zooms y reencuadres. No requiere cÃ¡mara web."><span className="grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-cyan"><Camera size={18} /></span><div><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan">Encuadre inteligente â“˜</p><h3 className="mt-1 font-bold text-ink">Zoom y seguimiento virtual</h3></div></div>
+      <div className="flex flex-wrap gap-2">{busy ? <Button icon={<Square size={14} />} onClick={() => void cancel()} variant="secondary">Cancelar</Button> : <Button icon={<Sparkles size={15} />} onClick={() => void analyze()}>{document ? "Reanalizar" : "Analizar"}</Button>}<Button disabled={busy || stale || acceptedCount === 0} icon={<Check size={15} />} onClick={() => void apply()}>Aplicar aceptadas al EDL</Button></div>
+    </div>
+    <div className="mt-5 grid gap-3 sm:grid-cols-[220px_1fr]"><label className="text-xs font-bold uppercase tracking-[0.12em] text-muted" title="Controla cuÃ¡nta evidencia visual se exige antes de proponer un movimiento.">Perfil â“˜<select className="mt-2 w-full rounded-md border border-line bg-canvas p-2 text-sm normal-case text-ink" disabled={busy} onChange={(event) => setProfile(event.target.value as CameraProfile)} value={profile}><option value="conservative">Conservador</option><option value="normal">Normal</option><option value="dynamic">DinÃ¡mico</option></select></label><p className="self-end pb-2 text-xs text-muted">AmplÃ­a regiones importantes del video sin usar una webcam. SÃ³lo propone cambios revisables.</p></div>
+    {busy && progress ? <div className="mt-5"><div className="mb-2 flex justify-between text-xs text-muted"><span>{stageLabel(progress.stage)}</span><span>{Math.floor(cameraProgressPercent(progress))} %</span></div><div className="h-2 rounded-full bg-canvas"><div className="h-full rounded-full bg-cyan transition-[width]" style={{ width: `${cameraProgressPercent(progress)}%` }} /></div></div> : null}
+    {stale ? <p className="mt-4 flex items-center gap-2 text-sm text-warning"><ShieldAlert size={16} />El original cambiÃ³. Reanaliza antes de aplicar propuestas anteriores.</p> : null}
+    {error ? <p className="mt-4 text-sm text-danger">{error}</p> : null}
+    {document ? <><div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4"><Stat label="Total" value={document.statistics.total} /><Stat label="Zoom" value={document.statistics.zoom} /><Stat label="Enfoque" value={document.statistics.focus} /><Stat label="Seleccionadas" value={selected.length} /></div><p className="mt-3 text-xs text-muted">Marca movimientos para probar 10/30 s sin escribir el EDL.</p><div className="mt-3 max-h-[34rem] space-y-3 overflow-auto pr-1">{document.suggestions.map((item) => <SuggestionCard applied={edl.tracks.camera.some(camera=>camera.id===item.id)} item={item} key={item.id} onPreview={() => preview(item)} onReview={(status) => void review(item, status)} onSeek={() => onSeek(item.startUs)} onToggle={()=>toggleDraft(item)} selected={selected.includes(item.id)} />)}{document.suggestions.length === 0 ? <p className="rounded-lg border border-line bg-canvas/40 p-4 text-sm text-muted">No se detectaron cambios visuales suficientemente sÃ³lidos con este perfil.</p> : null}</div></> : null}
+  </Card>;
+}
+
+function SuggestionCard({ applied,item,onPreview,onReview,onSeek,onToggle,selected }: { applied:boolean;item: CameraSuggestion; onPreview: () => void; onReview: (status: CameraSuggestionStatus) => void; onSeek: () => void;onToggle:()=>void;selected:boolean }) {
+  return <div className="rounded-xl border border-line bg-canvas/45 p-4"><label className="mb-2 flex items-center gap-2 text-xs font-bold text-cyan"><input checked={selected} onChange={onToggle} type="checkbox"/>Incluir en prueba temporal</label><div className="flex flex-wrap items-start justify-between gap-3"><div><span className="inline-block min-w-24 rounded bg-primary/10 px-2 py-1 text-center text-[10px] font-bold uppercase tracking-wider text-cyan">{typeLabel(item.suggestionType)}</span><p className="mt-3 font-mono text-xs text-ink">{formatPlaybackTime(item.startUs)} â†’ {formatPlaybackTime(item.endUs)} Â· {(item.durationUs / 1_000_000).toFixed(2)} s Â· {item.zoom.toFixed(2)}Ã—</p><p className="mt-2 max-w-2xl text-sm text-muted">{item.reason}</p><p className="mt-2 text-xs font-semibold text-ink">Centro {Math.round(item.centerX * 100)}%, {Math.round(item.centerY * 100)}% Â· Confianza {Math.round(item.confidence * 100)}% Â· {applied?"Aplicada":statusLabel(item.status)}</p></div><div className="flex min-h-10 flex-wrap gap-2"><Button icon={<ExternalLink size={14} />} onClick={onSeek} variant="secondary">Ir</Button><Button icon={<Eye size={14} />} onClick={onPreview} variant="secondary">Previsualizar</Button><Button disabled={item.status === "rejected"} icon={<X size={14} />} onClick={() => onReview("rejected")} variant="secondary">Rechazar</Button><Button disabled={item.status === "accepted"} icon={<Check size={14} />} onClick={() => onReview("accepted")}>Aceptar</Button></div></div></div>;
+}
+
+function Stat({ label, value }: { label: string; value: number }) { return <div className="rounded-lg border border-line bg-canvas/55 p-3"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted">{label}</p><p className="mt-2 text-xl font-bold text-ink">{value}</p></div>; }
+function typeLabel(type: CameraSuggestionType): string { return { focus: "Enfoque", reset: "Restablecer", zoom: "Zoom" }[type]; }
+function statusLabel(status: CameraSuggestionStatus): string { return { accepted: "Aceptada", pending: "Pendiente", rejected: "Rechazada" }[status]; }
+function stageLabel(stage: SmartCameraProgress["stage"]): string { return { analyzing_visual_changes: "Analizando cambios visuales", cancelled: "Cancelado", completed: "Completado", consolidating_movements: "Consolidando movimientos", error: "Error", extracting_samples: "Extrayendo muestras", saving: "Guardando smart_camera.json" }[stage]; }
+
+
+===== global.css =====
+@import "../../../../design/tokens/tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+html {
+  min-width: 320px;
+  background: var(--color-background);
+  font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow-x: hidden;
+  font-size: 14px;
+  line-height: 1.35;
+  background:
+    radial-gradient(circle at 85% -10%, rgb(47 107 255 / 12%), transparent 34rem),
+    var(--color-background);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button, input, select, textarea { min-width: 0; }
+
+h1, h2, h3, h4, p, label, span { overflow-wrap: anywhere; }
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: rgb(37 99 255 / 45%);
+  color: var(--color-text);
+}
+
+:focus-visible {
+  outline-offset: 3px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+
+::-webkit-scrollbar-thumb {
+  border: 3px solid var(--color-background);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-border) 78%, transparent);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-bright);
+}
+
+.hero-grid {
+  background-image:
+    linear-gradient(112deg, rgb(15 33 57 / 98%) 12%, rgb(12 27 48 / 90%) 58%, rgb(20 31 57 / 82%)),
+    linear-gradient(rgb(49 80 120 / 18%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(49 80 120 / 18%) 1px, transparent 1px);
+  background-size: auto, 36px 36px, 36px 36px;
+}
+
+.hero-grid::before {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 74% 18%, rgb(0 213 255 / 16%), transparent 28%),
+    radial-gradient(circle at 95% 85%, rgb(124 92 255 / 20%), transparent 30%);
+  content: "";
+  pointer-events: none;
+}
+
+.surface-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.surface-shine::after {
+  position: absolute;
+  top: 0;
+  left: 12%;
+  width: 54%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(0 213 255 / 55%), transparent);
+  content: "";
+  pointer-events: none;
+}
+
+.page-enter {
+  animation: page-enter var(--motion-normal) var(--ease-standard) both;
+}
+
+.modal-backdrop-enter {
+  animation: backdrop-enter var(--motion-normal) ease-out both;
+}
+
+.modal-panel-enter {
+  animation: modal-enter var(--motion-slow) var(--ease-standard) both;
+}
+
+.menu-enter {
+  animation: menu-enter var(--motion-fast) var(--ease-standard) both;
+  transform-origin: top right;
+}
+
+.toast-enter {
+  animation: toast-enter var(--motion-normal) var(--ease-standard) both;
+}
+
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes backdrop-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modal-enter {
+  from { opacity: 0; transform: translateY(12px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes menu-enter {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes toast-enter {
+  from { opacity: 0; transform: translateX(14px) scale(0.98); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+

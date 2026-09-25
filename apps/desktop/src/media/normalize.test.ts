@@ -43,7 +43,7 @@ describe("normalización FFprobe", () => {
       fpsNumerator: 60000,
     });
     expect(metadata.audio).toMatchObject({ present: true, codec: "aac", sampleRateHz: 48000, channels: 2 });
-    expect(metadata.streams).toEqual({ audio: 1, data: 0, other: 0, subtitle: 0, total: 2, video: 1 });
+    expect(metadata.streams).toEqual({ audio: 1, data: 0, other: 0, total: 2, video: 1 });
     expect(metadata.container.displayName).toBe("MP4");
     expect(metadata.path).toBe("D:\\Mis Videos\\curso programación (2026).mp4");
   });

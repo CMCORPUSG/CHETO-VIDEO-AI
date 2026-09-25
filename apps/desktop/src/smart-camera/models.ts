@@ -1,6 +1,7 @@
 import type { EdlManifest } from "../project/contracts";
 
 export type CameraProfile = "conservative" | "normal" | "dynamic";
+export type ContentMode = "auto" | "software" | "gameplay" | "presentation" | "general";
 export type CameraSuggestionType = "zoom" | "focus" | "reset";
 export type CameraSuggestionStatus = "pending" | "accepted" | "rejected";
 export type CameraAnalysisStatus = "completed" | "cancelled" | "stale";
@@ -31,6 +32,7 @@ export interface CameraStatistics {
 }
 
 export interface SmartCameraDocument {
+  contentMode?: ContentMode;
   createdAt: string;
   profile: CameraProfile;
   projectId: string;

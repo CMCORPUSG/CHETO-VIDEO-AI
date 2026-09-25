@@ -1,86 +1,127 @@
-import { ArrowUpRight, Film, Play, Plus, ScanLine, WandSparkles } from "lucide-react";
+﻿import {
+  ArrowRight,
+  Film,
+  Play,
+  Plus,
+  ShieldCheck,
+  WandSparkles,
+} from "lucide-react";
 import { Button } from "./Button";
 
 interface HeroCardProps {
   onNewProject: () => void;
 }
 
-const waveform = [30, 54, 38, 78, 48, 88, 44, 68, 32, 76, 46, 86, 56, 72, 40, 62, 34, 52];
-
-export function HeroCard({ onNewProject }: HeroCardProps) {
+export function HeroCard({
+  onNewProject,
+}: HeroCardProps) {
   return (
-    <section className="hero-grid surface-shine relative grid min-h-[390px] overflow-hidden rounded-xl border border-line-bright/70 shadow-card lg:grid-cols-[1.06fr_0.94fr]">
-      <div className="relative z-10 flex flex-col justify-center px-7 py-10 lg:px-10 xl:px-12">
-        <div className="mb-6 flex items-center gap-3">
-          <span className="h-px w-9 bg-cyan" />
-          <p className="text-xs font-bold uppercase tracking-[0.23em] text-cyan">CHETO VIDEO AI</p>
+    <section className="relative grid min-h-[310px] overflow-hidden rounded-2xl border border-white/[0.07] bg-[#090f18] lg:grid-cols-[1.05fr_.95fr]">
+      <div className="relative z-10 flex flex-col justify-center px-8 py-10 lg:px-10 xl:px-12">
+        <div className="flex items-center gap-2 text-[9px] font-medium uppercase tracking-[0.16em] text-muted/45">
+          <WandSparkles
+            aria-hidden="true"
+            className="text-cyan/80"
+            size={13}
+          />
+
+          Workspace creativo local
         </div>
-        <h2 className="max-w-2xl text-4xl font-bold leading-[1.08] tracking-[-0.035em] text-ink sm:text-5xl">
-          Convierte material largo en una edición con intención.
+
+        <h2 className="mt-5 max-w-2xl text-[30px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink xl:text-[36px]">
+          Edita con precisión.
+          <span className="block text-muted/55">
+            Mantén el control.
+          </span>
         </h2>
-        <p className="mt-5 max-w-xl text-base leading-7 text-muted">
-          Tu espacio local para organizar, revisar y preparar decisiones de edición inteligentes, con control antes de cada render.
+
+        <p className="mt-5 max-w-xl text-[12px] leading-6 text-muted/65">
+          Organiza tus videos, analiza cortes y encuadres,
+          revisa cada decisión y exporta únicamente cuando
+          el resultado esté listo.
         </p>
-        <div className="mt-8 flex flex-wrap items-center gap-4">
-          <Button className="min-h-12 px-5" icon={<Plus aria-hidden="true" size={18} />} onClick={onNewProject}>
+
+        <div className="mt-7 flex flex-wrap items-center gap-3">
+          <Button
+            icon={<Plus aria-hidden="true" size={15} />}
+            onClick={onNewProject}
+          >
             Nuevo proyecto
           </Button>
-          <div className="flex items-center gap-2 text-xs font-medium text-muted">
-            <span className="grid h-7 w-7 place-items-center rounded-full border border-line-bright bg-card text-success">
-              <Film aria-hidden="true" size={13} />
-            </span>
-            Flujo 100% local
+
+          <div className="flex items-center gap-2 px-2 text-[10px] text-muted/55">
+            <ShieldCheck
+              aria-hidden="true"
+              className="text-success"
+              size={13}
+            />
+
+            Procesamiento local
           </div>
         </div>
       </div>
 
-      <div className="relative hidden min-h-[390px] items-center justify-center overflow-hidden lg:flex">
-        <div className="absolute h-72 w-72 rounded-full bg-primary/20 blur-[70px]" />
-        <div className="absolute right-9 top-9 flex items-center gap-2 rounded-full border border-white/10 bg-canvas/45 px-3 py-1.5 text-[11px] font-semibold text-muted backdrop-blur-sm">
-          <span className="h-1.5 w-1.5 rounded-full bg-cyan shadow-[0_0_12px_var(--color-secondary)]" />
-          Preview de edición
-        </div>
+      <div className="relative hidden items-center justify-center overflow-hidden border-l border-white/[0.05] bg-[#070c13] p-8 lg:flex">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(0,200,239,.07),transparent_48%)]" />
 
-        <div className="relative w-[82%] max-w-md -rotate-1 rounded-xl border border-line-bright bg-canvas/70 p-3 shadow-modal backdrop-blur-sm">
-          <div className="relative aspect-video overflow-hidden rounded-lg border border-line bg-[linear-gradient(145deg,#172d4b,#0b1628)]">
-            <div className="absolute inset-0 opacity-40 [background-image:linear-gradient(rgba(0,213,255,.12)_1px,transparent_1px),linear-gradient(90deg,rgba(0,213,255,.12)_1px,transparent_1px)] [background-size:28px_28px]" />
-            <div className="absolute inset-x-[16%] inset-y-[17%] rounded-md border border-cyan/70 shadow-[0_0_24px_rgba(0,213,255,.16)]">
-              <span className="absolute -left-1 -top-1 h-2 w-2 bg-cyan" />
-              <span className="absolute -right-1 -top-1 h-2 w-2 bg-cyan" />
-              <span className="absolute -bottom-1 -left-1 h-2 w-2 bg-cyan" />
-              <span className="absolute -bottom-1 -right-1 h-2 w-2 bg-cyan" />
+        <div className="relative w-full max-w-[430px] overflow-hidden rounded-xl border border-white/[0.08] bg-[#0c131e] shadow-[0_30px_70px_rgba(0,0,0,.36)]">
+          <div className="flex h-9 items-center justify-between border-b border-white/[0.06] px-3">
+            <div className="flex items-center gap-2">
+              <Film
+                aria-hidden="true"
+                className="text-muted/60"
+                size={13}
+              />
+
+              <span className="text-[9px] font-medium text-muted/60">
+                Preview
+              </span>
             </div>
-            <div className="absolute left-1/2 top-1/2 grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/20 bg-primary/90 text-white shadow-glow">
-              <Play aria-hidden="true" className="ml-0.5" fill="currentColor" size={17} />
-            </div>
-            <div className="absolute bottom-3 left-3 flex items-center gap-2 rounded-md border border-white/10 bg-canvas/70 px-2.5 py-1.5 font-mono text-[10px] text-cyan">
-              <ScanLine aria-hidden="true" size={12} />
-              00:18:42
+
+            <span className="flex items-center gap-1.5 text-[8px] text-success/80">
+              <span className="h-1.5 w-1.5 rounded-full bg-success" />
+              Local
+            </span>
+          </div>
+
+          <div className="relative aspect-video bg-[#020407]">
+            <div className="absolute inset-[11%] overflow-hidden rounded-md border border-white/[0.06] bg-[linear-gradient(145deg,#172435,#08101a)]">
+              <div className="absolute left-[18%] top-[17%] h-[55%] w-[55%] border border-cyan/35" />
+
+              <div className="absolute left-1/2 top-1/2 grid h-10 w-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white text-[#07111f]">
+                <Play
+                  aria-hidden="true"
+                  className="ml-0.5"
+                  fill="currentColor"
+                  size={14}
+                />
+              </div>
             </div>
           </div>
 
-          <div className="mt-3 rounded-lg border border-line bg-surface/90 p-3">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-[11px] font-semibold text-ink">
-                <WandSparkles aria-hidden="true" className="text-violet" size={14} />
-                Plan de edición
+          <div className="border-t border-white/[0.06] p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[9px] font-medium text-muted/55">
+                Timeline
+              </span>
+
+              <ArrowRight
+                aria-hidden="true"
+                className="text-muted/40"
+                size={13}
+              />
+            </div>
+
+            <div className="mt-3 space-y-2">
+              <div className="h-2.5 overflow-hidden rounded-sm bg-white/[0.035]">
+                <div className="h-full w-[72%] bg-[#314866]" />
               </div>
-              <ArrowUpRight aria-hidden="true" className="text-muted" size={14} />
-            </div>
-            <div className="flex h-9 items-center gap-1">
-              {waveform.map((height, index) => (
-                <span
-                  className={index > 10 ? "flex-1 rounded-full bg-violet/65" : "flex-1 rounded-full bg-cyan/70"}
-                  key={`${height}-${index}`}
-                  style={{ height: `${height}%` }}
-                />
-              ))}
-            </div>
-            <div className="mt-2 flex gap-1">
-              <span className="h-1.5 w-[28%] rounded-full bg-primary" />
-              <span className="h-1.5 w-[18%] rounded-full bg-cyan" />
-              <span className="h-1.5 flex-1 rounded-full bg-violet/70" />
-              <span className="h-1.5 w-[12%] rounded-full bg-accent/80" />
+
+              <div className="flex gap-1">
+                <span className="h-2.5 w-[28%] rounded-sm bg-[#63353e]" />
+                <span className="h-2.5 w-[18%] rounded-sm bg-[#164b58]" />
+                <span className="h-2.5 w-[30%] rounded-sm bg-[#164b58]" />
+              </div>
             </div>
           </div>
         </div>

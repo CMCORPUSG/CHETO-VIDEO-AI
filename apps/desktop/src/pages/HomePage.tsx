@@ -1,4 +1,4 @@
-import {
+﻿import {
   Activity,
   Box,
   CloudOff,
@@ -8,11 +8,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "../components/Button";
-import { Card } from "../components/Card";
 import { EmptyState } from "../components/EmptyState";
 import { HeroCard } from "../components/HeroCard";
 import { ProjectCard } from "../components/ProjectCard";
-import { StatusBadge } from "../components/StatusBadge";
 import type { LocalProject } from "../types/project";
 import type { MediaDiagnosticState } from "../types/diagnostics";
 
@@ -26,40 +24,12 @@ interface HomePageProps {
 }
 
 interface SystemStatusItem {
-  accent: string;
   description: string;
   icon: LucideIcon;
   label: string;
-  tone: "neutral" | "success" | "warning";
+  state: "neutral" | "success" | "warning";
   value: string;
 }
-
-const staticSystemStatus: SystemStatusItem[] = [
-  {
-    label: "GPU",
-    value: "Pendiente",
-    description: "Detección aún no iniciada",
-    tone: "warning",
-    icon: Microchip,
-    accent: "bg-warning/10 text-warning",
-  },
-  {
-    label: "Modelos IA",
-    value: "No instalados",
-    description: "Sin descargas locales",
-    tone: "neutral",
-    icon: Box,
-    accent: "bg-violet/15 text-violet",
-  },
-  {
-    label: "API externa",
-    value: "Desactivada",
-    description: "Privacidad local activa",
-    tone: "success",
-    icon: CloudOff,
-    accent: "bg-success/10 text-success",
-  },
-];
 
 export function HomePage({
   mediaDiagnostics,
@@ -72,41 +42,80 @@ export function HomePage({
   const systemStatus: SystemStatusItem[] = [
     {
       label: "Motor multimedia",
-      value: mediaDiagnostics.ffprobeAvailable ? "Disponible" : "No disponible",
-      description: mediaDiagnostics.ffprobeAvailable ? `FFprobe: ${mediaDiagnostics.ffprobeVersion ?? "detectado"}` : "FFprobe no detectado",
-      tone: mediaDiagnostics.ffprobeAvailable ? "success" : "warning",
+      value: mediaDiagnostics.ffprobeAvailable
+        ? "Disponible"
+        : "No disponible",
+      description: mediaDiagnostics.ffprobeAvailable
+        ? `FFprobe ${mediaDiagnostics.ffprobeVersion ?? "detectado"}`
+        : "FFprobe no detectado",
+      state: mediaDiagnostics.ffprobeAvailable
+        ? "success"
+        : "warning",
       icon: Activity,
-      accent: mediaDiagnostics.ffprobeAvailable ? "bg-success/10 text-success" : "bg-warning/10 text-warning",
     },
-    ...staticSystemStatus,
+    {
+      label: "GPU",
+      value: "Pendiente",
+      description: "Detección aún no iniciada",
+      state: "warning",
+      icon: Microchip,
+    },
+    {
+      label: "Modelos IA",
+      value: "No instalados",
+      description: "Sin descargas locales",
+      state: "neutral",
+      icon: Box,
+    },
+    {
+      label: "Privacidad",
+      value: "Local",
+      description: "API externa desactivada",
+      state: "success",
+      icon: CloudOff,
+    },
   ];
+
   return (
-    <div className="space-y-10">
+    <div className="mx-auto w-full max-w-[1500px] space-y-8">
       <HeroCard onNewProject={onNewProject} />
 
       <section>
-        <div className="mb-5 flex items-end justify-between gap-4">
+        <div className="mb-4 flex items-center justify-between gap-4">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-cyan">Workspace</p>
-            <h2 className="mt-1.5 text-2xl font-bold tracking-tight text-ink">Proyectos recientes</h2>
+            <p className="text-[9px] font-medium uppercase tracking-[0.14em] text-muted/40">
+              Workspace
+            </p>
+
+            <h2 className="mt-1 text-[16px] font-semibold tracking-tight text-ink">
+              Proyectos recientes
+            </h2>
           </div>
-          <span className="rounded-full border border-line bg-surface px-3 py-1.5 text-[11px] font-semibold text-muted">
-            Sólo esta sesión
-          </span>
+
+          <Button
+            icon={<Plus aria-hidden="true" size={14} />}
+            onClick={onNewProject}
+            variant="secondary"
+          >
+            Nuevo
+          </Button>
         </div>
 
         {projects.length === 0 ? (
           <EmptyState
             action={
-              <Button icon={<Plus aria-hidden="true" size={16} />} onClick={onNewProject} variant="secondary">
-                Crear el primero
+              <Button
+                icon={<Plus aria-hidden="true" size={14} />}
+                onClick={onNewProject}
+              >
+                Crear proyecto
               </Button>
             }
-            description="Crea un proyecto para leer metadata técnica y conservar una referencia local. El video nunca sale de tu equipo."
-            title="Tu próxima edición empieza aquí"
+            description="Selecciona un video local y crea tu primer espacio de edición."
+            title="No hay proyectos recientes"
           />
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {projects.slice(0, 3).map((project) => (
               <ProjectCard
                 key={project.id}
@@ -120,31 +129,68 @@ export function HomePage({
         )}
       </section>
 
-      <section>
-        <div className="mb-5 flex items-end justify-between gap-4">
-          <div>
-            <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-cyan">
-              <Cpu aria-hidden="true" size={14} />
-              Entorno local
-            </p>
-            <h2 className="mt-1.5 text-2xl font-bold tracking-tight text-ink">Estado del sistema</h2>
-          </div>
-          <p className="hidden text-xs text-muted sm:block">Sin procesos pesados activos</p>
+      <section className="border-t border-white/[0.05] pt-7">
+        <div className="mb-4 flex items-center gap-2">
+          <Cpu
+            aria-hidden="true"
+            className="text-muted/45"
+            size={13}
+          />
+
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted/50">
+            Estado local
+          </h2>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {systemStatus.map((status) => (
-            <Card className="group relative overflow-hidden p-5 transition duration-200 hover:border-line-bright hover:shadow-card-hover" key={status.label}>
-              <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-primary/5 blur-2xl transition group-hover:bg-primary/10" />
-              <div className="relative flex items-start justify-between gap-3">
-                <span className={`grid h-10 w-10 place-items-center rounded-lg ${status.accent}`}>
-                  <status.icon aria-hidden="true" size={18} />
-                </span>
-                <StatusBadge label={status.value} tone={status.tone} />
+
+        <div className="grid overflow-hidden rounded-xl border border-white/[0.06] bg-[#090f18] sm:grid-cols-2 xl:grid-cols-4">
+          {systemStatus.map((status, index) => {
+            const Icon = status.icon;
+
+            return (
+              <div
+                className={`flex min-h-[105px] items-start gap-3 p-4 ${
+                  index > 0
+                    ? "border-t border-white/[0.05] sm:border-l sm:border-t-0"
+                    : ""
+                }`}
+                key={status.label}
+              >
+                <div className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-white/[0.035] text-muted/55">
+                  <Icon
+                    aria-hidden="true"
+                    size={14}
+                    strokeWidth={1.7}
+                  />
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-[9px] font-medium uppercase tracking-[0.1em] text-muted/40">
+                    {status.label}
+                  </p>
+
+                  <div className="mt-1.5 flex items-center gap-1.5">
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        status.state === "success"
+                          ? "bg-success"
+                          : status.state === "warning"
+                            ? "bg-warning"
+                            : "bg-muted/40"
+                      }`}
+                    />
+
+                    <p className="truncate text-[11px] font-semibold text-ink">
+                      {status.value}
+                    </p>
+                  </div>
+
+                  <p className="mt-1.5 truncate text-[9px] text-muted/45">
+                    {status.description}
+                  </p>
+                </div>
               </div>
-              <h3 className="relative mt-5 text-sm font-bold uppercase tracking-[0.1em] text-ink">{status.label}</h3>
-              <p className="relative mt-1.5 text-xs leading-5 text-muted">{status.description}</p>
-            </Card>
-          ))}
+            );
+          })}
         </div>
       </section>
     </div>

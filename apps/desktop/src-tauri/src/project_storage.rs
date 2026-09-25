@@ -17,8 +17,8 @@ const EDL_FILE: &str = "edl.json";
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProjectStorageError {
-    code: String,
-    message: String,
+    pub(crate) code: String,
+    pub(crate) message: String,
 }
 
 impl ProjectStorageError {
@@ -61,11 +61,9 @@ pub(crate) enum WorkflowState {
 #[serde(rename_all = "camelCase")]
 pub struct WorkflowStatus {
     ingest: WorkflowState,
-    transcription: WorkflowState,
     scene_analysis: WorkflowState,
     smart_cut: WorkflowState,
     smart_camera: WorkflowState,
-    captions: WorkflowState,
     broll: WorkflowState,
     render: WorkflowState,
 }
@@ -125,7 +123,6 @@ pub struct StreamCounts {
     total: u64,
     video: u64,
     audio: u64,
-    subtitle: u64,
     data: u64,
     other: u64,
 }
@@ -178,16 +175,8 @@ pub struct CameraDecision {
     pub(crate) easing: Option<String>,
     pub(crate) reason: Option<String>,
     pub(crate) confidence: Option<f64>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct CaptionDecision {
-    id: String,
-    start_us: u64,
-    end_us: u64,
-    text: String,
-    style_id: String,
+    #[serde(default)]
+    pub(crate) transition_us: Option<u64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -218,7 +207,6 @@ pub struct AudioDecision {
 pub struct EdlTracks {
     pub(crate) cuts: Vec<CutDecision>,
     pub(crate) camera: Vec<CameraDecision>,
-    captions: Vec<CaptionDecision>,
     broll: Vec<BrollDecision>,
     audio: Vec<AudioDecision>,
 }
@@ -227,7 +215,6 @@ impl EdlTracks {
     fn is_empty(&self) -> bool {
         self.cuts.is_empty()
             && self.camera.is_empty()
-            && self.captions.is_empty()
             && self.broll.is_empty()
             && self.audio.is_empty()
     }
@@ -420,22 +407,6 @@ impl ProjectStorage {
         Ok(bundle)
     }
 
-    pub(crate) fn update_transcription_workflow(
-        &self,
-        project_id: &str,
-        state: WorkflowState,
-        updated_at: String,
-    ) -> Result<ProjectBundle, ProjectStorageError> {
-        let mut bundle = self.load_project(project_id)?;
-        bundle.project.workflow.transcription = state;
-        bundle.project.updated_at = updated_at;
-        self.write_json(
-            &self.project_dir(project_id)?.join(PROJECT_FILE),
-            &bundle.project,
-        )?;
-        Ok(bundle)
-    }
-
     pub(crate) fn update_smart_cut_workflow(
         &self,
         project_id: &str,
@@ -466,27 +437,6 @@ impl ProjectStorage {
             &bundle.project,
         )?;
         Ok(bundle)
-    }
-
-    pub(crate) fn recover_interrupted_transcription(
-        &self,
-        project_id: &str,
-        updated_at: String,
-    ) -> Result<bool, ProjectStorageError> {
-        let mut bundle = self.load_project(project_id)?;
-        if !matches!(
-            bundle.project.workflow.transcription,
-            WorkflowState::Preparing | WorkflowState::Running
-        ) {
-            return Ok(false);
-        }
-        bundle.project.workflow.transcription = WorkflowState::Error;
-        bundle.project.updated_at = updated_at;
-        self.write_json(
-            &self.project_dir(project_id)?.join(PROJECT_FILE),
-            &bundle.project,
-        )?;
-        Ok(true)
     }
 
     fn save_project(
@@ -755,11 +705,9 @@ mod tests {
                 },
                 workflow: WorkflowStatus {
                     ingest: WorkflowState::Completed,
-                    transcription: WorkflowState::NotStarted,
                     scene_analysis: WorkflowState::NotStarted,
                     smart_cut: WorkflowState::NotStarted,
                     smart_camera: WorkflowState::NotStarted,
-                    captions: WorkflowState::NotStarted,
                     broll: WorkflowState::NotStarted,
                     render: WorkflowState::NotStarted,
                 },
@@ -807,7 +755,6 @@ mod tests {
                     total: 2,
                     video: 1,
                     audio: 1,
-                    subtitle: 0,
                     data: 0,
                     other: 0,
                 },
@@ -823,7 +770,6 @@ mod tests {
                 tracks: EdlTracks {
                     cuts: vec![],
                     camera: vec![],
-                    captions: vec![],
                     broll: vec![],
                     audio: vec![],
                 },

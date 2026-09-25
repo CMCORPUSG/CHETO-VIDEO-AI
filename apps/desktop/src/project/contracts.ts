@@ -15,13 +15,11 @@ export interface ProjectManifest {
   updatedAt: string;
   workflow: {
     broll: WorkflowState;
-    captions: WorkflowState;
     ingest: WorkflowState;
     render: WorkflowState;
     sceneAnalysis: WorkflowState;
     smartCamera: WorkflowState;
     smartCut: WorkflowState;
-    transcription: WorkflowState;
   };
 }
 
@@ -48,7 +46,6 @@ export interface SourceManifest {
     audio: number;
     data: number;
     other: number;
-    subtitle: number;
     total: number;
     video: number;
   };
@@ -86,12 +83,8 @@ export interface CameraDecision extends TimedTrackItem {
   easing: string | null;
   mode: string;
   reason: string | null;
+  transitionUs?: number | null;
   zoom: number | null;
-}
-
-export interface CaptionDecision extends TimedTrackItem {
-  styleId: string;
-  text: string;
 }
 
 export interface BrollDecision extends TimedTrackItem {
@@ -118,7 +111,6 @@ export interface EdlManifest {
     audio: AudioDecision[];
     broll: BrollDecision[];
     camera: CameraDecision[];
-    captions: CaptionDecision[];
     cuts: CutDecision[];
   };
   updatedAt: string;
@@ -141,6 +133,5 @@ export interface TrackCounts {
   audio: number;
   broll: number;
   camera: number;
-  captions: number;
   cuts: number;
 }

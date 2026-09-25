@@ -6,10 +6,11 @@
 
 * {
   box-sizing: border-box;
+  min-width: 0;
 }
 
 html {
-  min-width: 720px;
+  min-width: 320px;
   background: var(--color-background);
   font-family: var(--font-sans);
   text-rendering: optimizeLegibility;
@@ -19,14 +20,26 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  overflow-x: hidden;
+  font-size: 12px;
+  line-height: 1.35;
   background:
     radial-gradient(circle at 85% -10%, rgb(47 107 255 / 12%), transparent 34rem),
     var(--color-background);
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
+}
+
+button, input, select, textarea { min-width: 0; }
+
+h1, h2, h3, h4, p, label, span {
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 
 button {
@@ -151,3 +164,1082 @@ button {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* CHETO compact NLE workspace */
+.editor-shell {
+  --inspector-width: 360px;
+  font-size: 12px;
+}
+
+.editor-shell button,
+.editor-shell input,
+.editor-shell select,
+.editor-shell textarea {
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.editor-shell p,
+.editor-shell span,
+.editor-shell label,
+.editor-shell button,
+.editor-shell select {
+  max-width: 100%;
+}
+
+.editor-inspector-resizer {
+  position: absolute;
+  top: 0;
+  right: calc(var(--inspector-width) - 3px);
+  bottom: 0;
+  z-index: 40;
+  width: 7px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.editor-inspector-resizer::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 1px;
+  background: var(--color-border);
+  content: "";
+  transition: width 120ms ease, background 120ms ease;
+}
+
+.editor-inspector-resizer:hover::after,
+.editor-inspector-resizer:active::after {
+  left: 2px;
+  width: 3px;
+  background: var(--color-accent, #00d5ff);
+}
+
+@media (min-width: 1280px) {
+  .editor-shell {
+    grid-template-columns:
+      112px
+      minmax(0, 1fr)
+      var(--inspector-width);
+  }
+}
+/* =========================================================
+   CHETO GLOBAL COMPACT UI
+   ========================================================= */
+
+body {
+  font-size: 12px;
+}
+
+/* Escala tipográfica general */
+.text-xl {
+  font-size: 15px !important;
+  line-height: 1.25 !important;
+}
+
+.text-lg {
+  font-size: 13px !important;
+  line-height: 1.25 !important;
+}
+
+.text-base {
+  font-size: 12px !important;
+  line-height: 1.3 !important;
+}
+
+.text-sm {
+  font-size: 11px !important;
+  line-height: 1.3 !important;
+}
+
+.text-xs {
+  font-size: 10px !important;
+  line-height: 1.3 !important;
+}
+
+/* Editor todavía más compacto */
+.editor-shell {
+  font-size: 11px;
+}
+
+.editor-shell button,
+.editor-shell select,
+.editor-shell input,
+.editor-shell textarea {
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.editor-shell p,
+.editor-shell label,
+.editor-shell span,
+.editor-shell button {
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+/* =========================================================
+   ENCUADRE CUADRADO
+   ========================================================= */
+
+.smart-camera-square {
+  border-radius: 0 !important;
+}
+
+.smart-camera-square .rounded-xl,
+.smart-camera-square .rounded-lg,
+.smart-camera-square .rounded-md {
+  border-radius: 0 !important;
+}
+
+.smart-camera-square button,
+.smart-camera-square select {
+  border-radius: 0 !important;
+}
+
+/* Estadísticas: jamás hacer palabras verticales */
+.smart-camera-square p {
+  word-break: normal;
+  overflow-wrap: normal;
+}
+
+.smart-camera-square select {
+  min-height: 30px;
+}
+
+/* Valores técnicos sí pueden partirse si son muy largos */
+.smart-camera-square .font-mono {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+/* ==========================================================
+   CHETO FINAL COMPACT UI V2
+   ========================================================== */
+
+/* Tipografía general */
+body {
+  font-size: 11px !important;
+  line-height: 1.25;
+}
+
+/* Editor */
+.editor-shell {
+  --inspector-width: 320px;
+  font-size: 10px;
+  border-radius: 2px !important;
+}
+
+/* Grid escritorio */
+@media (min-width: 1280px) {
+  .editor-shell {
+    grid-template-columns:
+      104px
+      minmax(0, 1fr)
+      var(--inspector-width);
+  }
+}
+
+/* Texto compacto */
+.editor-shell .text-xl {
+  font-size: 14px !important;
+  line-height: 1.15 !important;
+}
+
+.editor-shell .text-lg {
+  font-size: 12px !important;
+  line-height: 1.2 !important;
+}
+
+.editor-shell .text-base {
+  font-size: 11px !important;
+  line-height: 1.2 !important;
+}
+
+.editor-shell .text-sm {
+  font-size: 10px !important;
+  line-height: 1.25 !important;
+}
+
+.editor-shell .text-xs {
+  font-size: 9px !important;
+  line-height: 1.25 !important;
+}
+
+.editor-shell button,
+.editor-shell input,
+.editor-shell select,
+.editor-shell textarea {
+  font-size: 9.5px !important;
+  line-height: 1.15 !important;
+}
+
+/* No romper palabras absurdamente */
+.editor-shell p,
+.editor-shell span,
+.editor-shell label,
+.editor-shell button {
+  min-width: 0;
+  max-width: 100%;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+/* Menos tracking gigante */
+.editor-shell [class*="tracking-"] {
+  letter-spacing: 0.035em !important;
+}
+
+/* ==========================================================
+   MENOS ESPACIO VACÍO
+   ========================================================== */
+
+.editor-shell .p-5 {
+  padding: 0.65rem !important;
+}
+
+.editor-shell .p-4 {
+  padding: 0.6rem !important;
+}
+
+.editor-shell .p-3 {
+  padding: 0.5rem !important;
+}
+
+.editor-shell .gap-4 {
+  gap: 0.55rem !important;
+}
+
+.editor-shell .gap-3 {
+  gap: 0.45rem !important;
+}
+
+.editor-shell .gap-2 {
+  gap: 0.35rem !important;
+}
+
+.editor-shell .mt-5 {
+  margin-top: 0.65rem !important;
+}
+
+.editor-shell .mt-4 {
+  margin-top: 0.55rem !important;
+}
+
+.editor-shell .mt-3 {
+  margin-top: 0.45rem !important;
+}
+
+.editor-shell .mb-4 {
+  margin-bottom: 0.55rem !important;
+}
+
+/* ==========================================================
+   CUADROS MÁS RECTOS
+   ========================================================== */
+
+.editor-shell .rounded-xl,
+.editor-shell .rounded-lg,
+.editor-shell .rounded-md {
+  border-radius: 2px !important;
+}
+
+/* Los controles circulares reales se mantienen circulares */
+.editor-shell .rounded-full {
+  border-radius: 9999px !important;
+}
+
+/* Cards principales */
+.editor-shell > section,
+.editor-shell > aside,
+.editor-shell > nav {
+  border-radius: 0 !important;
+}
+
+/* ==========================================================
+   BOTONES / SELECTS COMPACTOS
+   ========================================================== */
+
+.editor-shell button:not(.rounded-full) {
+  min-height: 26px;
+}
+
+.editor-shell select {
+  min-height: 27px;
+  padding-top: 3px !important;
+  padding-bottom: 3px !important;
+}
+
+/* ==========================================================
+   DIVISOR DEL INSPECTOR
+   ========================================================== */
+
+.editor-inspector-resizer {
+  position: absolute;
+  z-index: 60;
+  top: 0;
+  right: calc(var(--inspector-width) - 4px);
+  bottom: 0;
+
+  width: 8px;
+  padding: 0;
+
+  border: 0;
+  border-radius: 0 !important;
+
+  background: transparent;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.editor-inspector-resizer::after {
+  position: absolute;
+
+  top: 0;
+  bottom: 0;
+  left: 3px;
+
+  width: 1px;
+
+  background: var(--color-border);
+  content: "";
+}
+
+.editor-inspector-resizer:hover::after,
+.editor-inspector-resizer:active::after {
+  left: 2px;
+  width: 3px;
+  background: #00d5ff;
+}
+
+/* ==========================================================
+   MÉTRICAS
+   ========================================================== */
+
+.editor-shell [class*="grid-cols-4"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.editor-shell [class*="grid-cols-2"] > * {
+  min-width: 0;
+}
+
+/* No cortar valores cortos */
+.editor-shell .font-mono {
+  font-size: 9px !important;
+}
+
+/* ==========================================================
+   VIDEO
+   ========================================================== */
+
+.editor-shell video {
+  max-width: 100%;
+}
+
+.editor-shell section {
+  min-width: 0;
+}
+
+/* ==========================================================
+   WORKSPACE NLE V3
+   ========================================================== */
+
+.editor-shell {
+  --tools-width: 112px;
+  --inspector-width: 320px;
+  grid-template-columns: clamp(64px, var(--tools-width), 260px) minmax(360px, 1fr) clamp(240px, var(--inspector-width), 520px);
+  --timeline-height: 236px;
+  grid-template-rows: minmax(220px, 1fr) var(--timeline-height);
+  border-radius: 0 !important;
+}
+
+.editor-tool-panel { grid-column: 1; grid-row: 1 / 3; flex-direction: column; border-right-width: 1px; }
+.editor-viewer { grid-column: 2; grid-row: 1; }
+.editor-inspector-panel { grid-column: 3; grid-row: 1 / 3; }
+.editor-timeline-panel { grid-column: 2; grid-row: 2; }
+.editor-shell.tools-collapsed .editor-tool-button span,
+.editor-shell.tools-collapsed .editor-panel-heading { display: none; }
+.editor-shell.tools-collapsed .editor-tool-button { justify-content: center; }
+.editor-shell.inspector-collapsed { grid-template-columns: clamp(44px, var(--tools-width), 260px) minmax(360px, 1fr) 0; }
+.editor-shell.inspector-collapsed .editor-inspector-panel,
+.editor-shell.inspector-collapsed .editor-inspector-resizer { display: none !important; }
+.panel-collapse-button { display: grid; min-width: 24px !important; width: 24px; min-height: 24px !important; place-items: center; color: var(--color-text-muted); }
+.editor-inspector-open { position: absolute; z-index: 80; top: 8px; right: 0; width: 26px; min-height: 34px !important; border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text-muted); }
+
+.editor-tools-resizer,
+.editor-inspector-resizer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 70;
+  width: 8px;
+  min-height: 0 !important;
+  padding: 0;
+  border: 0;
+  border-radius: 0 !important;
+  background: transparent;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.editor-tools-resizer { left: calc(clamp(64px, var(--tools-width), 260px) - 4px); }
+.editor-inspector-resizer { right: calc(clamp(240px, var(--inspector-width), 520px) - 4px); display: block !important; }
+.editor-tools-resizer::after,
+.editor-inspector-resizer::after { position: absolute; inset-block: 0; left: 3px; width: 1px; background: var(--color-border); content: ""; }
+.editor-tools-resizer:hover::after,
+.editor-inspector-resizer:hover::after { left: 2px; width: 3px; background: #00d5ff; }
+.editor-horizontal-resizer { position: absolute; z-index: 65; right: clamp(0px, var(--inspector-width), 520px); bottom: calc(var(--timeline-height) - 4px); left: clamp(44px, var(--tools-width), 260px); height: 8px; min-height: 8px !important; padding: 0; border: 0; background: transparent; cursor: row-resize; }
+.editor-horizontal-resizer::after { position: absolute; inset: 3px 0 auto; height: 1px; background: var(--color-border); content: ""; }
+.editor-horizontal-resizer:hover::after { inset-block-start: 2px; height: 3px; background: #00d5ff; }
+.editor-shell.inspector-collapsed .editor-horizontal-resizer { right: 0; }
+
+.editor-tool-button svg { flex: 0 0 auto; width: 16px; height: 16px; }
+.editor-tool-button span { min-width: 0; }
+
+.video-player { border-radius: 0 !important; }
+.video-stage-shell { display: grid; min-height: 180px; max-height: 52vh; place-items: center; overflow: hidden; background: #030507; }
+.video-stage { max-height: 52vh; max-width: 100%; }
+.video-stage video { position: absolute; inset: 0; width: 100%; height: 100%; }
+.video-player > .relative { flex: 0 0 auto; }
+.video-player input[type="range"] { min-width: 52px; }
+
+.editor-timeline-toolbar { min-height: 38px; }
+.editor-metric { display: inline-flex; max-width: 140px; align-items: baseline; white-space: nowrap; overflow: hidden; }
+.editor-metric span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.editor-metric strong { flex: 0 0 auto; }
+
+.editor-timeline { display: flex; height: calc(100% - 39px); min-height: 0; flex-direction: column; background: color-mix(in srgb, var(--color-background) 84%, black); }
+.timeline-zoom-toolbar { display: flex; flex: 0 0 29px; align-items: center; gap: 4px; padding: 3px 8px; border-bottom: 1px solid var(--color-border); color: var(--color-text-muted); font-size: 8px; }
+.timeline-zoom-toolbar button { display: inline-flex; min-height: 22px !important; align-items: center; gap: 3px; padding: 2px 6px; border: 1px solid var(--color-border); background: var(--color-surface); }
+.timeline-zoom-toolbar input { width: 100px; accent-color: var(--color-secondary); }
+.editor-timeline-scroll { min-height: 0; flex: 1 1 auto; overflow: auto; }
+.editor-timeline-canvas { position: relative; min-height: 190px; padding-top: 28px; cursor: crosshair; }
+.editor-timeline-ruler { position: absolute; top: 0; left: 74px; height: 28px; border-bottom: 1px solid var(--color-border); color: var(--color-text-muted); touch-action: none; }
+.editor-timeline-tick { position: absolute; top: 0; height: 100%; translate: -1px 0; font: 600 8px/1 var(--font-mono); white-space: nowrap; }
+.editor-timeline-tick i { display: block; width: 1px; height: 8px; margin-bottom: 3px; background: var(--color-border-bright); }
+.editor-timeline-lane { display: grid; grid-template-columns: 74px minmax(0, 1fr); min-height: 48px; border-bottom: 1px solid var(--color-border); }
+.editor-timeline-lane > strong { position: sticky; left: 0; z-index: 8; display: flex; align-items: center; padding: 0 8px; border-right: 1px solid var(--color-border); background: var(--color-background); color: var(--color-text-muted); font-size: 8px; text-transform: uppercase; }
+.editor-timeline-track { position: relative; margin: 6px 0; overflow: hidden; }
+.editor-timeline-block { position: absolute; inset-block: 0; min-width: 4px; overflow: hidden; border: 1px solid rgb(255 255 255 / 15%); background: #2f6bff66; padding: 6px; color: white; font-size: 8px; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+.editor-timeline-block.is-editable { cursor: grab; touch-action: none; }
+.editor-timeline-block.is-editable:active { cursor: grabbing; }
+.editor-timeline-block.is-selected { z-index: 5; border-color: var(--color-secondary); box-shadow: 0 0 0 1px rgb(0 213 255 / 45%); }
+.editor-timeline-block b { pointer-events: none; font-weight: 600; }
+.timeline-handle { position: absolute; z-index: 4; top: 0; bottom: 0; width: 7px; background: rgb(255 255 255 / 22%); cursor: ew-resize; }
+.timeline-handle.left { left: 0; }
+.timeline-handle.right { right: 0; }
+.editor-timeline-lane-cuts .editor-timeline-block { background: #e0525266; }
+.editor-timeline-lane-camera .editor-timeline-block { background: #00b8d966; }
+.editor-timeline-block.is-video { background: linear-gradient(90deg, #253754, #314b70); }
+.editor-timeline-block.is-draft { border-style: dashed; filter: saturate(1.4); opacity: .8; }
+.editor-timeline-playhead { position: absolute; z-index: 20; top: 18px; bottom: 0; width: 1px; background: #ff5b63; pointer-events: none; }
+.editor-timeline-playhead span { position: absolute; top: -3px; left: -4px; width: 9px; height: 9px; rotate: 45deg; background: #ff5b63; }
+.editor-timeline-playhead { cursor: ew-resize; touch-action: none; }
+.editor-timeline-playhead em { position: absolute; top: -17px; left: 7px; display: none; padding: 2px 4px; background: #1a2230; color: white; font: 600 8px/1 var(--font-mono); white-space: nowrap; }
+.editor-timeline-playhead:hover em,
+.editor-timeline-playhead:active em { display: block; }
+.timeline-inspector input,
+.timeline-inspector select { min-height: 27px; }
+.export-field > input,
+.export-field > select,
+.export-field > output,
+.export-field > div { display: flex; width: 100%; min-height: 32px; margin-top: 5px; align-items: center; border: 1px solid var(--color-border); background: var(--color-background); padding: 5px 8px; color: var(--color-text); font-size: 11px; font-weight: 500; text-transform: none; }
+.export-field > div { padding: 0; border: 0; background: transparent; }
+.export-field small { display: block; margin-top: 3px; color: var(--color-text-muted); font-size: 8px; font-weight: 400; text-transform: none; }
+
+@media (max-width: 1150px) {
+  .editor-shell { grid-template-columns: 64px minmax(320px, 1fr) clamp(240px, var(--inspector-width), 340px); }
+  .editor-tool-panel .editor-panel-heading,
+  .editor-tool-button span { display: none; }
+  .editor-tool-button { justify-content: center; }
+  .editor-tools-resizer { display: none; }
+}
+
+@media (max-width: 900px) {
+  .editor-shell { grid-template-columns: 52px minmax(0, 1fr); grid-template-rows: minmax(280px, 1fr) var(--timeline-height); }
+  .editor-tool-panel { grid-column: 1; grid-row: 1 / 3; }
+  .editor-viewer { grid-column: 2; grid-row: 1; }
+  .editor-timeline-panel { grid-column: 2; grid-row: 2; }
+  .editor-inspector-panel,
+  .editor-inspector-resizer { display: none !important; }
+}
+
+/* ==========================================================
+   CHETO PREMIUM EDITOR V4
+   Visual refinement layer
+   ========================================================== */
+
+.editor-shell {
+  --editor-bg: #05080d;
+  --editor-panel: #080e17;
+  --editor-surface: #0b121d;
+  --editor-elevated: #101a28;
+  --editor-line: rgb(255 255 255 / 6%);
+  --editor-line-strong: rgb(255 255 255 / 10%);
+  --editor-muted: #7f8c9d;
+  --editor-accent: #00c8ef;
+
+  height: calc(100vh - 7.5rem) !important;
+  min-height: 560px !important;
+
+  overflow: hidden;
+
+  border: 1px solid var(--editor-line) !important;
+  border-radius: 10px !important;
+
+  background: var(--editor-bg) !important;
+
+  box-shadow:
+    0 24px 70px rgb(0 0 0 / 32%),
+    0 1px 0 rgb(255 255 255 / 3%) inset !important;
+}
+
+/* ----------------------------------------------------------
+   RADIO / GEOMETRÍA
+   ---------------------------------------------------------- */
+
+.editor-shell .rounded-xl {
+  border-radius: 9px !important;
+}
+
+.editor-shell .rounded-lg {
+  border-radius: 7px !important;
+}
+
+.editor-shell .rounded-md {
+  border-radius: 6px !important;
+}
+
+.editor-shell .rounded-full {
+  border-radius: 9999px !important;
+}
+
+/* ----------------------------------------------------------
+   ESCALA Y CONTROLES
+   ---------------------------------------------------------- */
+
+.editor-shell {
+  font-size: 10px;
+}
+
+.editor-shell button,
+.editor-shell input,
+.editor-shell select,
+.editor-shell textarea {
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+}
+
+.editor-shell button:not(.rounded-full) {
+  min-height: 28px;
+}
+
+.editor-shell select,
+.editor-shell input:not([type="range"]) {
+  min-height: 28px;
+
+  border-color: var(--editor-line-strong) !important;
+  border-radius: 6px !important;
+
+  background: var(--editor-surface) !important;
+}
+
+/* ----------------------------------------------------------
+   PANEL IZQUIERDO / HERRAMIENTAS
+   ---------------------------------------------------------- */
+
+.editor-tool-panel {
+  gap: 3px !important;
+
+  padding: 7px !important;
+
+  border-color: var(--editor-line) !important;
+
+  background: var(--editor-panel) !important;
+}
+
+.editor-panel-heading {
+  color: rgb(169 184 204 / 42%) !important;
+
+  font-size: 8px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.12em !important;
+}
+
+.editor-tool-button {
+  min-height: 36px !important;
+
+  gap: 8px !important;
+
+  padding: 0 9px !important;
+
+  border-color: transparent !important;
+  border-radius: 7px !important;
+
+  font-size: 10px !important;
+  font-weight: 500 !important;
+}
+
+.editor-tool-button:hover {
+  background: rgb(255 255 255 / 4%) !important;
+}
+
+.editor-tool-button svg {
+  width: 15px;
+  height: 15px;
+
+  stroke-width: 1.8;
+}
+
+/* ----------------------------------------------------------
+   VIEWER
+   ---------------------------------------------------------- */
+
+.editor-viewer {
+  padding: 10px !important;
+
+  background:
+    radial-gradient(
+      circle at 50% 20%,
+      rgb(33 56 82 / 16%),
+      transparent 44%
+    ),
+    #05080d !important;
+}
+
+.editor-viewer-toolbar {
+  min-height: 38px;
+
+  margin-bottom: 8px !important;
+  padding: 0 2px 8px;
+
+  border-bottom: 1px solid var(--editor-line);
+}
+
+/* Original / Resultado */
+
+.editor-viewer-toolbar > div:first-child {
+  overflow: hidden;
+
+  border-color: var(--editor-line-strong) !important;
+  border-radius: 7px !important;
+
+  background: var(--editor-panel) !important;
+}
+
+.editor-viewer-toolbar > div:first-child button {
+  min-height: 27px !important;
+
+  padding-inline: 10px !important;
+
+  border: 0 !important;
+
+  font-size: 8.5px !important;
+  letter-spacing: 0.06em;
+}
+
+/* ----------------------------------------------------------
+   VIDEO PLAYER
+   ---------------------------------------------------------- */
+
+.video-player {
+  overflow: hidden !important;
+
+  border: 1px solid var(--editor-line-strong) !important;
+  border-radius: 10px !important;
+
+  background: #000 !important;
+
+  box-shadow:
+    0 18px 50px rgb(0 0 0 / 32%),
+    0 0 0 1px rgb(255 255 255 / 2%) inset !important;
+}
+
+.video-stage-shell {
+  min-height: 200px;
+
+  background: #020305 !important;
+}
+
+.video-stage {
+  background:
+    radial-gradient(
+      circle at center,
+      #080b10 0%,
+      #020305 72%
+    ) !important;
+}
+
+.video-player > .relative {
+  padding: 8px 10px !important;
+
+  border-color: var(--editor-line) !important;
+
+  background: #090f18 !important;
+}
+
+.video-player input[type="range"] {
+  height: 3px;
+
+  accent-color: var(--editor-accent);
+}
+
+.video-player button {
+  color: #8997a9;
+}
+
+.video-player button:hover {
+  background: rgb(255 255 255 / 5%) !important;
+  color: #f8fafc !important;
+}
+
+/* Play central */
+
+.video-player button.rounded-full {
+  width: 34px !important;
+  height: 34px !important;
+
+  background: #f4f7fb !important;
+  color: #07111f !important;
+
+  box-shadow: none !important;
+}
+
+.video-player button.rounded-full:hover {
+  background: white !important;
+  color: #07111f !important;
+
+  transform: scale(1.03);
+}
+
+/* ----------------------------------------------------------
+   INSPECTOR DERECHO
+   ---------------------------------------------------------- */
+
+.editor-inspector-panel {
+  padding: 8px !important;
+
+  border-color: var(--editor-line) !important;
+
+  background: #080e17 !important;
+}
+
+.editor-inspector-panel > button:first-child {
+  margin-bottom: 6px;
+}
+
+.editor-inspector-panel .surface-shine::after {
+  display: none;
+}
+
+.editor-inspector-panel .border-line {
+  border-color: var(--editor-line) !important;
+}
+
+.editor-inspector-panel .bg-canvas\/55,
+.editor-inspector-panel .bg-canvas\/50,
+.editor-inspector-panel .bg-canvas\/45 {
+  background: rgb(255 255 255 / 2.5%) !important;
+}
+
+.editor-inspector-panel h3 {
+  font-weight: 600 !important;
+}
+
+/* Cards del inspector */
+
+.editor-inspector-panel > div > div,
+.editor-inspector-panel > div > section {
+  box-shadow: none !important;
+}
+
+/* ----------------------------------------------------------
+   BOTONES DE COLAPSAR
+   ---------------------------------------------------------- */
+
+.panel-collapse-button {
+  width: 26px !important;
+  min-width: 26px !important;
+  min-height: 26px !important;
+
+  border-radius: 6px !important;
+
+  color: rgb(169 184 204 / 55%) !important;
+}
+
+.panel-collapse-button:hover {
+  background: rgb(255 255 255 / 5%) !important;
+  color: #f8fafc !important;
+}
+
+/* ----------------------------------------------------------
+   RESIZERS
+   ---------------------------------------------------------- */
+
+.editor-tools-resizer::after,
+.editor-inspector-resizer::after,
+.editor-horizontal-resizer::after {
+  background: rgb(255 255 255 / 5%) !important;
+
+  transition:
+    background 120ms ease,
+    width 120ms ease,
+    height 120ms ease !important;
+}
+
+.editor-tools-resizer:hover::after,
+.editor-inspector-resizer:hover::after,
+.editor-horizontal-resizer:hover::after {
+  background: var(--editor-accent) !important;
+}
+
+/* ----------------------------------------------------------
+   TIMELINE HEADER
+   ---------------------------------------------------------- */
+
+.editor-timeline-panel {
+  border-color: var(--editor-line) !important;
+
+  background: #070c13 !important;
+}
+
+.editor-timeline-toolbar {
+  min-height: 42px !important;
+
+  gap: 4px !important;
+
+  padding: 5px 8px !important;
+
+  border-color: var(--editor-line) !important;
+
+  background: #090f18 !important;
+}
+
+.editor-timeline-toolbar > button {
+  display: inline-grid;
+
+  min-width: 27px;
+  min-height: 27px !important;
+
+  place-items: center;
+
+  padding: 0 6px;
+
+  border: 1px solid transparent;
+  border-radius: 6px !important;
+
+  color: #8491a2;
+
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.editor-timeline-toolbar > button:hover:not(:disabled) {
+  background: rgb(255 255 255 / 5%);
+  color: #f8fafc;
+}
+
+.editor-timeline-toolbar > button:disabled {
+  opacity: 0.25;
+}
+
+/* ----------------------------------------------------------
+   MÉTRICAS
+   ---------------------------------------------------------- */
+
+.editor-metric {
+  min-height: 27px;
+
+  align-items: center;
+
+  border: 0 !important;
+  border-radius: 5px !important;
+
+  background: rgb(255 255 255 / 3%) !important;
+
+  padding: 3px 7px !important;
+}
+
+.editor-metric span {
+  color: rgb(169 184 204 / 48%) !important;
+
+  font-size: 7.5px !important;
+  font-weight: 500 !important;
+}
+
+.editor-metric strong {
+  color: #dce4ee !important;
+
+  font-size: 8.5px !important;
+  font-weight: 600 !important;
+}
+
+/* ----------------------------------------------------------
+   TIMELINE
+   ---------------------------------------------------------- */
+
+.editor-timeline {
+  background: #05090f !important;
+}
+
+.timeline-zoom-toolbar {
+  min-height: 29px;
+
+  padding: 3px 8px !important;
+
+  border-color: var(--editor-line) !important;
+
+  background: #080e16 !important;
+
+  color: rgb(169 184 204 / 52%) !important;
+}
+
+.timeline-zoom-toolbar button {
+  min-height: 22px !important;
+
+  border: 0 !important;
+  border-radius: 5px !important;
+
+  background: transparent !important;
+}
+
+.timeline-zoom-toolbar button:hover {
+  background: rgb(255 255 255 / 5%) !important;
+  color: white;
+}
+
+.editor-timeline-lane {
+  min-height: 50px;
+
+  border-color: var(--editor-line) !important;
+}
+
+.editor-timeline-lane > strong {
+  border-color: var(--editor-line) !important;
+
+  background: #080e16 !important;
+
+  color: rgb(169 184 204 / 48%) !important;
+
+  font-size: 7.5px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.08em;
+}
+
+.editor-timeline-track {
+  margin-block: 7px !important;
+}
+
+.editor-timeline-ruler {
+  border-color: var(--editor-line) !important;
+
+  color: rgb(169 184 204 / 45%) !important;
+}
+
+.editor-timeline-tick i {
+  background: rgb(255 255 255 / 10%) !important;
+}
+
+/* ----------------------------------------------------------
+   CLIPS
+   ---------------------------------------------------------- */
+
+.editor-timeline-block {
+  padding: 6px 8px !important;
+
+  border: 1px solid rgb(255 255 255 / 9%) !important;
+  border-radius: 5px !important;
+
+  background: #253957 !important;
+
+  color: rgb(255 255 255 / 88%) !important;
+
+  font-size: 8px !important;
+
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 4%) inset;
+}
+
+.editor-timeline-lane-cuts .editor-timeline-block {
+  background: #66343d !important;
+}
+
+.editor-timeline-lane-camera .editor-timeline-block {
+  background: #164b58 !important;
+}
+
+.editor-timeline-block.is-video {
+  background: #24354e !important;
+}
+
+.editor-timeline-block.is-selected {
+  z-index: 5;
+
+  border-color: var(--editor-accent) !important;
+
+  box-shadow:
+    0 0 0 1px rgb(0 200 239 / 35%),
+    0 4px 14px rgb(0 0 0 / 18%) !important;
+}
+
+.timeline-handle {
+  width: 5px !important;
+
+  background: rgb(255 255 255 / 13%) !important;
+}
+
+.editor-timeline-block:hover .timeline-handle {
+  background: rgb(255 255 255 / 25%) !important;
+}
+
+/* ----------------------------------------------------------
+   PLAYHEAD
+   ---------------------------------------------------------- */
+
+.editor-timeline-playhead {
+  width: 1px !important;
+
+  background: #ff5964 !important;
+
+  box-shadow: 0 0 5px rgb(255 89 100 / 28%);
+}
+
+.editor-timeline-playhead span {
+  width: 8px !important;
+  height: 8px !important;
+
+  background: #ff5964 !important;
+}
+
+/* ----------------------------------------------------------
+   SCROLLBARS DEL EDITOR
+   ---------------------------------------------------------- */
+
+.editor-shell ::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+.editor-shell ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.editor-shell ::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+
+  background: rgb(255 255 255 / 12%);
+
+  background-clip: padding-box;
+}
+
+.editor-shell ::-webkit-scrollbar-thumb:hover {
+  background: rgb(255 255 255 / 20%);
+  background-clip: padding-box;
+}
+

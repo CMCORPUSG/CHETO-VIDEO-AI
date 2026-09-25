@@ -108,11 +108,10 @@ function containerName(rawName: string | undefined, extension: string): string {
 }
 
 function countStreams(streams: RawStream[]): StreamSummary {
-  const summary: StreamSummary = { audio: 0, data: 0, other: 0, subtitle: 0, total: streams.length, video: 0 };
+  const summary: StreamSummary = { audio: 0, data: 0, other: 0, total: streams.length, video: 0 };
   for (const stream of streams) {
     if (stream.codec_type === "video") summary.video += 1;
     else if (stream.codec_type === "audio") summary.audio += 1;
-    else if (stream.codec_type === "subtitle") summary.subtitle += 1;
     else if (stream.codec_type === "data") summary.data += 1;
     else summary.other += 1;
   }

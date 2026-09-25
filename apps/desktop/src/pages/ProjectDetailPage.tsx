@@ -30,6 +30,10 @@ export function ProjectDetailPage({ isRelocating, onBack, onDelete, onLog, onNot
   const sourceUnavailable = project.status === "source-missing" || project.status === "legacy";
   const trackCounts = countEdlTracks(projectBundle);
 
+  if (projectBundle && project.status === "ready") {
+    return <div className="min-h-0 w-full max-w-none"><div className="mb-2 flex h-10 items-center justify-between gap-3"><button className="flex items-center gap-2 text-xs font-semibold text-muted transition hover:text-cyan" onClick={onBack} type="button"><ArrowLeft aria-hidden="true" size={15} /> Proyectos</button><p className="min-w-0 truncate text-sm font-bold text-ink">{project.name}</p><StatusBadge label="Fuente verificada" tone="success" /></div><MediaWorkspace bundle={projectBundle} onLog={onLog} onNotify={onNotify} /></div>;
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -82,7 +86,6 @@ export function ProjectDetailPage({ isRelocating, onBack, onDelete, onLog, onNot
         <div className="mt-5 grid grid-cols-2 gap-4 border-t border-line pt-5 sm:grid-cols-4">
           <Detail label="Cortes" value={String(trackCounts.cuts)} />
           <Detail label="Cámara" value={String(trackCounts.camera)} />
-          <Detail label="Subtítulos" value={String(trackCounts.captions)} />
           <Detail label="B-roll" value={String(trackCounts.broll)} />
         </div>
         <p className="mt-5 text-xs text-muted">Schema: Project v{projectBundle?.project.schemaVersion ?? 1} · Source v{projectBundle?.source.schemaVersion ?? 1} · EDL v{projectBundle?.edl.schemaVersion ?? 1} · Tiempo en microsegundos</p>
@@ -117,7 +120,6 @@ export function ProjectDetailPage({ isRelocating, onBack, onDelete, onLog, onNot
             <Detail label="Total" value={String(metadata.streams.total)} />
             <Detail label="Video" value={String(metadata.streams.video)} />
             <Detail label="Audio" value={String(metadata.streams.audio)} />
-            <Detail label="Subtítulos" value={String(metadata.streams.subtitle)} />
             <Detail label="Datos" value={String(metadata.streams.data)} />
             <Detail label="Otros" value={String(metadata.streams.other)} />
           </MetadataCard>

@@ -30,6 +30,7 @@ transcript.json.tmp
 transcript.partial.json
 smart_cut.json
 smart_camera.json
+captions.json
 audio-transcription-*.wav
 worker/build/
 worker/dist/

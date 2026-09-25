@@ -76,11 +76,9 @@ export function createManifestInitializationRequest(
       edl: { schemaVersion: 1, file: "edl.json" },
       workflow: {
         ingest: "completed",
-        transcription: "not_started",
         sceneAnalysis: "not_started",
         smartCut: "not_started",
         smartCamera: "not_started",
-        captions: "not_started",
         broll: "not_started",
         render: "not_started",
       },
@@ -92,7 +90,7 @@ export function createManifestInitializationRequest(
       sourceId,
       timebase: { unit: "microseconds" },
       sourceDurationUs: source.durationUs,
-      tracks: { cuts: [], camera: [], captions: [], broll: [], audio: [] },
+      tracks: { cuts: [], camera: [], broll: [], audio: [] },
       output: { aspectRatioMode: "source", resolutionMode: "source", fpsMode: "source" },
       updatedAt: timestamp,
     },
@@ -119,12 +117,11 @@ export function replaceBundleSource(
 }
 
 export function countEdlTracks(bundle: ProjectBundle | null): TrackCounts {
-  if (!bundle) return { audio: 0, broll: 0, camera: 0, captions: 0, cuts: 0 };
+  if (!bundle) return { audio: 0, broll: 0, camera: 0, cuts: 0 };
   return {
     audio: bundle.edl.tracks.audio.length,
     broll: bundle.edl.tracks.broll.length,
     camera: bundle.edl.tracks.camera.length,
-    captions: bundle.edl.tracks.captions.length,
     cuts: bundle.edl.tracks.cuts.length,
   };
 }

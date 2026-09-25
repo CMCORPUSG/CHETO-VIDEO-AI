@@ -42,6 +42,24 @@ pub enum CameraProfile {
     Dynamic,
 }
 
+/// Contexto de contenido para que los umbrales puedan evolucionar sin
+/// acoplar Encuadre a una webcam ni cambiar el comportamiento de gameplay.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ContentMode {
+    Auto,
+    Software,
+    Gameplay,
+    Presentation,
+    General,
+}
+
+impl Default for ContentMode {
+    fn default() -> Self {
+        Self::Auto
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum CameraSuggestionType {
@@ -113,6 +131,8 @@ pub struct SmartCameraDocument {
     updated_at: String,
     status: AnalysisStatus,
     profile: CameraProfile,
+    #[serde(default)]
+    content_mode: ContentMode,
     source: SourceSnapshot,
     statistics: CameraStatistics,
     suggestions: Vec<CameraSuggestion>,
@@ -144,9 +164,10 @@ struct Config {
     transition_us: u64,
     zoom: f64,
     focus_distance: f64,
+    max_suggestions: usize,
 }
 
-fn config(profile: CameraProfile) -> Config {
+fn config_for(profile: CameraProfile) -> Config {
     match profile {
         CameraProfile::Conservative => Config {
             sample_interval_us: 3_000_000,
@@ -157,6 +178,7 @@ fn config(profile: CameraProfile) -> Config {
             transition_us: 800_000,
             zoom: 1.15,
             focus_distance: 0.18,
+            max_suggestions: 256,
         },
         CameraProfile::Normal => Config {
             sample_interval_us: 2_000_000,
@@ -167,6 +189,7 @@ fn config(profile: CameraProfile) -> Config {
             transition_us: 700_000,
             zoom: 1.22,
             focus_distance: 0.14,
+            max_suggestions: 512,
         },
         CameraProfile::Dynamic => Config {
             sample_interval_us: 1_500_000,
@@ -177,8 +200,30 @@ fn config(profile: CameraProfile) -> Config {
             transition_us: 600_000,
             zoom: 1.28,
             focus_distance: 0.11,
+            max_suggestions: 768,
         },
     }
+}
+
+fn effective_config(profile: CameraProfile, content_mode: ContentMode) -> Config {
+    let mut settings = config_for(profile);
+    // Auto/general/gameplay intentionally retain the validated conservative
+    // detector. Software/presentation are separate policy lanes for future
+    // cursor/UI/narration signals; their visual detector is only moderately
+    // more responsive and still retains the same anti-jitter constraints.
+    if matches!(
+        content_mode,
+        ContentMode::Software | ContentMode::Presentation
+    ) {
+        settings.sample_interval_us = settings
+            .sample_interval_us
+            .saturating_sub(500_000)
+            .max(1_000_000);
+        settings.change_threshold *= 0.90;
+        settings.zoom = settings.zoom.min(1.35);
+        settings.max_suggestions = settings.max_suggestions.min(768);
+    }
+    settings
 }
 
 #[derive(Clone)]
@@ -397,9 +442,10 @@ fn analyze_frames(
     app: &AppHandle,
     project_id: &str,
     profile: CameraProfile,
+    content_mode: ContentMode,
     duration_us: u64,
 ) -> Result<Vec<CameraSuggestion>, SmartCameraError> {
-    let settings = config(profile);
+    let settings = effective_config(profile, content_mode);
     let stdout = child
         .stdout
         .take()
@@ -430,6 +476,7 @@ fn analyze_frames(
     let mut previous: Option<Vec<u8>> = None;
     let mut frame_index = 0_u64;
     let mut next_allowed = 0_u64;
+    let mut candidate: Option<(u64, f64, f64, f64)> = None;
     let mut suggestions = Vec::new();
     let mut read_error = None;
     loop {
@@ -454,34 +501,62 @@ fn analyze_frames(
         if let Some(before) = &previous {
             let (score, center_x, center_y) = frame_change(before, &current);
             if score >= settings.change_threshold && timestamp >= next_allowed {
+                let Some((candidate_timestamp, candidate_score, candidate_x, candidate_y)) =
+                    candidate.take()
+                else {
+                    candidate = Some((timestamp, score, center_x, center_y));
+                    previous = Some(current.clone());
+                    frame_index += 1;
+                    continue;
+                };
+                let spatial_drift =
+                    ((center_x - candidate_x).powi(2) + (center_y - candidate_y).powi(2)).sqrt();
+                if spatial_drift > 0.12 {
+                    candidate = Some((timestamp, score, center_x, center_y));
+                    previous = Some(current.clone());
+                    frame_index += 1;
+                    continue;
+                }
+                let stable_x = (center_x + candidate_x) / 2.0;
+                let stable_y = (center_y + candidate_y) / 2.0;
+                let stable_score = (score + candidate_score) / 2.0;
                 let end = timestamp
                     .saturating_add(settings.hold_duration_us)
                     .min(duration_us);
-                if end.saturating_sub(timestamp) >= settings.minimum_duration_us {
-                    let distance = ((center_x - 0.5).powi(2) + (center_y - 0.5).powi(2)).sqrt();
+                if end.saturating_sub(candidate_timestamp) >= settings.minimum_duration_us {
+                    // A long or noisy source must not create an unbounded
+                    // review queue. Keep the stream moving so cancellation
+                    // and progress remain responsive after the cap.
+                    if suggestions.len().saturating_add(2) > settings.max_suggestions {
+                        candidate = None;
+                        previous = Some(current.clone());
+                        frame_index += 1;
+                        continue;
+                    }
+                    let distance = ((stable_x - 0.5).powi(2) + (stable_y - 0.5).powi(2)).sqrt();
                     let kind = if distance >= settings.focus_distance {
                         CameraSuggestionType::Focus
                     } else {
                         CameraSuggestionType::Zoom
                     };
                     let confidence = (0.70
-                        + ((score - settings.change_threshold) / settings.change_threshold)
+                        + ((stable_score - settings.change_threshold) / settings.change_threshold)
                             .min(1.0)
                             * 0.25)
                         .min(0.97);
                     suggestions.push(proposal(
                         kind,
-                        timestamp,
+                        candidate_timestamp,
                         end,
                         settings.zoom,
-                        center_x,
-                        center_y,
+                        stable_x,
+                        stable_y,
                         settings.transition_us,
                         confidence,
                         if kind == CameraSuggestionType::Focus {
-                            "Cambio visual relevante concentrado en una región de la interfaz."
+                            "Actividad visual concentrada y estable fuera de la zona central."
                         } else {
-                            "Cambio visual relevante en la zona central de trabajo."
+                            "Cambio sostenido de la región principal durante varias muestras."
                         },
                     ));
                     let reset_end = end.saturating_add(settings.transition_us).min(duration_us);
@@ -500,6 +575,8 @@ fn analyze_frames(
                     }
                     next_allowed = reset_end.saturating_add(settings.minimum_interval_us);
                 }
+            } else {
+                candidate = None;
             }
         }
         previous = Some(current.clone());
@@ -533,7 +610,7 @@ fn accepted_decisions(
     document: &SmartCameraDocument,
     duration_us: u64,
 ) -> Result<Vec<CameraDecision>, SmartCameraError> {
-    let settings = config(document.profile);
+    let settings = effective_config(document.profile, document.content_mode);
     let mut accepted: Vec<&CameraSuggestion> = document
         .suggestions
         .iter()
@@ -577,6 +654,7 @@ fn accepted_decisions(
             easing: Some("ease_in_out".into()),
             reason: Some(item.reason.clone()),
             confidence: Some(item.confidence),
+            transition_us: Some(item.transition_us),
         })
         .collect())
 }
@@ -611,6 +689,7 @@ fn analyze_impl(
     manager: &SmartCameraManager,
     project_id: &str,
     profile: CameraProfile,
+    content_mode: ContentMode,
 ) -> Result<SmartCameraDocument, SmartCameraError> {
     ProjectStorage::validate_id(project_id, "projectId")
         .map_err(|_| SmartCameraError::new("invalid-project-id", "projectId inválido"))?;
@@ -652,9 +731,17 @@ fn analyze_impl(
     let now = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
     let _ = storage.update_smart_camera_workflow(project_id, WorkflowState::Preparing, now.clone());
     emit(app, project_id, "extracting_samples", 0, duration_us);
-    let child = spawn_ffmpeg(source, config(profile))?;
+    let child = spawn_ffmpeg(source, effective_config(profile, content_mode))?;
     let _ = storage.update_smart_camera_workflow(project_id, WorkflowState::Running, now.clone());
-    let suggestions = analyze_frames(child, manager, app, project_id, profile, duration_us)?;
+    let suggestions = analyze_frames(
+        child,
+        manager,
+        app,
+        project_id,
+        profile,
+        content_mode,
+        duration_us,
+    )?;
     emit(
         app,
         project_id,
@@ -678,6 +765,7 @@ fn analyze_impl(
         updated_at: now.clone(),
         status: AnalysisStatus::Completed,
         profile,
+        content_mode,
         source: SourceSnapshot {
             file_size_bytes: metadata.len(),
             modified_at: file_modified_at(source),
@@ -703,12 +791,19 @@ pub async fn analyze_smart_camera(
     state: State<'_, SmartCameraManager>,
     project_id: String,
     profile: CameraProfile,
+    content_mode: Option<ContentMode>,
 ) -> Result<SmartCameraDocument, SmartCameraError> {
     let manager = state.inner().clone();
     let app_clone = app.clone();
     let project_clone = project_id.clone();
     let result = tauri::async_runtime::spawn_blocking(move || {
-        analyze_impl(&app_clone, &manager, &project_clone, profile)
+        analyze_impl(
+            &app_clone,
+            &manager,
+            &project_clone,
+            profile,
+            content_mode.unwrap_or_default(),
+        )
     })
     .await
     .map_err(|e| SmartCameraError::new("task-failed", e.to_string()))?;
@@ -835,7 +930,7 @@ pub fn review_smart_camera(
         ));
     }
     let duration = bundle.source.duration_us.unwrap_or(0);
-    let minimum = config(document.profile).minimum_duration_us;
+    let minimum = effective_config(document.profile, document.content_mode).minimum_duration_us;
     let item = document
         .suggestions
         .iter_mut()
@@ -930,6 +1025,7 @@ mod tests {
             updated_at: "now".into(),
             status: AnalysisStatus::Completed,
             profile: CameraProfile::Dynamic,
+            content_mode: ContentMode::Auto,
             source: SourceSnapshot {
                 file_size_bytes: 1,
                 modified_at: None,
@@ -1021,9 +1117,41 @@ mod tests {
         let stats = statistics(&values);
         assert_eq!((stats.accepted, stats.rejected, stats.pending), (1, 1, 1));
         assert!(
-            config(CameraProfile::Conservative).change_threshold
-                > config(CameraProfile::Dynamic).change_threshold
+            config_for(CameraProfile::Conservative).change_threshold
+                > config_for(CameraProfile::Dynamic).change_threshold
         );
+    }
+
+    #[test]
+    fn content_modes_keep_gameplay_conservative_and_prepare_software_lane() {
+        let gameplay = effective_config(CameraProfile::Normal, ContentMode::Gameplay);
+        let automatic = effective_config(CameraProfile::Normal, ContentMode::Auto);
+        let software = effective_config(CameraProfile::Normal, ContentMode::Software);
+        assert_eq!(gameplay.sample_interval_us, automatic.sample_interval_us);
+        assert_eq!(gameplay.change_threshold, automatic.change_threshold);
+        assert!(software.sample_interval_us <= gameplay.sample_interval_us);
+        assert!(software.change_threshold < gameplay.change_threshold);
+        assert!(software.zoom <= 1.35);
+        assert!(gameplay.max_suggestions < 1_000);
+        assert!(software.max_suggestions <= 768);
+    }
+
+    #[test]
+    fn content_mode_is_backward_compatible_when_document_field_is_missing() {
+        let json = serde_json::json!({
+            "schemaVersion": 1,
+            "projectId": "project",
+            "sourceId": "source",
+            "createdAt": "now",
+            "updatedAt": "now",
+            "status": "completed",
+            "profile": "normal",
+            "source": {"fileSizeBytes": 1, "modifiedAt": null, "durationUs": 10},
+            "statistics": {"total": 0, "zoom": 0, "focus": 0, "reset": 0, "pending": 0, "accepted": 0, "rejected": 0},
+            "suggestions": []
+        });
+        let document: SmartCameraDocument = serde_json::from_value(json).unwrap();
+        assert_eq!(document.content_mode, ContentMode::Auto);
     }
     #[test]
     fn temporal_order_is_stable() {

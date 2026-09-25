@@ -1,3 +1,4 @@
+mod export;
 mod hardware_profile;
 mod media_ingest;
 mod media_proxy;
@@ -6,19 +7,21 @@ mod proxy_ffmpeg;
 mod proxy_model;
 mod smart_camera;
 mod smart_cut;
-mod transcription;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(proxy_ffmpeg::ProxyManager::default())
+        .manage(export::ExportManager::default())
         .manage(smart_camera::SmartCameraManager::default())
-        .manage(transcription::TranscriptionManager::default())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
-            media_ingest::check_media_source,
+            export::cancel_export,
+            export::open_export_file,
+            export::reveal_export_file,
+            export::start_export,
             hardware_profile::detect_hardware_profile,
-            hardware_profile::select_transcription_profile,
+            media_ingest::check_media_source,
             media_ingest::detect_ffprobe,
             media_ingest::probe_media,
             media_proxy::cancel_proxy,
@@ -42,11 +45,6 @@ pub fn run() {
             smart_cut::apply_smart_cut_to_edl,
             smart_cut::get_smart_cut,
             smart_cut::review_smart_cut_suggestion,
-            transcription::cancel_transcription,
-            transcription::download_transcription_model,
-            transcription::get_transcript_status,
-            transcription::get_transcription_model_status,
-            transcription::start_transcription,
         ])
         .run(tauri::generate_context!())
         .expect("error al ejecutar CHETO VIDEO AI");

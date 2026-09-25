@@ -1,6 +1,6 @@
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import type { ApplySmartCameraResult, CameraProfile, CameraSuggestionStatus, SmartCameraDocument, SmartCameraProgress } from "./models";
+import type { ApplySmartCameraResult, CameraProfile, CameraSuggestionStatus, ContentMode, SmartCameraDocument, SmartCameraProgress } from "./models";
 
 function requireNative() {
   if (!isTauri()) throw new Error("Smart Camera requiere la aplicación nativa.");
@@ -18,9 +18,9 @@ export async function getSmartCamera(projectId: string): Promise<SmartCameraDocu
   return invoke("get_smart_camera", { projectId });
 }
 
-export async function analyzeSmartCamera(projectId: string, profile: CameraProfile): Promise<SmartCameraDocument> {
+export async function analyzeSmartCamera(projectId: string, profile: CameraProfile, contentMode: ContentMode = "auto"): Promise<SmartCameraDocument> {
   requireNative();
-  return invoke("analyze_smart_camera", { profile, projectId });
+  return invoke("analyze_smart_camera", { contentMode, profile, projectId });
 }
 
 export async function cancelSmartCamera(projectId: string): Promise<boolean> {

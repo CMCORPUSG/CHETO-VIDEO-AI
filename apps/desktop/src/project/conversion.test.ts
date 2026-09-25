@@ -49,7 +49,7 @@ describe("project manifest", () => {
       extension: ".mp4",
       durationUs: 6_137_245_000,
     });
-    expect(request.edl.tracks).toEqual({ cuts: [], camera: [], captions: [], broll: [], audio: [] });
+    expect(request.edl.tracks).toEqual({ cuts: [], camera: [], broll: [], audio: [] });
     expect(request.edl.timebase.unit).toBe("microseconds");
   });
 
@@ -57,8 +57,8 @@ describe("project manifest", () => {
     const bundle = createManifestInitializationRequest(localProject(), timestamp, sourceId);
     bundle.edl.tracks.cuts.push({ id: crypto.randomUUID(), startUs: 1, endUs: 2, action: "remove", reason: null, confidence: 0.9 });
     bundle.edl.tracks.camera.push({ id: crypto.randomUUID(), startUs: 3, endUs: 4, mode: "zoom", zoom: 1.2, centerX: 0.5, centerY: 0.5, easing: "smooth", reason: null, confidence: null });
-    expect(countEdlTracks(bundle)).toEqual({ audio: 0, broll: 0, camera: 1, captions: 0, cuts: 1 });
-    expect(countEdlTracks(null)).toEqual({ audio: 0, broll: 0, camera: 0, captions: 0, cuts: 0 });
+    expect(countEdlTracks(bundle)).toEqual({ audio: 0, broll: 0, camera: 1, cuts: 1 });
+    expect(countEdlTracks(null)).toEqual({ audio: 0, broll: 0, camera: 0, cuts: 0 });
   });
 
   it("normaliza errores del backend sin lanzar una segunda excepción", () => {

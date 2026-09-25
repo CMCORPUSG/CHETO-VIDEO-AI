@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+﻿import type { ReactNode } from "react";
 import type { PageId } from "../types/navigation";
 import type { LocalProfile } from "../types/profile";
 import { Sidebar } from "./Sidebar";
@@ -41,9 +41,10 @@ export function AppShell({
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar title={title} />
         <main className="min-h-0 flex-1 overflow-auto">
-          <div className="page-enter mx-auto w-full max-w-[1480px] p-5 sm:p-6 lg:p-8 xl:p-10" key={activePage}>{children}</div>
+          <div className="page-enter w-full max-w-none p-2 sm:p-2 lg:p-3" key={activePage}>{children}</div>
         </main>
       </div>
     </div>
   );
 }
+

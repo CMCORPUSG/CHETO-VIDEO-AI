@@ -16,7 +16,6 @@ export interface StreamSummary {
   audio: number;
   data: number;
   other: number;
-  subtitle: number;
   total: number;
   video: number;
 }

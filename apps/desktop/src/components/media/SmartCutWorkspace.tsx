@@ -1,7 +1,7 @@
 import { Check, ExternalLink, Scissors, ShieldAlert, Sparkles, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { formatPlaybackTime } from "../../playback/time";
-import type { ProjectBundle } from "../../project/contracts";
+import type { CutDecision, EdlManifest, ProjectBundle } from "../../project/contracts";
 import { acceptedSuggestions, smartCutProgressPercent, type SmartCutDocument, type SmartCutProfile, type SmartCutProgress, type SmartCutSuggestion, type SmartCutSuggestionStatus, type SmartCutType } from "../../smart-cut/models";
 import { analyzeSmartCut, applySmartCutToEdl, getSmartCut, onSmartCutProgress, reviewSmartCutSuggestion, smartCutErrorMessage } from "../../smart-cut/service";
 import type { LogLevel } from "../../types/diagnostics";
@@ -11,18 +11,23 @@ import { Card } from "../Card";
 
 interface Props {
   bundle: ProjectBundle;
+  edl: EdlManifest;
+  onDraftChange: (cuts: CutDecision[]) => void;
+  onEdlChange: (edl: EdlManifest) => void;
   onLog: (message: string, level?: LogLevel) => void;
   onNotify: (message: string, tone?: ToastTone) => void;
   onSeek: (timeUs: number) => void;
+  onSelect?: (id: string) => void;
 }
 
-export function SmartCutWorkspace({ bundle, onLog, onNotify, onSeek }: Props) {
+export function SmartCutWorkspace({ bundle, edl, onDraftChange, onEdlChange, onLog, onNotify, onSeek, onSelect }: Props) {
   const projectId = bundle.project.projectId;
   const [profile, setProfile] = useState<SmartCutProfile>("conservative");
   const [document, setDocument] = useState<SmartCutDocument | null>(null);
   const [progress, setProgress] = useState<SmartCutProgress | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string[]>([]);
 
   useEffect(() => {
     let disposed = false;
@@ -43,7 +48,7 @@ export function SmartCutWorkspace({ bundle, onLog, onNotify, onSeek }: Props) {
 
   const analyze = async () => {
     setBusy(true); setError(null); setProgress({ completedSteps: 0, projectId, stage: "preparing", totalSteps: 5 });
-    try { setDocument(await analyzeSmartCut(projectId, profile)); onNotify("Propuestas Smart Cut listas para revisar"); }
+    try { setDocument(await analyzeSmartCut(projectId, profile)); onNotify("Propuestas de cortes listas para revisar"); }
     catch (reason) { const message = smartCutErrorMessage(reason); setError(message); onNotify(message, "error"); }
     finally { setBusy(false); }
   };
@@ -66,31 +71,32 @@ export function SmartCutWorkspace({ bundle, onLog, onNotify, onSeek }: Props) {
 
   const apply = async () => {
     setBusy(true); setError(null);
-    try { const result = await applySmartCutToEdl(projectId); setDocument(result.document); onNotify(`${result.appliedCount} cortes aplicados al EDL`); onLog("SMART_CUT_APPLIED_TO_EDL"); }
+    try { const result = await applySmartCutToEdl(projectId); setDocument(result.document); onEdlChange(result.edl); const seconds=result.edl.tracks.cuts.filter(cut=>!edl.tracks.cuts.some(current=>current.id===cut.id)).reduce((sum,cut)=>sum+(cut.endUs-cut.startUs)/1_000_000,0); onNotify(result.appliedCount?`✓ EDL actualizado · ${result.appliedCount} cortes nuevos · ${seconds.toFixed(2)} s eliminados`:`EDL sin cambios · 0 nuevos`); onLog("SMART_CUT_APPLIED_TO_EDL"); }
     catch (reason) { const message = smartCutErrorMessage(reason); setError(message); onNotify(message, "error"); }
     finally { setBusy(false); }
   };
 
   const acceptedCount = acceptedSuggestions(document).length;
   const stale = document?.status === "stale";
+  const toggleDraft=(item:SmartCutSuggestion)=>{const next=selected.includes(item.id)?selected.filter(id=>id!==item.id):[...selected,item.id];setSelected(next);const byId=new Set(next);onDraftChange((document?.suggestions??[]).filter(value=>byId.has(value.id)).map(value=>({action:"remove",confidence:value.confidence,endUs:value.endUs,id:`draft-${value.id}`,reason:value.reason,startUs:value.startUs})));};
   return <Card className="p-5">
     <div className="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-4">
-      <div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-cyan"><Scissors size={18} /></span><div><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan">Smart Cut V1</p><h3 className="mt-1 font-bold text-ink">Propuestas revisables</h3></div></div>
+      <div className="flex items-center gap-3" title="Propone eliminar silencios o fragmentos innecesarios. Nunca modifica el original."><span className="grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-cyan"><Scissors size={18} /></span><div><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-cyan">Cortes inteligentes ⓘ</p><h3 className="mt-1 font-bold text-ink">Propuestas revisables</h3></div></div>
       <div className="flex flex-wrap gap-2"><Button disabled={busy} icon={<Sparkles size={15} />} onClick={() => void analyze()}>{document ? "Reanalizar" : "Analizar"}</Button>{document?.statistics.pending ? <Button disabled={busy || stale} onClick={() => void acceptPending()} variant="secondary">Aceptar pendientes</Button> : null}<Button disabled={busy || stale || acceptedCount === 0} icon={<Check size={15} />} onClick={() => void apply()}>Aplicar aceptadas al EDL</Button></div>
     </div>
     <div className="mt-5 grid gap-3 sm:grid-cols-[220px_1fr]"><label className="text-xs font-bold uppercase tracking-[0.12em] text-muted">Perfil<select className="mt-2 w-full rounded-md border border-line bg-canvas p-2 text-sm normal-case text-ink" disabled={busy} onChange={(event) => setProfile(event.target.value as SmartCutProfile)} value={profile}><option value="conservative">Conservador</option><option value="normal">Normal</option><option value="aggressive">Agresivo</option></select></label><p className="self-end pb-2 text-xs text-muted">El perfil sólo cambia qué propuestas se generan. Nunca modifica automáticamente el video.</p></div>
     {busy && progress ? <div className="mt-5"><div className="mb-2 flex justify-between text-xs text-muted"><span>{stageLabel(progress.stage)}</span><span>{Math.floor(smartCutProgressPercent(progress))} %</span></div><div className="h-2 rounded-full bg-canvas"><div className="h-full rounded-full bg-cyan transition-[width]" style={{ width: `${smartCutProgressPercent(progress)}%` }} /></div></div> : null}
     {stale ? <p className="mt-4 flex items-center gap-2 text-sm text-warning"><ShieldAlert size={16} />El original cambió. Reanaliza antes de aplicar decisiones antiguas.</p> : null}
     {error ? <p className="mt-4 text-sm text-danger">{error}</p> : null}
-    {document ? <><div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4"><Stat label="Total" value={document.statistics.total} /><Stat label="Silencios" value={document.statistics.silence} /><Stat label="Muletillas" value={document.statistics.filler} /><Stat label="Repeticiones / inicios" value={document.statistics.repetition + document.statistics.falseStart} /></div><div className="mt-5 max-h-[32rem] space-y-3 overflow-auto pr-1">{document.suggestions.map((item) => <SuggestionCard item={item} key={item.id} onReview={(status) => void review(item, status)} onSeek={() => onSeek(item.startUs)} />)}{document.suggestions.length === 0 ? <p className="rounded-lg border border-line bg-canvas/40 p-4 text-sm text-muted">No se encontraron propuestas suficientemente seguras con este perfil.</p> : null}</div></> : null}
+    {document ? <><div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4"><Stat label="Total" value={document.statistics.total} /><Stat label="Silencios" value={document.statistics.silence} /><Stat label="Muletillas" value={document.statistics.filler} /><Stat label="Seleccionadas" value={selected.length} /></div><p className="mt-3 text-xs text-muted">Marca propuestas para probar 10/30 s sin escribir el EDL.</p><div className="mt-3 max-h-[32rem] space-y-3 overflow-auto pr-1">{document.suggestions.map((item) => <SuggestionCard applied={edl.tracks.cuts.some(cut=>cut.id===item.id)} item={item} key={item.id} onReview={(status) => void review(item, status)} onSeek={() => {onSeek(item.startUs);if(edl.tracks.cuts.some(cut=>cut.id===item.id))onSelect?.(item.id);}} onToggle={()=>toggleDraft(item)} selected={selected.includes(item.id)} />)}{document.suggestions.length === 0 ? <p className="rounded-lg border border-line bg-canvas/40 p-4 text-sm text-muted">No se encontraron propuestas suficientemente seguras con este perfil.</p> : null}</div></> : null}
   </Card>;
 }
 
-function SuggestionCard({ item, onReview, onSeek }: { item: SmartCutSuggestion; onReview: (status: SmartCutSuggestionStatus) => void; onSeek: () => void }) {
-  return <div className="rounded-xl border border-line bg-canvas/45 p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><span className="rounded bg-primary/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-cyan">{typeLabel(item.suggestionType)}</span><p className="mt-3 font-mono text-xs text-ink">{formatPlaybackTime(item.startUs)} → {formatPlaybackTime(item.endUs)} · {(item.durationUs / 1_000_000).toFixed(2)} s</p><p className="mt-2 max-w-2xl text-sm text-muted">{item.reason}</p><p className="mt-2 text-xs font-semibold text-ink">Confianza {Math.round(item.confidence * 100)} % · {statusLabel(item.status)}</p></div><div className="flex gap-2"><Button icon={<ExternalLink size={14} />} onClick={onSeek} variant="secondary">Ir</Button><Button disabled={item.status === "rejected"} icon={<X size={14} />} onClick={() => onReview("rejected")} variant="secondary">Rechazar</Button><Button disabled={item.status === "accepted"} icon={<Check size={14} />} onClick={() => onReview("accepted")}>Aceptar</Button></div></div></div>;
+function SuggestionCard({ applied,item,onReview,onSeek,onToggle,selected }: { applied:boolean;item: SmartCutSuggestion; onReview: (status: SmartCutSuggestionStatus) => void; onSeek: () => void;onToggle:()=>void;selected:boolean }) {
+  return <div className="rounded-xl border border-line bg-canvas/45 p-4"><label className="mb-2 flex items-center gap-2 text-xs font-bold text-cyan"><input checked={selected} onChange={onToggle} type="checkbox"/>Incluir en prueba temporal</label><div className="flex flex-wrap items-start justify-between gap-3"><div><span className="inline-block min-w-24 rounded bg-primary/10 px-2 py-1 text-center text-[10px] font-bold uppercase tracking-wider text-cyan">{typeLabel(item.suggestionType)}</span><p className="mt-3 font-mono text-xs text-ink">{formatPlaybackTime(item.startUs)} → {formatPlaybackTime(item.endUs)} · {(item.durationUs / 1_000_000).toFixed(2)} s</p><p className="mt-2 max-w-2xl text-sm text-muted">{item.reason}</p><p className="mt-2 text-xs font-semibold text-ink">Confianza {Math.round(item.confidence * 100)} % · {applied?"Aplicada":statusLabel(item.status)}</p></div><div className="flex min-h-10 flex-wrap gap-2"><Button icon={<ExternalLink size={14} />} onClick={onSeek} variant="secondary">Ir</Button><Button disabled={item.status === "rejected"} icon={<X size={14} />} onClick={() => onReview("rejected")} variant="secondary">Rechazar</Button><Button disabled={item.status === "accepted"} icon={<Check size={14} />} onClick={() => onReview("accepted")}>Aceptar</Button></div></div></div>;
 }
 
 function Stat({ label, value }: { label: string; value: number }) { return <div className="rounded-lg border border-line bg-canvas/55 p-3"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted">{label}</p><p className="mt-2 text-xl font-bold text-ink">{value}</p></div>; }
 function typeLabel(type: SmartCutType): string { return { false_start: "Falso inicio", filler: "Muletilla", repetition: "Repetición", silence: "Silencio" }[type]; }
 function statusLabel(status: SmartCutSuggestionStatus): string { return { accepted: "Aceptada", pending: "Pendiente", rejected: "Rechazada" }[status]; }
-function stageLabel(stage: SmartCutProgress["stage"]): string { return { analyzing_silences: "Analizando silencios y muletillas", analyzing_transcript: "Analizando transcripción", completed: "Completado", consolidating_suggestions: "Consolidando propuestas", detecting_repetitions: "Detectando repeticiones y falsos inicios", error: "Error", preparing: "Preparando", saving: "Guardando smart_cut.json" }[stage]; }
+function stageLabel(stage: SmartCutProgress["stage"]): string { return { analyzing_silences: "Analizando silencios y muletillas", completed: "Completado", consolidating_suggestions: "Consolidando propuestas", detecting_repetitions: "Detectando repeticiones y falsos inicios", error: "Error", preparing: "Preparando", saving: "Guardando smart_cut.json" }[stage]; }

@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+﻿import { Plus } from "lucide-react";
 import { Button } from "../components/Button";
 import { EmptyState } from "../components/EmptyState";
 import { ProjectCard } from "../components/ProjectCard";
@@ -20,25 +20,52 @@ export function ProjectsPage({
   projects,
 }: ProjectsPageProps) {
   return (
-    <section>
-      <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
+    <section className="mx-auto w-full max-w-[1500px]">
+      <header className="mb-7 flex flex-wrap items-end justify-between gap-4 border-b border-white/[0.055] pb-6">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-cyan">Biblioteca local</p>
-          <p className="mt-2 max-w-xl text-sm leading-6 text-muted">
-            Referencias ligeras a tus videos originales. Ningún archivo se copia o modifica.
+          <p className="text-[9px] font-medium uppercase tracking-[0.14em] text-muted/40">
+            Biblioteca local
+          </p>
+
+          <div className="mt-1.5 flex items-baseline gap-3">
+            <h2 className="text-[20px] font-semibold tracking-tight text-ink">
+              Proyectos
+            </h2>
+
+            <span className="text-[10px] text-muted/40">
+              {projects.length}
+            </span>
+          </div>
+
+          <p className="mt-2 max-w-xl text-[11px] leading-5 text-muted/55">
+            Tus referencias y espacios de edición permanecen
+            almacenados localmente.
           </p>
         </div>
-        <Button icon={<Plus aria-hidden="true" size={17} />} onClick={onNewProject}>Nuevo proyecto</Button>
-      </div>
+
+        <Button
+          icon={<Plus aria-hidden="true" size={15} />}
+          onClick={onNewProject}
+        >
+          Nuevo proyecto
+        </Button>
+      </header>
 
       {projects.length === 0 ? (
         <EmptyState
-          action={<Button onClick={onNewProject}>Crear primer proyecto</Button>}
-          description="Selecciona un video local para crear una referencia segura y preparar tu espacio de edición."
-          title="Aún no tienes proyectos"
+          action={
+            <Button
+              icon={<Plus aria-hidden="true" size={14} />}
+              onClick={onNewProject}
+            >
+              Crear primer proyecto
+            </Button>
+          }
+          description="Selecciona un video para preparar tu primer espacio de edición local."
+          title="Tu biblioteca está vacía"
         />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {projects.map((project) => (
             <ProjectCard
               key={project.id}

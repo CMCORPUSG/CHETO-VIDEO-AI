@@ -66,7 +66,7 @@ npm test
 
 ## Límites actuales
 
-No hay reproducción avanzada, timeline, transcripción, IA, Smart Cut, Smart Camera, subtítulos, B-roll ni render. FFprobe se detecta, pero el repositorio no lo descarga ni lo instala silenciosamente. “Abrir ubicación” y el empaquetado como sidecar quedan preparados para una fase posterior. La API externa permanece desactivada.
+El producto mantiene reproducción, proyecto, proxy, Smart Cut y Smart Camera locales. FFprobe se detecta, pero el repositorio no lo descarga ni lo instala silenciosamente. “Abrir ubicación” y el empaquetado como sidecar quedan preparados para una fase posterior. La API externa permanece desactivada.
 
 ## Roadmap resumido
 
@@ -75,10 +75,8 @@ No hay reproducción avanzada, timeline, transcripción, IA, Smart Cut, Smart Ca
 | V0.1 | Base Desktop |
 | V0.2 | Importación y metadata de video |
 | V0.3 | Proyecto + JSON/EDL |
-| V0.4 | Transcripción |
 | V0.5 | Smart Cut |
-| V0.6 | Smart Camera |
-| V0.7 | Subtítulos |
+| V0.7 | Smart Camera |
 | V0.8 | B-roll |
 | V0.9 | Render + Quality Check |
 | V1.0 | MVP usable |

@@ -1,6 +1,10 @@
-import { cn } from "../lib/cn";
+﻿import { cn } from "../lib/cn";
 
-type StatusTone = "neutral" | "success" | "warning" | "error";
+type StatusTone =
+  | "neutral"
+  | "success"
+  | "warning"
+  | "error";
 
 interface StatusBadgeProps {
   label: string;
@@ -8,21 +12,32 @@ interface StatusBadgeProps {
 }
 
 const toneStyles: Record<StatusTone, string> = {
-  neutral: "border-line-bright/70 bg-elevated text-muted",
-  success: "border-success/25 bg-success/10 text-success",
-  warning: "border-warning/25 bg-warning/10 text-warning",
-  error: "border-danger/25 bg-danger/10 text-danger",
+  neutral:
+    "border-white/[0.07] bg-white/[0.035] text-muted",
+  success:
+    "border-success/15 bg-success/[0.07] text-success",
+  warning:
+    "border-warning/15 bg-warning/[0.07] text-warning",
+  error:
+    "border-danger/15 bg-danger/[0.07] text-danger",
 };
 
-export function StatusBadge({ label, tone = "neutral" }: StatusBadgeProps) {
+export function StatusBadge({
+  label,
+  tone = "neutral",
+}: StatusBadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[11px] font-semibold",
+        "inline-flex min-w-0 max-w-full items-center gap-1.5 truncate rounded-full border px-2 py-1 text-[9px] font-medium leading-none",
         toneStyles[tone],
       )}
     >
-      <span className="h-1.5 w-1.5 rounded-full bg-current shadow-[0_0_8px_currentColor]" aria-hidden="true" />
+      <span
+        aria-hidden="true"
+        className="h-1.5 w-1.5 shrink-0 rounded-full bg-current"
+      />
+
       {label}
     </span>
   );

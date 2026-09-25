@@ -43,7 +43,7 @@ export interface SmartCutDocument {
 export interface SmartCutProgress {
   completedSteps: number;
   projectId: string;
-  stage: "preparing" | "analyzing_transcript" | "analyzing_silences" | "detecting_repetitions" | "consolidating_suggestions" | "saving" | "completed" | "error";
+  stage: "preparing" | "analyzing_silences" | "detecting_repetitions" | "consolidating_suggestions" | "saving" | "completed" | "error";
   totalSteps: number;
 }
 
