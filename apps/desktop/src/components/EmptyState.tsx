@@ -1,4 +1,4 @@
-﻿import { Film } from "lucide-react";
+import { Film } from "lucide-react";
 import type { ReactNode } from "react";
 
 interface EmptyStateProps {
@@ -13,8 +13,8 @@ export function EmptyState({
   title,
 }: EmptyStateProps) {
   return (
-    <div className="flex min-h-[280px] flex-col items-center justify-center rounded-xl border border-dashed border-white/[0.08] bg-white/[0.015] px-8 py-12 text-center">
-      <div className="grid h-11 w-11 place-items-center rounded-lg border border-white/[0.08] bg-white/[0.035] text-muted">
+    <div className="flex min-h-[250px] flex-col items-center justify-center rounded-lg border border-dashed border-white/[0.07] bg-white/[0.012] px-8 py-10 text-center">
+      <div className="grid h-11 w-11 place-items-center rounded-lg bg-white/[0.035] text-muted ring-1 ring-white/[0.055]">
         <Film
           aria-hidden="true"
           size={19}

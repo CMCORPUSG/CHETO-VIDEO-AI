@@ -1,4 +1,4 @@
-﻿import { Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "../components/Button";
 import { EmptyState } from "../components/EmptyState";
 import { ProjectCard } from "../components/ProjectCard";
@@ -21,14 +21,14 @@ export function ProjectsPage({
 }: ProjectsPageProps) {
   return (
     <section className="mx-auto w-full max-w-[1500px]">
-      <header className="mb-7 flex flex-wrap items-end justify-between gap-4 border-b border-white/[0.055] pb-6">
+      <header className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-white/[0.055] pb-5">
         <div>
           <p className="text-[9px] font-medium uppercase tracking-[0.14em] text-muted/40">
             Biblioteca local
           </p>
 
           <div className="mt-1.5 flex items-baseline gap-3">
-            <h2 className="text-[20px] font-semibold tracking-tight text-ink">
+            <h2 className="text-[18px] font-semibold tracking-tight text-ink">
               Proyectos
             </h2>
 

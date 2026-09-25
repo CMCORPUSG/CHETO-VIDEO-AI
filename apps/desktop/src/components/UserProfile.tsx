@@ -1,4 +1,4 @@
-﻿import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import {
   Camera,
   ChevronUp,
@@ -67,10 +67,10 @@ export function UserProfile({
         <DropdownMenu.Trigger asChild>
           <button
             aria-label="Abrir perfil local"
-            className="group flex h-[52px] w-full items-center justify-center gap-2.5 rounded-lg border border-white/[0.07] bg-white/[0.025] px-2 transition-colors duration-150 hover:border-white/[0.11] hover:bg-white/[0.045] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan/70 md:justify-start"
+            className="group flex h-[52px] w-full items-center justify-center gap-2.5 rounded-lg bg-white/[0.025] px-2 ring-1 ring-white/[0.055] transition-[background-color,box-shadow] duration-150 hover:bg-white/[0.045] hover:ring-white/[0.09] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/55 md:justify-start"
             type="button"
           >
-            <span className="relative grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-md border border-white/[0.08] bg-white/[0.04] text-muted">
+            <span className="relative grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-md bg-white/[0.04] text-muted ring-1 ring-white/[0.06]">
               {profile.avatar ? (
                 <img
                   alt="Foto de perfil"

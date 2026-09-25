@@ -1,4 +1,4 @@
-﻿import {
+import {
   ArrowRight,
   Film,
   Play,
@@ -16,8 +16,8 @@ export function HeroCard({
   onNewProject,
 }: HeroCardProps) {
   return (
-    <section className="relative grid min-h-[310px] overflow-hidden rounded-2xl border border-white/[0.07] bg-[#090f18] lg:grid-cols-[1.05fr_.95fr]">
-      <div className="relative z-10 flex flex-col justify-center px-8 py-10 lg:px-10 xl:px-12">
+    <section className="relative grid min-h-[292px] overflow-hidden rounded-xl bg-[#090f18] ring-1 ring-white/[0.06] lg:grid-cols-[1.05fr_.95fr]">
+      <div className="relative z-10 flex flex-col justify-center px-7 py-9 lg:px-9 xl:px-10">
         <div className="flex items-center gap-2 text-[9px] font-medium uppercase tracking-[0.16em] text-muted/45">
           <WandSparkles
             aria-hidden="true"
@@ -28,14 +28,14 @@ export function HeroCard({
           Workspace creativo local
         </div>
 
-        <h2 className="mt-5 max-w-2xl text-[30px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink xl:text-[36px]">
+        <h2 className="mt-5 max-w-2xl text-[28px] font-semibold leading-[1.08] tracking-[-0.035em] text-ink xl:text-[36px]">
           Edita con precisión.
           <span className="block text-muted/55">
             Mantén el control.
           </span>
         </h2>
 
-        <p className="mt-5 max-w-xl text-[12px] leading-6 text-muted/65">
+        <p className="mt-4 max-w-xl text-[12px] leading-6 text-muted/65">
           Organiza tus videos, analiza cortes y encuadres,
           revisa cada decisión y exporta únicamente cuando
           el resultado esté listo.
@@ -64,7 +64,7 @@ export function HeroCard({
       <div className="relative hidden items-center justify-center overflow-hidden border-l border-white/[0.05] bg-[#070c13] p-8 lg:flex">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(0,200,239,.07),transparent_48%)]" />
 
-        <div className="relative w-full max-w-[430px] overflow-hidden rounded-xl border border-white/[0.08] bg-[#0c131e] shadow-[0_30px_70px_rgba(0,0,0,.36)]">
+        <div className="relative w-full max-w-[430px] overflow-hidden rounded-lg bg-[#0c131e] ring-1 ring-white/[0.065] shadow-[0_22px_58px_rgba(0,0,0,.30)]">
           <div className="flex h-9 items-center justify-between border-b border-white/[0.06] px-3">
             <div className="flex items-center gap-2">
               <Film

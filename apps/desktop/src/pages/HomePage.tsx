@@ -1,4 +1,4 @@
-﻿import {
+import {
   Activity,
   Box,
   CloudOff,
@@ -77,7 +77,7 @@ export function HomePage({
   ];
 
   return (
-    <div className="mx-auto w-full max-w-[1500px] space-y-8">
+    <div className="mx-auto w-full max-w-[1500px] space-y-7">
       <HeroCard onNewProject={onNewProject} />
 
       <section>
@@ -142,7 +142,7 @@ export function HomePage({
           </h2>
         </div>
 
-        <div className="grid overflow-hidden rounded-xl border border-white/[0.06] bg-[#090f18] sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid overflow-hidden rounded-lg bg-[#090f18] ring-1 ring-white/[0.055] sm:grid-cols-2 xl:grid-cols-4">
           {systemStatus.map((status, index) => {
             const Icon = status.icon;
 

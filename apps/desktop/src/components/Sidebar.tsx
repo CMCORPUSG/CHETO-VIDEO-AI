@@ -1,4 +1,4 @@
-﻿import {
+import {
   Activity,
   FolderKanban,
   Home,
@@ -47,7 +47,7 @@ export function Sidebar({
   return (
     <aside className="relative flex w-[72px] shrink-0 flex-col border-r border-white/[0.06] bg-[#080f19] px-2.5 py-4 md:w-[220px] md:px-3">
       <div className="flex h-11 items-center gap-2.5 px-1.5">
-        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/[0.10] bg-white/[0.04] text-cyan">
+        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/[0.04] text-cyan ring-1 ring-white/[0.08]">
           <WandSparkles aria-hidden="true" size={17} strokeWidth={1.8} />
         </div>
 
@@ -78,7 +78,7 @@ export function Sidebar({
             <button
               aria-current={isActive ? "page" : undefined}
               className={cn(
-                "group relative flex h-10 w-full items-center justify-center gap-3 rounded-md px-2.5 text-[11px] font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan/70 md:justify-start",
+                "group relative flex h-10 w-full items-center justify-center gap-3 rounded-md px-2.5 text-[11px] font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/55 md:justify-start",
                 isActive
                   ? "bg-white/[0.07] text-ink"
                   : "text-muted/75 hover:bg-white/[0.04] hover:text-ink",
