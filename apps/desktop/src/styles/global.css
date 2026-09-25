@@ -2045,3 +2045,23 @@ input[type="checkbox"] {
 .editor-timeline-lane-audio .audio-op-mute_range { background: rgb(185 28 28 / 78%) !important; border-color: rgb(248 113 113 / 40%) !important; }
 .editor-timeline-lane-audio .audio-op-gain_range { background: rgb(37 99 235 / 72%) !important; border-color: rgb(96 165 250 / 36%) !important; }
 .editor-timeline-lane-audio .audio-op-noise_reduction_range { background: rgb(13 148 136 / 76%) !important; }
+
+/* CHETO EDITOR V9 · viewport sin scroll general */
+.editor-shell {
+  height: calc(100vh - 3.5rem) !important;
+  min-height: 0 !important;
+  grid-template-rows: minmax(240px, 1fr) var(--timeline-height) !important;
+}
+.editor-viewer,
+.editor-timeline-panel,
+.editor-inspector-panel,
+.editor-tool-panel { min-height: 0 !important; }
+.editor-viewer-stage { min-height: 0 !important; overflow: hidden !important; }
+.editor-timeline-panel { max-height: 100%; }
+@media (max-height: 760px) {
+  .editor-shell { --timeline-height: 190px; grid-template-rows: minmax(210px, 1fr) var(--timeline-height) !important; }
+}
+@media (max-height: 680px) {
+  .editor-shell { --timeline-height: 160px; grid-template-rows: minmax(190px, 1fr) var(--timeline-height) !important; }
+  .editor-viewer-toolbar { min-height: 28px !important; }
+}
