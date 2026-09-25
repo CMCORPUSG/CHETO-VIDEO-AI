@@ -1243,3 +1243,820 @@ body {
   background-clip: padding-box;
 }
 
+
+/* ==========================================================
+   CHETO PLAYER + TIMELINE V5
+   ========================================================== */
+
+/* ----------------------------------------------------------
+   TOOL COLORS
+   ---------------------------------------------------------- */
+
+.editor-tool-button.is-active {
+  border-color: transparent !important;
+  font-weight: 600 !important;
+}
+
+.editor-tool-button.is-active.tool-project {
+  background: rgb(47 107 255 / 10%) !important;
+  color: #76a0ff !important;
+}
+
+.editor-tool-button.is-active.tool-cut {
+  background: rgb(224 82 82 / 10%) !important;
+  color: #ef858b !important;
+}
+
+.editor-tool-button.is-active.tool-camera {
+  background: rgb(0 184 217 / 10%) !important;
+  color: #45cde5 !important;
+}
+
+/* ----------------------------------------------------------
+   VIEWER SIZE
+   ---------------------------------------------------------- */
+
+.viewer-scale-control {
+  min-height: 28px;
+  padding: 0 7px;
+
+  border: 1px solid rgb(255 255 255 / 7%);
+  border-radius: 6px;
+
+  background: rgb(255 255 255 / 2%);
+
+  color: rgb(169 184 204 / 50%);
+}
+
+.viewer-scale-control input[type="range"] {
+  width: 68px;
+  height: 3px;
+
+  accent-color: #00c8ef;
+}
+
+/* ----------------------------------------------------------
+   PLAYER - ONE VISUAL UNIT
+   ---------------------------------------------------------- */
+
+.video-player {
+  overflow: hidden !important;
+
+  border: 1px solid rgb(255 255 255 / 8%) !important;
+  border-radius: 10px !important;
+
+  background: #04070b !important;
+
+  box-shadow:
+    0 18px 45px rgb(0 0 0 / 28%) !important;
+}
+
+.video-stage-shell {
+  display: grid;
+
+  min-height: 180px;
+  max-height: 52vh;
+
+  place-items: center;
+
+  overflow: hidden;
+
+  background: #020305 !important;
+}
+
+.video-stage {
+  max-width: 100%;
+  max-height: 52vh;
+
+  background: #020305 !important;
+}
+
+.player-source-badge {
+  position: absolute;
+
+  top: 12px;
+  left: 12px;
+
+  padding: 4px 7px;
+
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 5px;
+
+  background: rgb(0 0 0 / 62%);
+  color: rgb(255 255 255 / 80%);
+
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+
+  backdrop-filter: blur(8px);
+}
+
+.player-camera-badge {
+  position: absolute;
+
+  top: 12px;
+  right: 12px;
+
+  padding: 4px 7px;
+
+  border: 1px solid rgb(0 200 239 / 22%);
+  border-radius: 5px;
+
+  background: rgb(0 0 0 / 62%);
+  color: #4dd5eb;
+
+  font-size: 8px;
+  font-weight: 700;
+
+  backdrop-filter: blur(8px);
+}
+
+.player-loading {
+  position: absolute;
+
+  top: 50%;
+  left: 50%;
+
+  translate: -50% -50%;
+
+  padding: 5px 9px;
+
+  border-radius: 6px;
+
+  background: rgb(0 0 0 / 70%);
+  color: white;
+
+  font-size: 9px;
+}
+
+/* ----------------------------------------------------------
+   PLAYER BOTTOM CONTROLS
+   ---------------------------------------------------------- */
+
+.player-bottom {
+  border-top: 1px solid rgb(255 255 255 / 6%);
+
+  background: #080d14;
+}
+
+.player-progress-shell {
+  position: relative;
+
+  height: 20px;
+
+  padding: 8px 12px 0;
+}
+
+.player-progress {
+  position: relative;
+  z-index: 2;
+
+  width: 100%;
+  height: 3px;
+
+  margin: 0;
+
+  cursor: pointer;
+
+  accent-color: #00c8ef;
+}
+
+.player-marker {
+  position: absolute;
+  z-index: 4;
+
+  top: 5px;
+
+  width: 7px !important;
+  min-width: 7px !important;
+  height: 9px !important;
+  min-height: 9px !important;
+
+  translate: -50% 0;
+
+  padding: 0 !important;
+
+  border: 0 !important;
+  border-radius: 1px !important;
+
+  background: #f5b942 !important;
+
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% 65%,
+    50% 100%,
+    0 65%
+  );
+
+  cursor: pointer;
+}
+
+.player-controlbar {
+  position: relative;
+
+  display: grid;
+
+  grid-template-columns:
+    minmax(130px, 1fr)
+    auto
+    minmax(230px, 1fr);
+
+  min-height: 44px;
+
+  align-items: center;
+
+  padding: 4px 10px 7px;
+}
+
+.player-time {
+  display: flex;
+
+  align-items: center;
+
+  gap: 5px;
+
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.player-time strong {
+  color: #00c8ef;
+
+  font-weight: 600;
+}
+
+.player-time span {
+  color: rgb(169 184 204 / 50%);
+}
+
+.player-center {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+}
+
+.player-play {
+  display: grid;
+
+  width: 32px !important;
+  min-width: 32px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+
+  place-items: center;
+
+  padding: 0 !important;
+
+  border: 0 !important;
+  border-radius: 999px !important;
+
+  background: #f5f7fa !important;
+  color: #07111f !important;
+
+  transition:
+    scale 120ms ease,
+    background 120ms ease !important;
+}
+
+.player-play:hover {
+  scale: 1.05;
+
+  background: white !important;
+  color: #07111f !important;
+}
+
+.player-right {
+  display: flex;
+
+  min-width: 0;
+
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 7px;
+}
+
+.player-icon-button {
+  display: grid;
+
+  width: 27px !important;
+  min-width: 27px !important;
+  height: 27px !important;
+  min-height: 27px !important;
+
+  place-items: center;
+
+  padding: 0 !important;
+
+  border: 0 !important;
+  border-radius: 5px !important;
+
+  background: transparent !important;
+  color: rgb(169 184 204 / 65%) !important;
+}
+
+.player-icon-button:hover {
+  background: rgb(255 255 255 / 5%) !important;
+  color: white !important;
+}
+
+.player-volume {
+  width: 76px !important;
+  height: 3px !important;
+
+  accent-color: #00c8ef;
+}
+
+.player-volume-value {
+  width: 28px;
+
+  color: rgb(169 184 204 / 45%);
+
+  font-family: var(--font-mono);
+  font-size: 8px;
+
+  text-align: right;
+}
+
+.player-rate {
+  min-height: 27px !important;
+
+  padding: 0 22px 0 8px !important;
+
+  border: 1px solid rgb(255 255 255 / 7%) !important;
+  border-radius: 5px !important;
+
+  background: rgb(255 255 255 / 2.5%) !important;
+  color: rgb(248 250 252 / 82%) !important;
+
+  font-size: 9px !important;
+}
+
+/* ----------------------------------------------------------
+   TIMELINE TOOLBAR - NO DUPLICATE TRANSPORT
+   ---------------------------------------------------------- */
+
+.editor-timeline-toolbar {
+  min-height: 43px !important;
+
+  gap: 5px !important;
+}
+
+.editor-timeline-toolbar > button {
+  width: 27px;
+  min-width: 27px !important;
+
+  padding: 0 !important;
+}
+
+.timeline-action-delete:not(:disabled):hover {
+  background: rgb(239 68 68 / 10%) !important;
+  color: #ef7777 !important;
+}
+
+.timeline-action-marker {
+  color: #d9a94a !important;
+}
+
+.timeline-action-marker:hover {
+  background: rgb(245 185 66 / 10%) !important;
+  color: #f5b942 !important;
+}
+
+/* ----------------------------------------------------------
+   SEMANTIC EDIT BUTTONS
+   ---------------------------------------------------------- */
+
+.editor-mark-in-button {
+  border-color: rgb(0 200 239 / 18%) !important;
+
+  background: rgb(0 200 239 / 6%) !important;
+  color: #70d9eb !important;
+}
+
+.editor-mark-out-button {
+  border-color: rgb(124 92 255 / 18%) !important;
+
+  background: rgb(124 92 255 / 6%) !important;
+  color: #a999ff !important;
+}
+
+.editor-preview-button {
+  border-color: rgb(47 107 255 / 24%) !important;
+
+  background: rgb(47 107 255 / 12%) !important;
+  color: #8eacff !important;
+
+  box-shadow: none !important;
+}
+
+.editor-preview-alt-button {
+  border-color: rgb(255 255 255 / 8%) !important;
+
+  background: rgb(255 255 255 / 3%) !important;
+  color: rgb(248 250 252 / 72%) !important;
+}
+
+.editor-selection-button {
+  border-color: rgb(0 200 239 / 14%) !important;
+
+  background: transparent !important;
+  color: rgb(112 217 235 / 72%) !important;
+}
+
+/* ----------------------------------------------------------
+   TRACK COLORS
+   ---------------------------------------------------------- */
+
+.editor-timeline-block.is-video {
+  border-color: rgb(90 130 180 / 25%) !important;
+
+  background: #293f5d !important;
+}
+
+.editor-timeline-lane-cuts
+.editor-timeline-block {
+  border-color: rgb(224 82 82 / 28%) !important;
+
+  background: #6a3841 !important;
+}
+
+.editor-timeline-lane-camera
+.editor-timeline-block {
+  border-color: rgb(0 184 217 / 25%) !important;
+
+  background: #185363 !important;
+}
+
+.editor-timeline-block.is-selected {
+  border-color: #f8fafc !important;
+
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 30%),
+    0 5px 14px rgb(0 0 0 / 24%) !important;
+}
+
+/* ----------------------------------------------------------
+   VIDEO MARKERS ON TIMELINE
+   ---------------------------------------------------------- */
+
+.editor-timeline-marker {
+  position: absolute;
+  z-index: 18;
+
+  top: 21px;
+  bottom: 0;
+
+  width: 11px !important;
+  min-width: 11px !important;
+  height: auto !important;
+  min-height: 0 !important;
+
+  translate: -5px 0;
+
+  padding: 0 !important;
+
+  border: 0 !important;
+  border-radius: 0 !important;
+
+  background: transparent !important;
+
+  cursor: pointer;
+}
+
+.editor-timeline-marker::after {
+  position: absolute;
+
+  top: 7px;
+  bottom: 0;
+  left: 5px;
+
+  width: 1px;
+
+  background: rgb(245 185 66 / 42%);
+
+  content: "";
+}
+
+.editor-timeline-marker span {
+  position: absolute;
+
+  top: 0;
+  left: 1px;
+
+  width: 9px;
+  height: 8px;
+
+  background: #f5b942;
+
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% 60%,
+    50% 100%,
+    0 60%
+  );
+}
+
+.editor-timeline-marker:hover::after {
+  background: #f5b942;
+}
+
+.editor-timeline-marker:hover span {
+  filter: brightness(1.12);
+}
+
+
+/* ==========================================================
+   CHETO TIMELINE TOOLBAR V5.1
+   ========================================================== */
+
+.editor-timeline-toolbar {
+  min-height: 42px !important;
+
+  flex-wrap: nowrap !important;
+
+  gap: 5px !important;
+
+  padding: 5px 8px !important;
+
+  border-bottom: 1px solid rgb(255 255 255 / 6%) !important;
+
+  background: #080e16 !important;
+}
+
+/* ----------------------------------------------------------
+   EDICIÓN / RESULTADO
+   ---------------------------------------------------------- */
+
+.timeline-mode {
+  display: flex;
+
+  min-width: 126px;
+
+  align-items: center;
+
+  gap: 7px;
+
+  padding-right: 9px;
+
+  border-right: 1px solid rgb(255 255 255 / 6%);
+}
+
+.timeline-mode > span {
+  color: rgb(169 184 204 / 52%);
+
+  font-size: 8px;
+  font-weight: 600;
+
+  letter-spacing: 0.11em;
+
+  text-transform: uppercase;
+}
+
+.timeline-mode > strong {
+  display: inline-flex;
+
+  align-items: center;
+
+  min-height: 20px;
+
+  padding: 0 7px;
+
+  border: 1px solid rgb(0 200 239 / 15%);
+  border-radius: 5px;
+
+  background: rgb(0 200 239 / 6%);
+
+  color: #55d2e8;
+
+  font-size: 8px;
+  font-weight: 600;
+
+  letter-spacing: 0.03em;
+
+  text-transform: uppercase;
+}
+
+/* ----------------------------------------------------------
+   UNDO / REDO / DELETE / MARKER
+   ---------------------------------------------------------- */
+
+.editor-timeline-toolbar > button {
+  width: 27px !important;
+  min-width: 27px !important;
+  height: 27px !important;
+  min-height: 27px !important;
+
+  padding: 0 !important;
+
+  border: 1px solid transparent !important;
+  border-radius: 5px !important;
+
+  background: transparent !important;
+
+  color: rgb(169 184 204 / 52%) !important;
+}
+
+.editor-timeline-toolbar > button:hover:not(:disabled) {
+  border-color: rgb(255 255 255 / 6%) !important;
+
+  background: rgb(255 255 255 / 4%) !important;
+
+  color: #f1f5f9 !important;
+}
+
+.editor-timeline-toolbar > button:disabled {
+  opacity: 0.22 !important;
+}
+
+/* Eliminar */
+
+.editor-timeline-toolbar .timeline-action-delete:hover:not(:disabled) {
+  background: rgb(239 68 68 / 9%) !important;
+
+  color: #ef7b80 !important;
+}
+
+/* Marcador */
+
+.editor-timeline-toolbar .timeline-action-marker {
+  color: #d9aa49 !important;
+}
+
+.editor-timeline-toolbar .timeline-action-marker:hover {
+  background: rgb(245 185 66 / 9%) !important;
+
+  color: #f5b942 !important;
+}
+
+/* ----------------------------------------------------------
+   MÉTRICAS
+   ---------------------------------------------------------- */
+
+.editor-metric {
+  display: inline-flex !important;
+
+  min-height: 25px !important;
+
+  align-items: center;
+
+  padding: 0 7px !important;
+
+  border: 0 !important;
+  border-radius: 5px !important;
+
+  background: rgb(255 255 255 / 2.5%) !important;
+}
+
+.editor-metric span {
+  color: rgb(169 184 204 / 40%) !important;
+
+  font-size: 7px !important;
+  font-weight: 500 !important;
+}
+
+.editor-metric strong {
+  margin-left: 4px !important;
+
+  color: rgb(232 238 246 / 78%) !important;
+
+  font-size: 8px !important;
+  font-weight: 600 !important;
+}
+
+/* ----------------------------------------------------------
+   CONTROLES IN / OUT / PREVIEW
+   ---------------------------------------------------------- */
+
+.timeline-selection-controls {
+  flex-wrap: nowrap !important;
+
+  align-items: center !important;
+
+  gap: 5px !important;
+
+  margin-left: auto !important;
+
+  padding-left: 9px !important;
+
+  border-left: 1px solid rgb(255 255 255 / 6%);
+}
+
+.timeline-selection-controls button {
+  width: auto !important;
+
+  min-width: 0 !important;
+  min-height: 27px !important;
+
+  padding: 0 9px !important;
+
+  border-radius: 5px !important;
+
+  box-shadow: none !important;
+
+  font-size: 8px !important;
+  font-weight: 600 !important;
+
+  white-space: nowrap;
+}
+
+/* IN */
+
+.timeline-selection-controls .editor-mark-in-button {
+  border-color: rgb(0 200 239 / 17%) !important;
+
+  background: rgb(0 200 239 / 5%) !important;
+
+  color: #58d5e9 !important;
+}
+
+/* OUT */
+
+.timeline-selection-controls .editor-mark-out-button {
+  border-color: rgb(139 111 255 / 17%) !important;
+
+  background: rgb(139 111 255 / 5%) !important;
+
+  color: #aa98ff !important;
+}
+
+/* Probar 10 s - acción principal */
+
+.timeline-selection-controls .editor-preview-button {
+  border-color: rgb(73 112 255 / 28%) !important;
+
+  background: rgb(73 112 255 / 12%) !important;
+
+  color: #a7baff !important;
+}
+
+/* Probar 30 s */
+
+.timeline-selection-controls .editor-preview-alt-button {
+  border-color: rgb(255 255 255 / 7%) !important;
+
+  background: rgb(255 255 255 / 2.5%) !important;
+
+  color: rgb(226 232 240 / 68%) !important;
+}
+
+/* Probar selección */
+
+.timeline-selection-controls .editor-selection-button {
+  border-color: rgb(255 255 255 / 7%) !important;
+
+  background: transparent !important;
+
+  color: rgb(169 184 204 / 62%) !important;
+}
+
+.timeline-selection-controls .editor-selection-button:not(:disabled):hover {
+  border-color: rgb(0 200 239 / 18%) !important;
+
+  background: rgb(0 200 239 / 5%) !important;
+
+  color: #60d6ea !important;
+}
+
+/* Cerrar prueba */
+
+.editor-close-preview-button {
+  margin-left: 3px;
+
+  border-color: transparent !important;
+
+  background: transparent !important;
+
+  color: rgb(169 184 204 / 48%) !important;
+}
+
+.editor-close-preview-button:hover {
+  background: rgb(255 255 255 / 4%) !important;
+
+  color: #f8fafc !important;
+}
+
+/* ----------------------------------------------------------
+   RESPONSIVE TOOLBAR
+   ---------------------------------------------------------- */
+
+@media (max-width: 1280px) {
+  .editor-metric {
+    display: none !important;
+  }
+}
+
+@media (max-width: 1050px) {
+  .timeline-selection-controls {
+    gap: 3px !important;
+  }
+
+  .timeline-selection-controls button {
+    padding-inline: 6px !important;
+  }
+}
+

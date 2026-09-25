@@ -1,4 +1,4 @@
-import { Minus, Plus, ScanLine } from "lucide-react";
+﻿import { Minus, Plus, ScanLine } from "lucide-react";
 import {
   useEffect,
   useMemo,
@@ -30,6 +30,7 @@ interface EditorTimelineProps {
   draftCamera?: CameraDecision[];
   draftCuts?: CutDecision[];
   durationUs: number;
+  markers?: number[];
   onChangeCamera: (item: CameraDecision) => void;
   onChangeCut: (item: CutDecision) => void;
   onSeek: (timeUs: number) => void;
@@ -54,6 +55,7 @@ export function EditorTimeline({
   draftCamera = [],
   draftCuts = [],
   durationUs,
+  markers = [],
   onChangeCamera,
   onChangeCut,
   onSeek,
@@ -127,10 +129,11 @@ export function EditorTimeline({
       0,
       safeDuration,
       playheadUs,
+      ...markers,
       ...cuts.flatMap((item) => [item.startUs, item.endUs]),
       ...camera.flatMap((item) => [item.startUs, item.endUs]),
     ],
-    [camera, cuts, playheadUs, safeDuration],
+    [camera, cuts, markers, playheadUs, safeDuration],
   );
 
   const zoom = (next: number, anchorRatio = 0.5) => {
@@ -421,6 +424,25 @@ export function EditorTimeline({
               />
             ))}
           </TimelineLane>
+          {markers.map((marker, index) => (
+            <button
+              aria-label={`Ir al marcador ${index + 1}`}
+              className="editor-timeline-marker"
+              key={`${marker}-${index}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                onSeek(marker);
+              }}
+              style={{
+                left: 74 + usToPixels(marker, pixelsPerSecond),
+              }}
+              title={`Marcador ${index + 1} · ${formatTimecode(marker)}`}
+              type="button"
+            >
+              <span />
+            </button>
+          ))}
+
           <div
             className="editor-timeline-playhead"
             onPointerDown={scrub}
@@ -558,3 +580,7 @@ function cameraLabel(mode: string) {
       ? "Enfoque"
       : "Zoom";
 }
+
+
+
+

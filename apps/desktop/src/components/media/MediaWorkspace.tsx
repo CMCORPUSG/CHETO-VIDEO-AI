@@ -1,4 +1,4 @@
-import { Camera, CheckCircle2, ChevronLeft, ChevronRight, Cpu, Download, FileVideo, Film, Gauge, LoaderCircle, PanelLeftClose, PanelRightClose, Redo2, Scissors, SkipBack, SkipForward, Trash2, Undo2 } from "lucide-react";
+﻿import { BookmarkPlus, Camera, CheckCircle2, ChevronLeft, ChevronRight, Cpu, Download, FileVideo, Film, Gauge, LoaderCircle, PanelLeftClose, PanelRightClose, Redo2, Scissors, Trash2, Undo2, ZoomIn, ZoomOut } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { formatFileSize } from "../../lib/format";
 import type { ProjectBundle } from "../../project/contracts";
@@ -42,12 +42,25 @@ export function MediaWorkspace({ bundle, onLog, onNotify }: MediaWorkspaceProps)
   const [edl, setEdl] = useState<EdlManifest>(bundle.edl);
   const [activeTool, setActiveTool] = useState<"project"|"cut"|"camera">("project");
   const [previewMode, setPreviewMode] = useState<"original"|"result">("result");
-  const [previewSize, setPreviewSize] = useState<"small"|"medium"|"large">("medium");
+  const [viewerScale, setViewerScale] = useState(() => storedWidth("cheto.editor.viewerScale", 92));
   const [aspectMode, setAspectMode] = useState<AspectMode>("original");
   const [customAspectWidth, setCustomAspectWidth] = useState(16);
   const [customAspectHeight, setCustomAspectHeight] = useState(9);
   const playheadUs = useRef(0);
   const [visiblePlayheadUs, setVisiblePlayheadUs] = useState(0);
+  const markerStorageKey = `cheto.editor.markers.${projectId}`;
+  const [markers, setMarkers] = useState<number[]>(() => {
+    try {
+      const value = window.localStorage.getItem(markerStorageKey);
+      const parsed = value ? JSON.parse(value) : [];
+
+      return Array.isArray(parsed)
+        ? parsed.filter((item): item is number => typeof item === "number")
+        : [];
+    } catch {
+      return [];
+    }
+  });
   const [draftTracks, setDraftTracks] = useState<DraftTracks|null>(null);
   const [draftRange, setDraftRange] = useState<PreviewRange|null>(null);
   const [selectionInUs, setSelectionInUs] = useState<number|null>(null);
@@ -100,6 +113,8 @@ export function MediaWorkspace({ bundle, onLog, onNotify }: MediaWorkspaceProps)
   useEffect(() => { window.localStorage.setItem("cheto.editor.toolsWidth", String(Math.round(toolsWidth))); }, [toolsWidth]);
   useEffect(() => { window.localStorage.setItem("cheto.editor.inspectorWidth", String(Math.round(inspectorWidth))); }, [inspectorWidth]);
   useEffect(() => { window.localStorage.setItem("cheto.editor.timelineHeight", String(Math.round(timelineHeight))); }, [timelineHeight]);
+  useEffect(() => { window.localStorage.setItem("cheto.editor.viewerScale", String(Math.round(viewerScale))); }, [viewerScale]);
+  useEffect(() => { window.localStorage.setItem(markerStorageKey, JSON.stringify(markers)); }, [markerStorageKey, markers]);
 
   const beginInspectorResize = (event: ReactPointerEvent<HTMLButtonElement>) => {
     resizeRef.current = {
@@ -204,6 +219,25 @@ export function MediaWorkspace({ bundle, onLog, onNotify }: MediaWorkspaceProps)
   const runPreview=(seconds:10|30)=>{const current=playheadUs.current;setDraftRange(previewRange(current,seconds,durationUs));setPreviewMode("result");setRequestedSeekUs(current);};
   const runSelection=()=>{const range=selectionRange(selectionInUs,selectionOutUs,durationUs);if(range){setDraftRange(range);setPreviewMode("result");setRequestedSeekUs(range.startUs);}};
   const updatePlayhead=useCallback((value:number)=>{playheadUs.current=value;setVisiblePlayheadUs(value);},[]);
+  const toggleMarker=useCallback(()=>{
+    const current=Math.round(playheadUs.current/1000)*1000;
+
+    setMarkers((currentMarkers)=>{
+      const existing=currentMarkers.find(
+        (marker)=>Math.abs(marker-current)<=250_000,
+      );
+
+      if(existing!==undefined){
+        return currentMarkers.filter(
+          (marker)=>marker!==existing,
+        );
+      }
+
+      return [...currentMarkers,current].sort(
+        (a,b)=>a-b,
+      );
+    });
+  },[]);
   const handlePlaybackError=useCallback((message:string)=>{setError(message);onLog("PLAYBACK_ERROR","error");},[onLog]);
   const sourceAspect = (bundle.source.video.displayWidth ?? bundle.source.video.width ?? 16) / Math.max(1, bundle.source.video.displayHeight ?? bundle.source.video.height ?? 9);
   const aspectRatio = resolveAspectRatio(aspectMode, sourceAspect, customAspectWidth, customAspectHeight);
@@ -245,11 +279,11 @@ export function MediaWorkspace({ bundle, onLog, onNotify }: MediaWorkspaceProps)
       </Card>;
   const toolPanel=activeTool==="project"?proxyPanel:activeTool==="cut"?<SmartCutWorkspace bundle={bundle} edl={edl} onDraftChange={(cuts)=>setDraftTracks(current=>({camera:current?.camera??[],cuts}))} onEdlChange={commitEdl} onLog={onLog} onNotify={onNotify} onSeek={setRequestedSeekUs} onSelect={(id)=>setTimelineSelection({id,track:"cuts"})}/>:<SmartCameraWorkspace bundle={bundle} edl={edl} onDraftChange={(camera)=>setDraftTracks(current=>({camera,cuts:current?.cuts??[]}))} onEdlChange={commitEdl} onLog={onLog} onNotify={onNotify} onPreview={setCameraPreview} onSeek={setRequestedSeekUs} onSelect={(id)=>setTimelineSelection({id,track:"camera"})}/>;
   const panel=<><TimelineInspector camera={edl.tracks.camera} cut={selectedCut} durationUs={durationUs} item={selectedCamera} key={timelineSelection?`${timelineSelection.track}-${timelineSelection.id}`:"none"} onApplyCamera={changeCamera} onApplyCut={changeCut} onDelete={deleteSelected} onReplaceCamera={replaceCamera}/>{toolPanel}</>;
-  const tools=[{id:"project" as const,label:"Proyecto",icon:<FileVideo size={18}/>},{id:"cut" as const,label:"Cortes",icon:<Scissors size={18}/>},{id:"camera" as const,label:"Encuadre",icon:<Camera size={18}/>}];
+  const tools=[{id:"project" as const,label:"Proyecto",icon:<FileVideo size={18}/>,tone:"tool-project"},{id:"cut" as const,label:"Cortes",icon:<Scissors size={18}/>,tone:"tool-cut"},{id:"camera" as const,label:"Encuadre",icon:<Camera size={18}/>,tone:"tool-camera"}];
   return <div className={`editor-shell relative grid h-[calc(100vh-9rem)] min-h-[620px] overflow-hidden border border-line bg-surface shadow-2xl ${toolsCollapsed?"tools-collapsed":""} ${inspectorCollapsed?"inspector-collapsed":""}`} style={{ "--inspector-width": `${inspectorCollapsed?0:inspectorWidth}px`, "--timeline-height": `${timelineHeight}px`, "--tools-width": `${toolsCollapsed?44:toolsWidth}px` } as CSSProperties}>
     <nav className="editor-tool-panel flex gap-1 overflow-auto border-line bg-canvas/60 p-1.5">
       <div className="flex items-center justify-between"><p className="editor-panel-heading truncate px-2 py-2 text-[9px] font-bold uppercase text-muted">Herramientas</p><button aria-label="Ocultar panel izquierdo" className="panel-collapse-button" onClick={()=>setToolsCollapsed(value=>!value)} type="button">{toolsCollapsed?<ChevronRight size={14}/>:<PanelLeftClose size={14}/>}</button></div>
-      {tools.map(tool=><button className={`editor-tool-button flex min-w-0 items-center gap-2 border border-transparent px-2 py-2 text-[10px] font-semibold transition ${activeTool===tool.id?"border-primary/30 bg-primary/15 text-cyan":"text-muted hover:bg-card hover:text-ink"}`} key={tool.id} onClick={()=>setActiveTool(tool.id)} title={tool.label} type="button">{tool.icon}<span className="truncate">{tool.label}</span></button>)}
+      {tools.map(tool=><button className={`editor-tool-button flex min-w-0 items-center gap-2 border border-transparent px-2 py-2 text-[10px] font-semibold transition ${activeTool===tool.id?`is-active ${tool.tone}`:"text-muted hover:bg-card hover:text-ink"}`} key={tool.id} onClick={()=>setActiveTool(tool.id)} title={tool.label} type="button">{tool.icon}<span className="truncate">{tool.label}</span></button>)}
     </nav>
     <button aria-label="Redimensionar panel de herramientas" className="editor-tools-resizer" onDoubleClick={() => setToolsWidth(112)} onPointerDown={beginToolsResize} title="Arrastra para cambiar el ancho. Doble clic para restablecer." type="button" />
     <section className="editor-viewer min-h-0 overflow-auto bg-black/40 p-2">
@@ -258,10 +292,10 @@ export function MediaWorkspace({ bundle, onLog, onNotify }: MediaWorkspaceProps)
         <div className="flex min-w-0 flex-wrap items-center justify-end gap-1">
           <label className="flex items-center gap-1 text-[9px] font-semibold text-muted"><span>Formato</span><select aria-label="Relación de aspecto" className="border border-line bg-canvas px-2 py-1 text-ink" onChange={(event)=>setAspectMode(event.target.value as AspectMode)} value={aspectMode}><option value="original">Original</option><option value="16:9">16:9</option><option value="4:3">4:3</option><option value="1:1">1:1</option><option value="9:16">9:16</option><option value="21:9">21:9</option><option value="custom">Personalizado</option></select></label>
           {aspectMode==="custom"?<div className="flex items-center gap-1"><input aria-label="Ancho personalizado" className="w-11 border border-line bg-canvas px-1 py-1 text-center text-ink" min="1" onChange={(event)=>setCustomAspectWidth(Number(event.target.value)||1)} type="number" value={customAspectWidth}/><span className="text-muted">:</span><input aria-label="Alto personalizado" className="w-11 border border-line bg-canvas px-1 py-1 text-center text-ink" min="1" onChange={(event)=>setCustomAspectHeight(Number(event.target.value)||1)} type="number" value={customAspectHeight}/></div>:null}
-          <div className="flex gap-0.5">{(["small","medium","large"] as const).map(size=><button className={`border border-line px-1.5 py-1 text-[9px] font-bold ${previewSize===size?"bg-card text-cyan":"text-muted"}`} key={size} onClick={()=>setPreviewSize(size)}>{size==="small"?"P":size==="medium"?"M":"G"}</button>)}</div><Button icon={<Download size={13}/>} onClick={()=>setExportOpen(true)}>Exportar</Button>
+          <div className="viewer-scale-control flex items-center gap-1.5" title="Tamaño del visor"><ZoomOut size={12}/><input aria-label="Tamaño del visor" max="100" min="65" onChange={(event)=>setViewerScale(Number(event.target.value))} step="5" type="range" value={viewerScale}/><span className="w-8 text-right font-mono text-[8px] text-muted">{Math.round(viewerScale)}%</span><ZoomIn size={12}/></div><Button icon={<Download size={13}/>} onClick={()=>setExportOpen(true)}>Exportar</Button>
         </div>
       </div>
-      <div className={`mx-auto w-full transition-[max-width] ${previewSize==="small"?"max-w-xl":previewSize==="medium"?"max-w-4xl":"max-w-none"}`}>{source?<VideoPlayer aspectRatio={aspectRatio} cameraPreview={cameraPreview} draftRange={draftRange} draftTracks={draftTracks} durationUs={source.durationUs} edl={edl} key={source.path} kind={source.kind} mode={previewMode} onError={handlePlaybackError} onTimeChange={updatePlayhead} path={source.path} seekToUs={requestedSeekUs}/>:<div className="grid aspect-video place-items-center bg-black"><LoaderCircle className="animate-spin text-cyan"/></div>}</div>
+      <div className="mx-auto w-full transition-[max-width] duration-150" style={{ maxWidth: `${viewerScale}%` }}>{source?<VideoPlayer aspectRatio={aspectRatio} cameraPreview={cameraPreview} draftRange={draftRange} draftTracks={draftTracks} durationUs={source.durationUs} edl={edl} key={source.path} kind={source.kind} markers={markers} mode={previewMode} onError={handlePlaybackError} onTimeChange={updatePlayhead} path={source.path} seekToUs={requestedSeekUs}/>:<div className="grid aspect-video place-items-center bg-black"><LoaderCircle className="animate-spin text-cyan"/></div>}</div>
       {error?<p className="mt-2 truncate text-[10px] text-danger" title={error}>{error}</p>:null}
     </section>
     <button
@@ -277,11 +311,11 @@ export function MediaWorkspace({ bundle, onLog, onNotify }: MediaWorkspaceProps)
     <button aria-label="Redimensionar player y timeline" className="editor-horizontal-resizer" onDoubleClick={()=>setTimelineHeight(236)} onPointerDown={beginVerticalResize} title="Arrastra para dar más espacio al player o a la timeline" type="button"/>
     <section className="editor-timeline-panel overflow-hidden border-t border-line bg-canvas/65">
       <div className="editor-timeline-toolbar flex min-w-0 flex-wrap items-center gap-1 border-b border-line px-2 py-1.5">
-        <span className="mr-1 text-[9px] font-bold uppercase text-cyan">Edición · {previewMode==="result"?"Resultado":"Original"}</span><button aria-label="Deshacer" disabled={!undoStack.length} onClick={undo} title="Deshacer (Ctrl+Z)" type="button"><Undo2 size={13}/></button><button aria-label="Rehacer" disabled={!redoStack.length} onClick={redo} title="Rehacer (Ctrl+Y)" type="button"><Redo2 size={13}/></button><button aria-label="Eliminar seleccionado" disabled={!timelineSelection} onClick={deleteSelected} title="Eliminar seleccionado" type="button"><Trash2 size={13}/></button><button aria-label="Ir al inicio" onClick={()=>{setRequestedSeekUs(0);setVisiblePlayheadUs(0)}} title="Ir al inicio" type="button"><SkipBack size={13}/></button><button aria-label="Ir al final" onClick={()=>{setRequestedSeekUs(durationUs);setVisiblePlayheadUs(durationUs)}} title="Ir al final" type="button"><SkipForward size={13}/></button>
+        <div className="timeline-mode"><span>Edición</span><strong>{previewMode==="result"?"Resultado":"Original"}</strong></div><button aria-label="Deshacer" disabled={!undoStack.length} onClick={undo} title="Deshacer (Ctrl+Z)" type="button"><Undo2 size={13}/></button><button aria-label="Rehacer" disabled={!redoStack.length} onClick={redo} title="Rehacer (Ctrl+Y)" type="button"><Redo2 size={13}/></button><button aria-label="Eliminar seleccionado" className="timeline-action-delete" disabled={!timelineSelection} onClick={deleteSelected} title="Eliminar seleccionado" type="button"><Trash2 size={13}/></button><button aria-label="Agregar o quitar marcador" className="timeline-action-marker" onClick={toggleMarker} title="Agregar/quitar marcador en el cabezal" type="button"><BookmarkPlus size={13}/></button>
         <Metric label="Cortes" value={String(edl.tracks.cuts.length)}/><Metric label="Eliminado" value={formatShort(removedUs)}/><Metric label="Encuadres" value={String(edl.tracks.camera.length)}/><Metric label="Final" value={formatShort(resultUs)}/>
-        <div className="ml-auto flex min-w-0 flex-wrap justify-end gap-1"><Button onClick={()=>setSelectionInUs(playheadUs.current)} variant="secondary">Inicio {selectionInUs===null?"—":formatShort(selectionInUs)}</Button><Button onClick={()=>setSelectionOutUs(playheadUs.current)} variant="secondary">Fin {selectionOutUs===null?"—":formatShort(selectionOutUs)}</Button><Button onClick={()=>runPreview(10)}>Probar 10 s</Button><Button onClick={()=>runPreview(30)} variant="secondary">30 s</Button><Button disabled={!selectionRange(selectionInUs,selectionOutUs,durationUs)} onClick={runSelection} variant="secondary">Selección</Button>{draftRange?<Button onClick={()=>setDraftRange(null)} variant="ghost">Cerrar</Button>:null}</div>
+        <div className="timeline-selection-controls ml-auto flex min-w-0 flex-wrap justify-end gap-1"><Button className="editor-mark-in-button" onClick={()=>setSelectionInUs(playheadUs.current)} variant="secondary">Entrada {selectionInUs===null?"—":formatShort(selectionInUs)}</Button><Button className="editor-mark-out-button" onClick={()=>setSelectionOutUs(playheadUs.current)} variant="secondary">Salida {selectionOutUs===null?"—":formatShort(selectionOutUs)}</Button><Button className="editor-preview-button" onClick={()=>runPreview(10)}>Probar 10 s</Button><Button className="editor-preview-alt-button" onClick={()=>runPreview(30)} variant="secondary">Probar 30 s</Button><Button disabled={!selectionRange(selectionInUs,selectionOutUs,durationUs)} onClick={runSelection} variant="secondary">Probar selección</Button>{draftRange?<Button className="editor-close-preview-button" onClick={()=>setDraftRange(null)} variant="ghost">Cerrar prueba</Button>:null}</div>
       </div>
-      <EditorTimeline camera={edl.tracks.camera} cuts={edl.tracks.cuts} draftCamera={draftTracks?.camera} draftCuts={draftTracks?.cuts} durationUs={durationUs} onChangeCamera={changeCamera} onChangeCut={changeCut} onSeek={(timeUs)=>{setRequestedSeekUs(timeUs);setVisiblePlayheadUs(timeUs);}} onSelect={setTimelineSelection} playheadUs={visiblePlayheadUs} selected={timelineSelection} sourceName={bundle.source.fileName}/>
+      <EditorTimeline camera={edl.tracks.camera} cuts={edl.tracks.cuts} draftCamera={draftTracks?.camera} draftCuts={draftTracks?.cuts} durationUs={durationUs} onChangeCamera={changeCamera} onChangeCut={changeCut} onSeek={(timeUs)=>{setRequestedSeekUs(timeUs);setVisiblePlayheadUs(timeUs);}} onSelect={setTimelineSelection} markers={markers} playheadUs={visiblePlayheadUs} selected={timelineSelection} sourceName={bundle.source.fileName}/>
     </section>
     <ExportModal aspectRatio={aspectRatio} bundle={bundle} edl={edl} onClose={()=>setExportOpen(false)} open={exportOpen}/>
   </div>;
@@ -301,3 +335,6 @@ function ProxyDetail({ icon, label, value }: { icon: ReactNode; label: string; v
 function isTypingTarget(target: EventTarget | null) {
   return target instanceof HTMLElement && (target.matches("input, textarea, select") || target.isContentEditable);
 }
+
+
+
