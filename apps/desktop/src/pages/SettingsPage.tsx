@@ -216,7 +216,7 @@ export function SettingsPage({
                 <Cpu size={15} />
               </span>
 
-              <StatusBadge label="Próximamente" />
+              <StatusBadge label="Activo" tone="success" />
             </div>
 
             <h3 className="mt-4 text-[13px] font-semibold text-ink">
@@ -224,8 +224,8 @@ export function SettingsPage({
             </h3>
 
             <p className="mt-1.5 text-[10px] leading-5 text-muted/50">
-              Las opciones avanzadas del motor local se incorporarán
-              en siguientes fases.
+              FFmpeg/FFprobe, proxy, Smart Cut, Encuadre inteligente,
+              audio y exportación se ejecutan localmente.
             </p>
           </div>
 

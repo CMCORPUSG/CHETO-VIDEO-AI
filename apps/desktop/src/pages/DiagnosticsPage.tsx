@@ -92,6 +92,22 @@ export function DiagnosticsPage({
     [activeFilter, events],
   );
 
+  const errorCount = events.filter(
+    (event) => event.level === "error",
+  ).length;
+  const warningCount = events.filter(
+    (event) => event.level === "warning",
+  ).length;
+  const hasEnvironmentIssue = !media.ffprobeAvailable;
+  const applicationTone =
+    hasEnvironmentIssue || errorCount > 0
+      ? "warning"
+      : "success";
+  const applicationLabel =
+    hasEnvironmentIssue || errorCount > 0
+      ? "Con incidencias"
+      : "Operativa";
+
   const copyEvents = async (
     selectedEvents: DiagnosticEvent[],
     limit: number,
@@ -203,16 +219,30 @@ export function DiagnosticsPage({
       <section className="grid overflow-hidden rounded-lg bg-[#0a111b] ring-1 ring-white/[0.055] lg:grid-cols-2">
         <article className="p-4 lg:border-r lg:border-white/[0.05]">
           <div className="flex items-start justify-between gap-4">
-            <span className="grid h-9 w-9 place-items-center rounded-lg bg-success/[0.07] text-success">
-              <CheckCircle2
-                aria-hidden="true"
-                size={16}
-              />
+            <span
+              className={cn(
+                "grid h-9 w-9 place-items-center rounded-lg",
+                applicationTone === "success"
+                  ? "bg-success/[0.07] text-success"
+                  : "bg-warning/[0.07] text-warning",
+              )}
+            >
+              {applicationTone === "success" ? (
+                <CheckCircle2
+                  aria-hidden="true"
+                  size={16}
+                />
+              ) : (
+                <FileWarning
+                  aria-hidden="true"
+                  size={16}
+                />
+              )}
             </span>
 
             <StatusBadge
-              label="Operativa"
-              tone="success"
+              label={applicationLabel}
+              tone={applicationTone}
             />
           </div>
 
@@ -221,12 +251,15 @@ export function DiagnosticsPage({
           </p>
 
           <h3 className="mt-1 text-[13px] font-semibold text-ink">
-            CHETO funcionando correctamente
+            {applicationTone === "success"
+              ? "CHETO funcionando correctamente"
+              : "Revisar registro y entorno local"}
           </h3>
 
           <p className="mt-1.5 text-[10px] leading-5 text-muted/50">
-            No existen errores activos que
-            impidan utilizar el workspace.
+            {applicationTone === "success"
+              ? "El registro actual no contiene errores y FFprobe está disponible."
+              : `${errorCount} error(es) · ${warningCount} aviso(s)${hasEnvironmentIssue ? " · FFprobe no disponible" : ""}.`}
           </p>
         </article>
 
