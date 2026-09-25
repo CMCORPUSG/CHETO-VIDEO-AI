@@ -282,7 +282,9 @@ fn audio_filters(edl: &EdlManifest) -> String {
             "notch_range" => {
                 let hz = audio_parameter_f64(item, "hz", 4000.0).clamp(120.0, 16_000.0);
                 let width = audio_parameter_f64(item, "width", 90.0).clamp(10.0, 500.0);
-                filters.push(format!("bandreject=f={hz}:width_type=h:width={width}:enable='{enable}'"));
+                filters.push(format!(
+                    "bandreject=f={hz}:width_type=h:width={width}:enable='{enable}'"
+                ));
             }
             _ => {}
         }

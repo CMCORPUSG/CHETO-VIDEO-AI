@@ -216,7 +216,7 @@ function operationLabel(item: AudioDecision) {
     case "mute_range": return "Silenciar tramo";
     case "gain_range": return `Ganancia ${numberParameter(item, "gainDb")} dB`;
     case "noise_reduction_range": return "Limpieza de tramo";
-    case "notch_range": return `Pitido ${String(item.parameters.hz ?? 0)} Hz`;
+    case "notch_range": return `Pitido ${parameterNumber(item, "hz", 0)} Hz`;
     default: return item.operation;
   }
 }
@@ -224,4 +224,10 @@ function operationLabel(item: AudioDecision) {
 function numberParameter(item: AudioDecision, key: string) {
   const value = item.parameters[key];
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+
+function parameterNumber(item: AudioDecision, key: string, fallback: number) {
+  const value = item.parameters[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
