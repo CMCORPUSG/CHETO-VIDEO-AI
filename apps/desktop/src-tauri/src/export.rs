@@ -261,10 +261,26 @@ fn command(config: &ExportConfig, source: &Path, edl: &EdlManifest, encoder: &st
     let keep = keep_expression(edl);
     let scaled_w = ((config.width as f64 * config.canvas_scale / 2.0).round() as u32 * 2).max(2);
     let scaled_h = ((config.height as f64 * config.canvas_scale / 2.0).round() as u32 * 2).max(2);
-    let crop_x = format!("max(0,(iw-{w})/2-(iw-{w})*({ox})/2)", w=config.width, ox=config.canvas_offset_x);
-    let crop_y = format!("max(0,(ih-{h})/2-(ih-{h})*({oy})/2)", h=config.height, oy=config.canvas_offset_y);
-    let pad_x = format!("max(0,({w}-iw)/2+({w}-iw)*({ox})/2)", w=config.width, ox=config.canvas_offset_x);
-    let pad_y = format!("max(0,({h}-ih)/2+({h}-ih)*({oy})/2)", h=config.height, oy=config.canvas_offset_y);
+    let crop_x = format!(
+        "max(0,(iw-{w})/2-(iw-{w})*({ox})/2)",
+        w = config.width,
+        ox = config.canvas_offset_x
+    );
+    let crop_y = format!(
+        "max(0,(ih-{h})/2-(ih-{h})*({oy})/2)",
+        h = config.height,
+        oy = config.canvas_offset_y
+    );
+    let pad_x = format!(
+        "max(0,({w}-iw)/2+({w}-iw)*({ox})/2)",
+        w = config.width,
+        ox = config.canvas_offset_x
+    );
+    let pad_y = format!(
+        "max(0,({h}-ih)/2+({h}-ih)*({oy})/2)",
+        h = config.height,
+        oy = config.canvas_offset_y
+    );
     let vf=format!(
         "[0:v]crop='iw/({zoom})':'ih/({zoom})':'(iw-iw/({zoom}))*({center_x})':'(ih-ih/({zoom}))*({center_y})',select='{keep}',setpts=N/FRAME_RATE/TB,scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},scale={sw}:{sh},crop='min(iw,{w})':'min(ih,{h})':'{cx}':'{cy}',pad={w}:{h}:'{px}':'{py}':black,setsar=1[v]",
         w=config.width,
