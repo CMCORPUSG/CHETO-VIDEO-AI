@@ -441,18 +441,30 @@ export function EditorTimeline({
           </TimelineLane>
           {audioPresent ? <TimelineLane contentWidth={contentWidth} label="Audio" tone="audio">
               <TimelineBlock className="is-audio" endUs={safeDuration} label="Audio original" pixelsPerSecond={pixelsPerSecond} startUs={0} title={"Audio original · " + formatTimecode(safeDuration)} />
-              {audio.map((item) => (
-                <EditableAudioBlock
-                  item={item}
-                  key={item.id}
-                  onMove={updateDrag}
-                  onRelease={finishDrag}
-                  onStart={beginDrag}
-                  pixelsPerSecond={pixelsPerSecond}
-                  range={displayedRange("audio", item)}
-                  selected={selected?.track === "audio" && selected.id === item.id}
-                />
-              ))}
+              {audio.map((item) =>
+                item.startUs === 0 && item.endUs === safeDuration ? (
+                  <TimelineBlock
+                    className={"is-audio-operation audio-op-" + item.operation}
+                    endUs={item.endUs}
+                    key={item.id}
+                    label={audioLabel(item)}
+                    pixelsPerSecond={pixelsPerSecond}
+                    startUs={item.startUs}
+                    title={audioLabel(item)}
+                  />
+                ) : (
+                  <EditableAudioBlock
+                    item={item}
+                    key={item.id}
+                    onMove={updateDrag}
+                    onRelease={finishDrag}
+                    onStart={beginDrag}
+                    pixelsPerSecond={pixelsPerSecond}
+                    range={displayedRange("audio", item)}
+                    selected={selected?.track === "audio" && selected.id === item.id}
+                  />
+                ),
+              )}
             </TimelineLane> : null}
           {markers.map((marker, index) => (
             <button
@@ -623,6 +635,9 @@ function audioLabel(item: AudioDecision) {
   if (item.operation === "voice_focus") return "Voz";
   if (item.operation === "hum_filter") return "Hum";
   if (item.operation === "normalize") return "Normalizar";
+  if (item.operation === "peak_limiter") return "Picos";
+  if (item.operation === "master_gain") return "Gain";
+  if (item.operation === "notch_range") return "Pitido";
   return item.operation;
 }
 
