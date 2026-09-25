@@ -275,7 +275,14 @@ fn audio_filters(edl: &EdlManifest) -> String {
                 filters.push(format!("volume={gain_db}dB:enable='{enable}'"));
             }
             "noise_reduction_range" => {
-                filters.push(format!("afftdn=nr=8:nf=-35:enable='{enable}'"));
+                let amount = audio_parameter_f64(item, "amount", 0.45).clamp(0.0, 1.0);
+                let nr = 4.0 + amount * 10.0;
+                filters.push(format!("afftdn=nr={nr:.1}:nf=-35:enable='{enable}'"));
+            }
+            "notch_range" => {
+                let hz = audio_parameter_f64(item, "hz", 4000.0).clamp(120.0, 16_000.0);
+                let width = audio_parameter_f64(item, "width", 90.0).clamp(10.0, 500.0);
+                filters.push(format!("bandreject=f={hz}:width_type=h:width={width}:enable='{enable}'"));
             }
             _ => {}
         }
@@ -652,6 +659,21 @@ mod tests {
         assert_eq!(edited_duration(&edl, 100), 70);
         edl.tracks.cuts.clear();
         assert_eq!(edited_duration(&edl, 100), 100);
+    }
+
+    #[test]
+    fn audio_filters_use_adjustable_parameters() {
+        let edl: EdlManifest = serde_json::from_str(
+            r#"{"schemaVersion":1,"projectId":"p","sourceId":"s","sourceDurationUs":3000000,"timebase":{"unit":"microseconds"},"tracks":{"cuts":[],"camera":[],"broll":[],"audio":[{"id":"n","startUs":0,"endUs":3000000,"operation":"noise_reduction","parameters":{"amount":0.75}},{"id":"h","startUs":0,"endUs":3000000,"operation":"hum_filter","parameters":{"hz":60}},{"id":"l","startUs":0,"endUs":3000000,"operation":"peak_limiter","parameters":{"limit":0.94}},{"id":"p","startUs":1000000,"endUs":2000000,"operation":"notch_range","parameters":{"hz":4200,"width":80}}]},"output":{"resolutionMode":"source","fpsMode":"source","aspectRatioMode":"source"},"updatedAt":"x"}"#,
+        )
+        .unwrap();
+
+        let filters = audio_filters(&edl);
+        assert!(filters.contains("afftdn=nr=13.0:nf=-35"));
+        assert!(filters.contains("bandreject=f=60"));
+        assert!(filters.contains("alimiter=limit=0.94"));
+        assert!(filters.contains("bandreject=f=4200"));
+        assert!(filters.contains("between(t,1.000000,2.000000)"));
     }
 
     #[test]

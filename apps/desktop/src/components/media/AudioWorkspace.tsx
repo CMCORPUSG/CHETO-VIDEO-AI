@@ -10,6 +10,7 @@ import {
   VolumeX,
   Waves,
 } from "lucide-react";
+import { useState } from "react";
 import type { AudioDecision } from "../../project/contracts";
 import { formatTimecode } from "../../editor/timecode";
 import { Button } from "../Button";
@@ -64,6 +65,11 @@ export function AudioWorkspace({
   const normalize = globalOperation(audio, "normalize");
   const masterGain = globalOperation(audio, "master_gain");
   const masterGainDb = Number(masterGain?.parameters.gainDb ?? 0);
+  const [rangeGainDb, setRangeGainDb] = useState(-12);
+  const [rangeNoiseAmount, setRangeNoiseAmount] = useState(0.45);
+  const [notchHz, setNotchHz] = useState(4000);
+  const [humHz, setHumHz] = useState(Number(hum?.parameters.hz ?? 60));
+  const [noiseAmount, setNoiseAmount] = useState(Number(noise?.parameters.amount ?? 0.55));
 
   const toggleGlobal = (operation: string, parameters: Record<string, unknown> = {}) => {
     const exists = globalOperation(audio, operation);
@@ -112,9 +118,11 @@ export function AudioWorkspace({
         </div>
 
         <div className="mt-3 grid gap-2">
-          <AudioToggle checked={Boolean(noise)} label="Reducir ruido continuo" onClick={() => toggleGlobal("noise_reduction", { amount: 0.55 })} />
-          <AudioToggle checked={Boolean(voice)} label="Enfocar rango de voz" onClick={() => toggleGlobal("voice_focus", { preset: "speech" })} />
-          <AudioToggle checked={Boolean(hum)} label="Eliminar zumbido 50 Hz" onClick={() => toggleGlobal("hum_filter", { hz: 50 })} />
+          <AudioToggle checked={Boolean(noise)} label="Reducir ruido continuo" onClick={() => toggleGlobal("noise_reduction", { amount: noiseAmount })} />
+          {noise ? <Control label="Intensidad de reducción" value={Math.round(noiseAmount * 100) + "%"}><input aria-label="Intensidad de reducción de ruido" className="w-full accent-cyan" max="0.9" min="0.2" onChange={(event) => setNoiseAmount(Number(event.currentTarget.value))} step="0.05" type="range" value={noiseAmount} /></Control> : null}
+          <AudioToggle checked={Boolean(voice)} label="Enfocar voz / recortar extremos" onClick={() => toggleGlobal("voice_focus", { preset: "speech" })} />
+          <div className="grid grid-cols-[1fr_auto] items-center gap-2"><AudioToggle checked={Boolean(hum)} label={"Eliminar zumbido " + humHz + " Hz"} onClick={() => toggleGlobal("hum_filter", { hz: humHz })} /><select aria-label="Frecuencia de zumbido" className="h-8 rounded-md border border-white/[0.06] bg-white/[0.025] px-2 text-[8px] text-ink" onChange={(event) => setHumHz(Number(event.currentTarget.value))} value={humHz}><option value="50">50 Hz</option><option value="60">60 Hz</option></select></div>
+          <AudioToggle checked={Boolean(globalOperation(audio, "peak_limiter"))} label="Proteger voz de picos" onClick={() => toggleGlobal("peak_limiter", { limit: 0.95 })} />
           <AudioToggle checked={Boolean(normalize)} label="Normalizar volumen final" onClick={() => toggleGlobal("normalize", { targetLufs: -16 })} />
         </div>
       </Card>
@@ -126,10 +134,16 @@ export function AudioWorkspace({
         </p>
         <div className="grid grid-cols-2 gap-2">
           <Button disabled={!range || !hasAudio} icon={<VolumeX size={12}/>} onClick={() => addRange("mute_range", {}) } variant="secondary">Silenciar tramo</Button>
-          <Button disabled={!range || !hasAudio} icon={<MinusCircle size={12}/>} onClick={() => addRange("gain_range", { gainDb: -12 })} variant="secondary">Reducir -12 dB</Button>
-          <Button disabled={!range || !hasAudio} icon={<PlusCircle size={12}/>} onClick={() => addRange("gain_range", { gainDb: 3 })} variant="secondary">Subir +3 dB</Button>
-          <Button disabled={!range || !hasAudio} icon={<Waves size={12}/>} onClick={() => addRange("noise_reduction_range", { amount: 0.45 })} variant="secondary">Limpiar tramo</Button>
+          <Button disabled={!range || !hasAudio} icon={<Waves size={12}/>} onClick={() => addRange("noise_reduction_range", { amount: rangeNoiseAmount })} variant="secondary">Limpiar tramo</Button>
         </div>
+        <div className="mt-3 grid gap-3">
+          <Control label="Ganancia del tramo" value={(rangeGainDb > 0 ? "+" : "") + rangeGainDb.toFixed(1) + " dB"}><input aria-label="Ganancia del tramo" className="w-full accent-cyan" max="12" min="-36" onChange={(event) => setRangeGainDb(Number(event.currentTarget.value))} step="0.5" type="range" value={rangeGainDb} /></Control>
+          <Button disabled={!range || !hasAudio} icon={rangeGainDb >= 0 ? <PlusCircle size={12}/> : <MinusCircle size={12}/>} onClick={() => addRange("gain_range", { gainDb: rangeGainDb })} variant="secondary">Aplicar ganancia al tramo</Button>
+          <Control label="Limpieza del tramo" value={Math.round(rangeNoiseAmount * 100) + "%"}><input aria-label="Intensidad de limpieza del tramo" className="w-full accent-cyan" max="0.85" min="0.2" onChange={(event) => setRangeNoiseAmount(Number(event.currentTarget.value))} step="0.05" type="range" value={rangeNoiseAmount} /></Control>
+          <Control label="Pitido tonal" value={Math.round(notchHz) + " Hz"}><input aria-label="Frecuencia del pitido tonal" className="w-full accent-cyan" max="8000" min="500" onChange={(event) => setNotchHz(Number(event.currentTarget.value))} step="100" type="range" value={notchHz} /></Control>
+          <Button disabled={!range || !hasAudio} icon={<Waves size={12}/>} onClick={() => addRange("notch_range", { hz: notchHz, width: 90 })} variant="secondary">Atenuar pitido en selección</Button>
+        </div>
+        <p className="mt-3 text-[8px] leading-4 text-muted/45">Para TV, voces externas o sonidos aislados: marca Entrada/Salida y reduce, silencia o limpia solo ese tramo. CHETO no elimina automáticamente una voz concreta sin un modelo local de separación de hablantes.</p>
       </Card>
 
       <Card className="p-3">
@@ -197,10 +211,12 @@ function operationLabel(item: AudioDecision) {
     case "voice_focus": return "Enfoque de voz";
     case "hum_filter": return "Filtro de zumbido";
     case "normalize": return "Normalización";
+    case "peak_limiter": return "Protección de picos";
     case "master_gain": return `Ganancia maestra ${numberParameter(item, "gainDb")} dB`;
     case "mute_range": return "Silenciar tramo";
     case "gain_range": return `Ganancia ${numberParameter(item, "gainDb")} dB`;
     case "noise_reduction_range": return "Limpieza de tramo";
+    case "notch_range": return `Pitido ${String(item.parameters.hz ?? 0)} Hz`;
     default: return item.operation;
   }
 }
