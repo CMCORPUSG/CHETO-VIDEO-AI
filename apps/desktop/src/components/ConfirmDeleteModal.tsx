@@ -1,4 +1,4 @@
-import { ShieldAlert, Trash2 } from "lucide-react";
+﻿import { ShieldAlert, Trash2 } from "lucide-react";
 import type { LocalProject } from "../types/project";
 import { Button } from "./Button";
 import { Modal } from "./Modal";
@@ -9,25 +9,51 @@ interface ConfirmDeleteModalProps {
   project: LocalProject | null;
 }
 
-export function ConfirmDeleteModal({ onClose, onConfirm, project }: ConfirmDeleteModalProps) {
+export function ConfirmDeleteModal({
+  onClose,
+  onConfirm,
+  project,
+}: ConfirmDeleteModalProps) {
   return (
-    <Modal onClose={onClose} open={project !== null} size="small" title="Eliminar referencia">
-      <div className="p-6">
+    <Modal
+      onClose={onClose}
+      open={project !== null}
+      size="small"
+      title="Eliminar referencia"
+    >
+      <div className="p-5">
         <div className="flex gap-4">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg border border-danger/25 bg-danger/10 text-danger">
-            <ShieldAlert aria-hidden="true" size={20} />
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-danger/15 bg-danger/[0.07] text-danger">
+            <ShieldAlert size={17} />
           </span>
-          <div>
-            <p className="font-semibold text-ink">¿Eliminar “{project?.name}”?</p>
-            <p className="mt-2 text-sm leading-6 text-muted">
-              Se eliminará el proyecto de CHETO VIDEO AI. El archivo de video original no será eliminado.
+
+          <div className="min-w-0">
+            <p className="truncate text-[13px] font-semibold text-ink">
+              ¿Eliminar “{project?.name}”?
+            </p>
+
+            <p className="mt-2 text-[10px] leading-5 text-muted/55">
+              Se eliminará únicamente la referencia y los datos del
+              proyecto en CHETO VIDEO AI. El video original permanecerá
+              intacto.
             </p>
           </div>
         </div>
-        <div className="mt-6 flex justify-end gap-3 border-t border-line pt-5">
-          <Button onClick={onClose} variant="secondary">Cancelar</Button>
-          <Button icon={<Trash2 aria-hidden="true" size={16} />} onClick={onConfirm} variant="danger">
-            Eliminar referencia
+
+        <div className="mt-5 flex justify-end gap-2 border-t border-white/[0.06] pt-4">
+          <Button
+            onClick={onClose}
+            variant="secondary"
+          >
+            Cancelar
+          </Button>
+
+          <Button
+            icon={<Trash2 size={14} />}
+            onClick={onConfirm}
+            variant="danger"
+          >
+            Eliminar
           </Button>
         </div>
       </div>

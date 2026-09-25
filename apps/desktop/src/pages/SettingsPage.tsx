@@ -1,7 +1,20 @@
-import { Camera, CloudOff, Cpu, ImageMinus, Languages, Moon, Save, UserRound } from "lucide-react";
-import { useId, useState, type ChangeEvent, type FormEvent } from "react";
+﻿import {
+  Camera,
+  CloudOff,
+  Cpu,
+  ImageMinus,
+  Languages,
+  Moon,
+  Save,
+  UserRound,
+} from "lucide-react";
+import {
+  useId,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
 import { Button } from "../components/Button";
-import { Card } from "../components/Card";
 import { StatusBadge } from "../components/StatusBadge";
 import { readAvatarFile } from "../lib/avatar";
 import type { LocalProfile } from "../types/profile";
@@ -24,116 +37,281 @@ export function SettingsPage({
   const avatarInputId = useId();
   const [name, setName] = useState(profile.name);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
     event.preventDefault();
-    if (name.trim()) onNameSave(name.trim());
+
+    if (name.trim()) {
+      onNameSave(name.trim());
+    }
   };
 
-  const handleAvatarChange = async (event: ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     event.target.value = "";
+
     if (!file) return;
+
     try {
       onAvatarChange(await readAvatarFile(file));
     } catch (error) {
-      onError(error instanceof Error ? error.message : "No se pudo leer la imagen.");
+      onError(
+        error instanceof Error
+          ? error.message
+          : "No se pudo leer la imagen.",
+      );
     }
   };
 
   return (
-    <div className="space-y-6">
-      <Card className="p-6">
-        <div className="mb-6 flex items-center gap-3 border-b border-line pb-4">
-          <span className="grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-cyan"><Moon aria-hidden="true" size={18} /></span>
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-cyan">General</p>
-            <h2 className="mt-1 font-bold text-ink">Preferencias de la aplicación</h2>
-          </div>
-        </div>
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-lg border border-line bg-canvas/45 p-4">
-            <p className="text-xs font-semibold text-muted">Tema</p>
-            <div className="mt-3 flex items-center gap-2 text-sm font-semibold text-ink"><Moon aria-hidden="true" className="text-violet" size={16} />Oscuro</div>
-          </div>
-          <div className="rounded-lg border border-line bg-canvas/45 p-4">
-            <p className="text-xs font-semibold text-muted">Idioma</p>
-            <div className="mt-3 flex items-center gap-2 text-sm font-semibold text-ink"><Languages aria-hidden="true" className="text-cyan" size={16} />Español</div>
-          </div>
-          <div className="rounded-lg border border-line bg-canvas/45 p-4">
-            <p className="text-xs font-semibold text-muted">Inicio automático</p>
-            <p className="mt-3 text-sm font-semibold text-muted">Disponible próximamente</p>
-          </div>
-        </div>
-      </Card>
+    <div className="mx-auto w-full max-w-[1200px] space-y-8">
+      <header className="border-b border-white/[0.055] pb-5">
+        <p className="text-[9px] font-medium uppercase tracking-[0.14em] text-muted/40">
+          Aplicación
+        </p>
 
-      <Card className="p-6">
-        <div className="mb-6 flex items-center gap-3 border-b border-line pb-4">
-          <span className="grid h-10 w-10 place-items-center rounded-lg bg-violet/10 text-violet"><UserRound aria-hidden="true" size={18} /></span>
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-violet">Perfil</p>
-            <h2 className="mt-1 font-bold text-ink">Identidad local</h2>
-          </div>
-        </div>
+        <h2 className="mt-1 text-[20px] font-semibold tracking-tight text-ink">
+          Configuración
+        </h2>
 
-        <div className="grid gap-6 lg:grid-cols-[auto_1fr]">
-          <div className="flex items-center gap-4">
-            <span className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-xl border border-line-bright bg-[var(--gradient-primary)] text-white shadow-glow">
-              {profile.avatar ? <img alt="Avatar local" className="h-full w-full object-cover" src={profile.avatar} /> : <UserRound aria-hidden="true" size={28} />}
-            </span>
-            <div className="space-y-2">
-              <input
-                accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
-                className="sr-only"
-                id={avatarInputId}
-                onChange={(event) => void handleAvatarChange(event)}
-                type="file"
-              />
-              <label className="flex cursor-pointer items-center gap-2 rounded-md border border-line-bright bg-elevated px-3 py-2 text-xs font-semibold text-ink transition hover:border-cyan/50 hover:text-cyan" htmlFor={avatarInputId}>
-                <Camera aria-hidden="true" size={15} />Cambiar foto
-              </label>
-              <Button disabled={!profile.avatar} icon={<ImageMinus aria-hidden="true" size={14} />} onClick={onAvatarRemove} variant="ghost">Quitar foto</Button>
+        <p className="mt-2 text-[11px] text-muted/55">
+          Preferencias locales de CHETO VIDEO AI.
+        </p>
+      </header>
+
+      <section>
+        <SectionTitle
+          description="Preferencias generales del entorno."
+          icon={<Moon size={15} />}
+          title="General"
+        />
+
+        <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-[#090f18]">
+          <SettingRow
+            icon={<Moon size={15} />}
+            label="Tema"
+            value="Oscuro"
+          />
+
+          <SettingRow
+            icon={<Languages size={15} />}
+            label="Idioma"
+            value="Español"
+          />
+
+          <SettingRow
+            label="Inicio automático"
+            value="Próximamente"
+          />
+        </div>
+      </section>
+
+      <section>
+        <SectionTitle
+          description="Información utilizada únicamente dentro de la aplicación."
+          icon={<UserRound size={15} />}
+          title="Perfil local"
+        />
+
+        <div className="rounded-xl border border-white/[0.06] bg-[#090f18] p-5">
+          <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
+            <div className="flex items-center gap-4">
+              <span className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.035] text-muted">
+                {profile.avatar ? (
+                  <img
+                    alt="Avatar local"
+                    className="h-full w-full object-cover"
+                    src={profile.avatar}
+                  />
+                ) : (
+                  <UserRound
+                    aria-hidden="true"
+                    size={23}
+                  />
+                )}
+              </span>
+
+              <div className="space-y-2">
+                <input
+                  accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+                  className="sr-only"
+                  id={avatarInputId}
+                  onChange={(event) =>
+                    void handleAvatarChange(event)
+                  }
+                  type="file"
+                />
+
+                <label
+                  className="flex cursor-pointer items-center gap-2 rounded-md border border-white/[0.08] bg-white/[0.025] px-3 py-2 text-[10px] font-medium text-muted transition hover:bg-white/[0.05] hover:text-ink"
+                  htmlFor={avatarInputId}
+                >
+                  <Camera size={13} />
+                  Cambiar foto
+                </label>
+
+                <Button
+                  disabled={!profile.avatar}
+                  icon={<ImageMinus size={13} />}
+                  onClick={onAvatarRemove}
+                  variant="ghost"
+                >
+                  Quitar
+                </Button>
+              </div>
             </div>
+
+            <form
+              className="flex items-end gap-3"
+              onSubmit={handleSubmit}
+            >
+              <div className="flex-1">
+                <label
+                  className="mb-2 block text-[10px] font-medium text-muted/70"
+                  htmlFor="profile-name"
+                >
+                  Nombre visible
+                </label>
+
+                <input
+                  className="cheto-input"
+                  id="profile-name"
+                  maxLength={48}
+                  onChange={(event) =>
+                    setName(event.target.value)
+                  }
+                  value={name}
+                />
+              </div>
+
+              <Button
+                disabled={
+                  !name.trim() ||
+                  name.trim() === profile.name
+                }
+                icon={<Save size={14} />}
+                type="submit"
+              >
+                Guardar
+              </Button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <SectionTitle
+          description="Servicios utilizados por el editor."
+          icon={<Cpu size={15} />}
+          title="Procesamiento y privacidad"
+        />
+
+        <div className="grid overflow-hidden rounded-xl border border-white/[0.06] bg-[#090f18] lg:grid-cols-2">
+          <div className="p-5 lg:border-r lg:border-white/[0.05]">
+            <div className="flex items-start justify-between gap-3">
+              <span className="grid h-9 w-9 place-items-center rounded-lg bg-white/[0.035] text-muted/60">
+                <Cpu size={15} />
+              </span>
+
+              <StatusBadge label="Próximamente" />
+            </div>
+
+            <h3 className="mt-4 text-[13px] font-semibold text-ink">
+              Motor local
+            </h3>
+
+            <p className="mt-1.5 text-[10px] leading-5 text-muted/50">
+              Las opciones avanzadas del motor local se incorporarán
+              en siguientes fases.
+            </p>
           </div>
 
-          <form className="flex items-end gap-3" onSubmit={handleSubmit}>
-            <div className="flex-1">
-              <label className="mb-2 block text-sm font-semibold text-ink" htmlFor="profile-name">Nombre visible</label>
-              <input
-                className="h-11 w-full rounded-md border border-line bg-canvas px-3.5 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/25"
-                id="profile-name"
-                maxLength={48}
-                onChange={(event) => setName(event.target.value)}
-                value={name}
+          <div className="border-t border-white/[0.05] p-5 lg:border-t-0">
+            <div className="flex items-start justify-between gap-3">
+              <span className="grid h-9 w-9 place-items-center rounded-lg bg-success/[0.06] text-success">
+                <CloudOff size={15} />
+              </span>
+
+              <StatusBadge
+                label="Desactivada"
+                tone="success"
               />
             </div>
-            <Button disabled={!name.trim() || name.trim() === profile.name} icon={<Save aria-hidden="true" size={15} />} type="submit">Guardar</Button>
-          </form>
+
+            <h3 className="mt-4 text-[13px] font-semibold text-ink">
+              API externa
+            </h3>
+
+            <p className="mt-1.5 text-[10px] leading-5 text-muted/50">
+              Las integraciones externas permanecen apagadas y se
+              utilizarán únicamente cuando una función las necesite.
+            </p>
+          </div>
         </div>
-      </Card>
+      </section>
+    </div>
+  );
+}
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <Card className="p-6">
-          <div className="flex items-start justify-between gap-4">
-            <span className="grid h-11 w-11 place-items-center rounded-lg bg-primary/10 text-cyan"><Cpu aria-hidden="true" size={20} /></span>
-            <StatusBadge label="Próximamente" />
-          </div>
-          <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.16em] text-cyan">Procesamiento</p>
-          <h2 className="mt-1.5 text-lg font-bold text-ink">Motor local</h2>
-          <p className="mt-2 text-sm leading-6 text-muted">Se configurará en próximas fases.</p>
-        </Card>
+function SectionTitle({
+  description,
+  icon,
+  title,
+}: {
+  description: string;
+  icon: React.ReactNode;
+  title: string;
+}) {
+  return (
+    <div className="mb-3 flex items-start gap-2">
+      <span className="mt-0.5 text-muted/45">
+        {icon}
+      </span>
 
-        <Card className="p-6">
-          <div className="flex items-start justify-between gap-4">
-            <span className="grid h-11 w-11 place-items-center rounded-lg bg-success/10 text-success"><CloudOff aria-hidden="true" size={20} /></span>
-            <StatusBadge label="Desactivada" tone="success" />
-          </div>
-          <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.16em] text-success">API externa</p>
-          <h2 className="mt-1.5 text-lg font-bold text-ink">Integraciones bajo demanda</h2>
-          <p className="mt-2 text-sm leading-6 text-muted">
-            Las integraciones externas estarán apagadas por defecto y sólo se utilizarán cuando una función concreta las requiera.
-          </p>
-        </Card>
+      <div>
+        <h3 className="text-[12px] font-semibold text-ink">
+          {title}
+        </h3>
+
+        <p className="mt-0.5 text-[9px] text-muted/45">
+          {description}
+        </p>
       </div>
+    </div>
+  );
+}
+
+function SettingRow({
+  icon,
+  label,
+  value,
+}: {
+  icon?: React.ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex min-h-[58px] items-center justify-between gap-4 border-b border-white/[0.05] px-5 last:border-b-0">
+      <div className="flex items-center gap-3">
+        {icon ? (
+          <span className="text-muted/45">
+            {icon}
+          </span>
+        ) : (
+          <span className="w-[15px]" />
+        )}
+
+        <span className="text-[10px] font-medium text-muted/65">
+          {label}
+        </span>
+      </div>
+
+      <span className="text-[10px] font-semibold text-ink/80">
+        {value}
+      </span>
     </div>
   );
 }

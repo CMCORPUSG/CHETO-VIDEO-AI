@@ -2060,3 +2060,83 @@ body {
   }
 }
 
+
+/* ==========================================================
+   CHETO SETTINGS + FORMS + MODALS V6
+   ========================================================== */
+
+.cheto-input,
+.export-field input,
+.export-field select,
+.export-field output {
+  width: 100%;
+  min-height: 36px;
+
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 6px;
+
+  background: #070c13;
+  color: #f4f7fb;
+
+  padding: 0 10px;
+
+  font-size: 10px;
+
+  outline: none;
+
+  transition:
+    border-color 120ms ease,
+    background 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.cheto-input:hover,
+.export-field input:hover,
+.export-field select:hover {
+  border-color: rgb(255 255 255 / 13%);
+}
+
+.cheto-input:focus,
+.export-field input:focus,
+.export-field select:focus {
+  border-color: rgb(0 200 239 / 40%);
+
+  box-shadow:
+    0 0 0 2px rgb(0 200 239 / 8%);
+}
+
+.export-field {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 6px;
+
+  color: rgb(169 184 204 / 55%) !important;
+
+  font-size: 8px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.08em;
+}
+
+.export-field small {
+  color: rgb(169 184 204 / 40%);
+
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.export-field output {
+  display: flex;
+
+  align-items: center;
+
+  color: rgb(248 250 252 / 72%);
+}
+
+input[type="checkbox"] {
+  accent-color: #00c8ef;
+}
+

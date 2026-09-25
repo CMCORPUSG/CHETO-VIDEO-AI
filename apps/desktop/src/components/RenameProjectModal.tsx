@@ -1,4 +1,9 @@
-import { useState, type FormEvent } from "react";
+﻿import { Pencil } from "lucide-react";
+import {
+  useEffect,
+  useState,
+  type FormEvent,
+} from "react";
 import type { LocalProject } from "../types/project";
 import { Button } from "./Button";
 import { Modal } from "./Modal";
@@ -9,38 +14,86 @@ interface RenameProjectModalProps {
   project: LocalProject | null;
 }
 
-export function RenameProjectModal({ onClose, onRename, project }: RenameProjectModalProps) {
-  const [name, setName] = useState(project?.name ?? "");
+export function RenameProjectModal({
+  onClose,
+  onRename,
+  project,
+}: RenameProjectModalProps) {
+  const [name, setName] = useState(
+    project?.name ?? "",
+  );
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    setName(project?.name ?? "");
+  }, [project]);
+
+  const handleSubmit = (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
     event.preventDefault();
+
     const nextName = name.trim();
+
     if (!nextName) return;
+
     onRename(nextName);
   };
 
   return (
     <Modal
-      description="El archivo de video conservará su nombre original."
+      description="El nombre del archivo de video original no será modificado."
       onClose={onClose}
       open={project !== null}
       size="small"
       title="Renombrar proyecto"
     >
-      <form className="p-6" onSubmit={handleSubmit}>
-        <label className="mb-2 block text-sm font-semibold text-ink" htmlFor="rename-project">
+      <form
+        className="p-5"
+        onSubmit={handleSubmit}
+      >
+        <div className="mb-4 flex items-center gap-2 text-muted/50">
+          <Pencil size={14} />
+
+          <span className="text-[9px]">
+            Cambiar nombre visible
+          </span>
+        </div>
+
+        <label
+          className="mb-2 block text-[10px] font-medium text-muted/65"
+          htmlFor="rename-project"
+        >
           Nombre del proyecto
         </label>
+
         <input
           autoFocus
-          className="h-11 w-full rounded-md border border-line bg-canvas px-3.5 text-sm text-ink outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/25"
+          className="cheto-input"
           id="rename-project"
-          onChange={(event) => setName(event.target.value)}
+          maxLength={80}
+          onChange={(event) =>
+            setName(event.target.value)
+          }
           value={name}
         />
-        <div className="mt-6 flex justify-end gap-3 border-t border-line pt-5">
-          <Button onClick={onClose} variant="secondary">Cancelar</Button>
-          <Button disabled={!name.trim() || name.trim() === project?.name} type="submit">Guardar nombre</Button>
+
+        <div className="mt-5 flex justify-end gap-2 border-t border-white/[0.06] pt-4">
+          <Button
+            onClick={onClose}
+            variant="secondary"
+          >
+            Cancelar
+          </Button>
+
+          <Button
+            disabled={
+              !name.trim() ||
+              name.trim() === project?.name
+            }
+            type="submit"
+          >
+            Guardar
+          </Button>
         </div>
       </form>
     </Modal>
