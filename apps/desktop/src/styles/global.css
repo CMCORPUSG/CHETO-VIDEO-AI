@@ -2019,3 +2019,17 @@ input[type="checkbox"] {
 .editor-timeline-lane-audio .editor-timeline-block { border-color:rgb(34 197 94 / 24%) !important; background:linear-gradient(180deg,rgb(17 102 65 / 88%),rgb(10 73 49 / 88%)) !important; }
 .editor-timeline-block.is-audio { color:rgb(220 252 231 / 88%) !important; }
 @media (max-width:1280px){ .editor-shell{grid-template-columns:72px minmax(360px,1fr) clamp(250px,var(--inspector-width),340px) !important;} .editor-tool-panel{grid-template-columns:72px;} .editor-tool-content,.editor-tools-resizer{display:none !important;} .editor-horizontal-resizer{left:72px !important;} }
+
+
+/* CHETO EDITOR V8 · canvas interactivo */
+.editor-app-topbar { box-shadow: 0 1px 0 rgb(255 255 255 / 2%) inset; }
+.editor-viewer-stage { min-height: 0; }
+.player-transform-frame { position:absolute; inset:0; z-index:8; border:1px solid rgb(255 255 255 / 42%); pointer-events:none; }
+.player-transform-frame i { position:absolute; width:9px; height:9px; border:1px solid rgb(255 255 255 / 85%); background:#0b121d; }
+.player-transform-frame i:nth-child(1){top:-5px;left:-5px;}
+.player-transform-frame i:nth-child(2){top:-5px;right:-5px;}
+.player-transform-frame i:nth-child(3){bottom:-5px;left:-5px;}
+.player-transform-frame i:nth-child(4){right:-5px;bottom:-5px;}
+.canvas-transform-panel input[type="range"] { accent-color:#00c8ef; }
+@media (max-height:760px){ .editor-shell{--timeline-height:190px;} .video-stage-shell{max-height:44vh !important;} }
+@media (max-height:680px){ .editor-shell{--timeline-height:165px;} .editor-viewer-toolbar{min-height:30px;} .video-stage-shell{max-height:38vh !important;} }

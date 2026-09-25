@@ -37,6 +37,9 @@ import { Modal } from "../Modal";
 
 interface Props {
   aspectRatio: number;
+  canvasOffsetX: number;
+  canvasOffsetY: number;
+  canvasScale: number;
   bundle: ProjectBundle;
   edl: ProjectBundle["edl"];
   onClose: () => void;
@@ -46,6 +49,9 @@ interface Props {
 export function ExportModal({
   aspectRatio,
   bundle,
+  canvasOffsetX,
+  canvasOffsetY,
+  canvasScale,
   edl,
   onClose,
   open,
@@ -159,25 +165,21 @@ export function ExportModal({
   ]);
 
   const browse = async () => {
-    const selected = await save({
-      defaultPath:
-        path || `${name}.mp4`,
-      filters: [
-        {
-          name: "Video MP4",
-          extensions: ["mp4"],
-        },
-      ],
-    });
+    setError(null);
+    const sourceFolder = bundle.source.path.replace(/[\\/][^\\/]+$/, "");
+    const suggested = sourceFolder ? sourceFolder + "\\" + name + ".mp4" : name + ".mp4";
 
-    if (selected) {
-      setPath(
-        selected
-          .toLowerCase()
-          .endsWith(".mp4")
-          ? selected
-          : `${selected}.mp4`,
-      );
+    try {
+      const selected = await save({
+        defaultPath: path || suggested,
+        filters: [{ name: "Video MP4", extensions: ["mp4"] }],
+      });
+
+      if (selected) {
+        setPath(selected.toLowerCase().endsWith(".mp4") ? selected : selected + ".mp4");
+      }
+    } catch (reason) {
+      setError("No se pudo abrir el selector de destino: " + exportErrorMessage(reason));
     }
   };
 
@@ -185,6 +187,9 @@ export function ExportModal({
     const config = {
       aspectRatio,
       bitrate,
+      canvasOffsetX,
+      canvasOffsetY,
+      canvasScale,
       fps: effectiveFps,
       height: dimensions.height,
       includeAudio: audio,
@@ -398,6 +403,11 @@ export function ExportModal({
             value={formatFileSize(
               estimate,
             )}
+          />
+
+          <Summary
+            label="Encuadre"
+            value={Math.round(canvasScale * 100) + "% · X " + Math.round(canvasOffsetX * 100) + " · Y " + Math.round(canvasOffsetY * 100)}
           />
 
           <Summary

@@ -10,6 +10,9 @@ export interface ExportConfig {
   bitrate: ExportBitrate;
   includeAudio: boolean;
   aspectRatio: number;
+  canvasScale: number;
+  canvasOffsetX: number;
+  canvasOffsetY: number;
 }
 export interface ExportProgress {
   projectId: string;
@@ -63,6 +66,10 @@ export function validateExportConfig(config: ExportConfig): string | null {
   if (config.fps < 1 || config.fps > 240) return "Los FPS no son válidos.";
   if (config.aspectRatio < 0.2 || config.aspectRatio > 5)
     return "La relación de aspecto no es válida.";
+  if (config.canvasScale < 0.5 || config.canvasScale > 2.5)
+    return "La escala del lienzo no es válida.";
+  if (Math.abs(config.canvasOffsetX) > 1 || Math.abs(config.canvasOffsetY) > 1)
+    return "La posición del lienzo no es válida.";
   return null;
 }
 export function estimatedSizeBytes(

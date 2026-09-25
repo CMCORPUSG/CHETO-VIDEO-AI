@@ -1,4 +1,4 @@
-﻿import type { ReactNode } from "react";
+import type { ReactNode } from "react";
 import type { PageId } from "../types/navigation";
 import type { LocalProfile } from "../types/profile";
 import { Sidebar } from "./Sidebar";
@@ -27,24 +27,34 @@ export function AppShell({
   profile,
   title,
 }: AppShellProps) {
+  const editorMode = activePage === "project";
+
   return (
     <div className="flex h-screen overflow-hidden bg-transparent text-ink">
-      <Sidebar
-        activePage={activePage}
-        onNavigate={onNavigate}
-        onProfileAvatarChange={onProfileAvatarChange}
-        onProfileAvatarRemove={onProfileAvatarRemove}
-        onProfileEdit={onProfileEdit}
-        onProfileError={onProfileError}
-        profile={profile}
-      />
+      {!editorMode ? (
+        <Sidebar
+          activePage={activePage}
+          onNavigate={onNavigate}
+          onProfileAvatarChange={onProfileAvatarChange}
+          onProfileAvatarRemove={onProfileAvatarRemove}
+          onProfileEdit={onProfileEdit}
+          onProfileError={onProfileError}
+          profile={profile}
+        />
+      ) : null}
+
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar title={title} />
-        <main className="min-h-0 flex-1 overflow-auto">
-          <div className="page-enter w-full max-w-none p-2 sm:p-2 lg:p-3" key={activePage}>{children}</div>
+        <TopBar activePage={activePage} editorMode={editorMode} onNavigate={onNavigate} title={title} />
+
+        <main className={editorMode ? "min-h-0 flex-1 overflow-hidden" : "min-h-0 flex-1 overflow-auto"}>
+          <div
+            className={editorMode ? "h-full w-full max-w-none" : "page-enter w-full max-w-none p-2 sm:p-2 lg:p-3"}
+            key={activePage}
+          >
+            {children}
+          </div>
         </main>
       </div>
     </div>
   );
 }
-

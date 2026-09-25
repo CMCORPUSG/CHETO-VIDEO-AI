@@ -1,4 +1,4 @@
-import { BookmarkPlus, Camera, CheckCircle2, ChevronLeft, ChevronRight, Cpu, Download, FileVideo, Film, Gauge, Headphones, LoaderCircle, PanelLeftClose, PanelRightClose, Redo2, Scissors, Trash2, Undo2, ZoomIn, ZoomOut } from "lucide-react";
+import { BookmarkPlus, Camera, CheckCircle2, ChevronLeft, ChevronRight, Cpu, Download, FileVideo, Film, Gauge, Headphones, LoaderCircle, Move, PanelLeftClose, PanelRightClose, Redo2, RotateCcw, Scissors, Trash2, Undo2, ZoomIn, ZoomOut } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { formatFileSize } from "../../lib/format";
 import type { ProjectBundle } from "../../project/contracts";
@@ -31,6 +31,11 @@ function storedWidth(key: string, fallback: number) {
   if (typeof window === "undefined") return fallback;
   const value = Number(window.localStorage.getItem(key));
   return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+function storedNumber(key: string, fallback: number) {
+  if (typeof window === "undefined") return fallback;
+  const value = Number(window.localStorage.getItem(key));
+  return Number.isFinite(value) ? value : fallback;
 }
 
 export function MediaWorkspace({ bundle, onLog, onNotify }: MediaWorkspaceProps) {
@@ -79,6 +84,12 @@ export function MediaWorkspace({ bundle, onLog, onNotify }: MediaWorkspaceProps)
   const [audioVolume, setAudioVolume] = useState(1);
   const [audioMuted, setAudioMuted] = useState(false);
   const [audioRate, setAudioRate] = useState(1);
+  const canvasScaleKey = `cheto.editor.canvasScale.${projectId}`;
+  const canvasOffsetXKey = `cheto.editor.canvasOffsetX.${projectId}`;
+  const canvasOffsetYKey = `cheto.editor.canvasOffsetY.${projectId}`;
+  const [canvasScale, setCanvasScale] = useState(() => storedNumber(canvasScaleKey, 1));
+  const [canvasOffsetX, setCanvasOffsetX] = useState(() => storedNumber(canvasOffsetXKey, 0));
+  const [canvasOffsetY, setCanvasOffsetY] = useState(() => storedNumber(canvasOffsetYKey, 0));
   const resizeRef = useRef<{ side: "left" | "right" | "vertical"; startX: number; startY: number; startWidth: number } | null>(null);
 
   useEffect(() => {
@@ -119,6 +130,9 @@ export function MediaWorkspace({ bundle, onLog, onNotify }: MediaWorkspaceProps)
   useEffect(() => { window.localStorage.setItem("cheto.editor.timelineHeight", String(Math.round(timelineHeight))); }, [timelineHeight]);
   useEffect(() => { window.localStorage.setItem("cheto.editor.viewerScale.v2", String(Math.round(viewerScale))); }, [viewerScale]);
   useEffect(() => { window.localStorage.setItem(markerStorageKey, JSON.stringify(markers)); }, [markerStorageKey, markers]);
+  useEffect(() => { window.localStorage.setItem(canvasScaleKey, String(canvasScale)); }, [canvasScale, canvasScaleKey]);
+  useEffect(() => { window.localStorage.setItem(canvasOffsetXKey, String(canvasOffsetX)); }, [canvasOffsetX, canvasOffsetXKey]);
+  useEffect(() => { window.localStorage.setItem(canvasOffsetYKey, String(canvasOffsetY)); }, [canvasOffsetY, canvasOffsetYKey]);
 
   const beginInspectorResize = (event: ReactPointerEvent<HTMLButtonElement>) => {
     resizeRef.current = {
@@ -282,7 +296,9 @@ export function MediaWorkspace({ bundle, onLog, onNotify }: MediaWorkspaceProps)
         <p className="mt-5 text-xs text-muted">{recommend ? "Crear un proxy de trabajo puede mejorar la fluidez de edición." : "El archivo original puede reproducirse directamente."} El original siempre permanece como fuente maestra.</p>
       </Card>;
   const toolPanel=activeTool==="project"?proxyPanel:activeTool==="cut"?<SmartCutWorkspace bundle={bundle} edl={edl} onDraftChange={(cuts)=>setDraftTracks(current=>({camera:current?.camera??[],cuts}))} onEdlChange={commitEdl} onLog={onLog} onNotify={onNotify} onSeek={setRequestedSeekUs} onSelect={(id)=>setTimelineSelection({id,track:"cuts"})}/>:activeTool==="camera"?<SmartCameraWorkspace bundle={bundle} edl={edl} onDraftChange={(camera)=>setDraftTracks(current=>({camera,cuts:current?.cuts??[]}))} onEdlChange={commitEdl} onLog={onLog} onNotify={onNotify} onPreview={setCameraPreview} onSeek={setRequestedSeekUs} onSelect={(id)=>setTimelineSelection({id,track:"camera"})}/>:<AudioWorkspace hasAudio={bundle.source.audio.present} muted={audioMuted} onMutedChange={setAudioMuted} onRateChange={setAudioRate} onVolumeChange={setAudioVolume} rate={audioRate} volume={audioVolume}/>;
-  const panel=activeTool==="audio"?<AudioInspector hasAudio={bundle.source.audio.present} muted={audioMuted} onMutedChange={setAudioMuted} onVolumeChange={setAudioVolume} volume={audioVolume}/>:<TimelineInspector camera={edl.tracks.camera} cut={selectedCut} durationUs={durationUs} item={selectedCamera} key={timelineSelection?timelineSelection.track+"-"+timelineSelection.id:"none"} onApplyCamera={changeCamera} onApplyCut={changeCut} onDelete={deleteSelected} onReplaceCamera={replaceCamera}/>;
+  const panel=activeTool==="audio"
+    ? <AudioInspector hasAudio={bundle.source.audio.present} muted={audioMuted} onMutedChange={setAudioMuted} onVolumeChange={setAudioVolume} volume={audioVolume}/>
+    : <><CanvasTransformPanel offsetX={canvasOffsetX} offsetY={canvasOffsetY} onOffsetX={setCanvasOffsetX} onOffsetY={setCanvasOffsetY} onReset={()=>{setCanvasScale(1);setCanvasOffsetX(0);setCanvasOffsetY(0);}} onScale={setCanvasScale} scale={canvasScale}/><TimelineInspector camera={edl.tracks.camera} cut={selectedCut} durationUs={durationUs} item={selectedCamera} key={timelineSelection?timelineSelection.track+"-"+timelineSelection.id:"none"} onApplyCamera={changeCamera} onApplyCut={changeCut} onDelete={deleteSelected} onReplaceCamera={replaceCamera}/></>;
   const tools=[{id:"project" as const,label:"Medios",icon:<FileVideo size={18}/>,tone:"tool-project"},{id:"cut" as const,label:"Cortes",icon:<Scissors size={18}/>,tone:"tool-cut"},{id:"camera" as const,label:"Encuadre",icon:<Camera size={18}/>,tone:"tool-camera"},{id:"audio" as const,label:"Audio",icon:<Headphones size={18}/>,tone:"tool-audio"}];
   return <div className={`editor-shell relative grid h-[calc(100vh-9rem)] min-h-[620px] overflow-hidden border border-line bg-surface shadow-2xl ${toolsCollapsed?"tools-collapsed":""} ${inspectorCollapsed?"inspector-collapsed":""}`} style={{ "--inspector-width": `${inspectorCollapsed?0:inspectorWidth}px`, "--timeline-height": `${timelineHeight}px`, "--tools-width": `${toolsCollapsed?44:toolsWidth}px` } as CSSProperties}>
     <nav className="editor-tool-panel overflow-hidden border-line bg-canvas/60"><div className="editor-tool-rail"><div className="flex items-center justify-center py-2"><button aria-label="Ocultar panel izquierdo" className="panel-collapse-button" onClick={()=>setToolsCollapsed(value=>!value)} type="button">{toolsCollapsed?<ChevronRight size={14}/>:<PanelLeftClose size={14}/>}</button></div>{tools.map(tool=><button className={"editor-tool-button flex min-w-0 flex-col items-center justify-center gap-1 border border-transparent px-1 py-2 text-[8px] font-semibold transition "+(activeTool===tool.id?"is-active "+tool.tone:"text-muted hover:bg-card hover:text-ink")} key={tool.id} onClick={()=>setActiveTool(tool.id)} title={tool.label} type="button">{tool.icon}<span className="truncate">{tool.label}</span></button>)}</div>{!toolsCollapsed?<div className="editor-tool-content min-h-0 overflow-auto border-l border-white/[0.055] p-2.5">{toolPanel}</div>:null}</nav>
@@ -296,7 +312,7 @@ export function MediaWorkspace({ bundle, onLog, onNotify }: MediaWorkspaceProps)
           <div className="viewer-scale-control flex items-center gap-1.5" title="Tamaño del visor"><ZoomOut size={12}/><input aria-label="Tamaño del visor" max="100" min="35" onChange={(event)=>setViewerScale(Number(event.target.value))} step="5" type="range" value={viewerScale}/><span className="w-8 text-right font-mono text-[8px] text-muted">{Math.round(viewerScale)}%</span><ZoomIn size={12}/></div><Button icon={<Download size={13}/>} onClick={()=>setExportOpen(true)}>Exportar</Button>
         </div>
       </div>
-      <div className="editor-viewer-stage flex min-h-0 flex-1 items-center justify-center overflow-hidden"><div className="mx-auto flex h-full w-full items-center justify-center">{source?<VideoPlayer aspectRatio={aspectRatio} cameraPreview={cameraPreview} draftRange={draftRange} draftTracks={draftTracks} durationUs={source.durationUs} edl={edl} externalMuted={audioMuted} externalPlaybackRate={audioRate} externalVolume={audioVolume} key={source.path} kind={source.kind} markers={markers} mode={previewMode} onError={handlePlaybackError} onMutedChange={setAudioMuted} onPlaybackRateChange={setAudioRate} onTimeChange={updatePlayhead} onVolumeChange={setAudioVolume} path={source.path} seekToUs={requestedSeekUs} viewerScale={viewerScale}/>:<div className="grid aspect-video place-items-center bg-black"><LoaderCircle className="animate-spin text-cyan"/></div>}</div></div>
+      <div className="editor-viewer-stage flex min-h-0 flex-1 items-center justify-center overflow-hidden"><div className="mx-auto flex h-full w-full items-center justify-center">{source?<VideoPlayer aspectRatio={aspectRatio} cameraPreview={cameraPreview} canvasOffsetX={canvasOffsetX} canvasOffsetY={canvasOffsetY} canvasScale={canvasScale} draftRange={draftRange} draftTracks={draftTracks} durationUs={source.durationUs} edl={edl} externalMuted={audioMuted} externalPlaybackRate={audioRate} externalVolume={audioVolume} key={source.path} kind={source.kind} markers={markers} mode={previewMode} onCanvasOffsetChange={(x,y)=>{setCanvasOffsetX(x);setCanvasOffsetY(y);}} onError={handlePlaybackError} onMutedChange={setAudioMuted} onPlaybackRateChange={setAudioRate} onTimeChange={updatePlayhead} onVolumeChange={setAudioVolume} path={source.path} seekToUs={requestedSeekUs} viewerScale={viewerScale}/>:<div className="grid aspect-video place-items-center bg-black"><LoaderCircle className="animate-spin text-cyan"/></div>}</div></div>
       {error?<p className="mt-2 truncate text-[10px] text-danger" title={error}>{error}</p>:null}
     </section>
     <button
@@ -318,7 +334,7 @@ export function MediaWorkspace({ bundle, onLog, onNotify }: MediaWorkspaceProps)
       </div>
       <EditorTimeline audioPresent={bundle.source.audio.present} camera={edl.tracks.camera} cuts={edl.tracks.cuts} draftCamera={draftTracks?.camera} draftCuts={draftTracks?.cuts} durationUs={durationUs} onChangeCamera={changeCamera} onChangeCut={changeCut} onSeek={(timeUs)=>{setRequestedSeekUs(timeUs);setVisiblePlayheadUs(timeUs);}} onSelect={setTimelineSelection} markers={markers} playheadUs={visiblePlayheadUs} selected={timelineSelection} sourceName={bundle.source.fileName}/>
     </section>
-    <ExportModal aspectRatio={aspectRatio} bundle={bundle} edl={edl} onClose={()=>setExportOpen(false)} open={exportOpen}/>
+    <ExportModal aspectRatio={aspectRatio} bundle={bundle} canvasOffsetX={canvasOffsetX} canvasOffsetY={canvasOffsetY} canvasScale={canvasScale} edl={edl} onClose={()=>setExportOpen(false)} open={exportOpen}/>
   </div>;
 }
 
@@ -339,3 +355,25 @@ function isTypingTarget(target: EventTarget | null) {
 
 
 
+
+
+function CanvasTransformPanel({ offsetX, offsetY, onOffsetX, onOffsetY, onReset, onScale, scale }: {
+  offsetX: number; offsetY: number; onOffsetX: (value:number)=>void; onOffsetY: (value:number)=>void; onReset: ()=>void; onScale: (value:number)=>void; scale: number;
+}) {
+  return (
+    <div className="canvas-transform-panel border-b border-white/[0.055] p-3">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2"><Move className="text-cyan/75" size={13}/><div><p className="text-[10px] font-semibold text-ink">Transformar lienzo</p><p className="mt-0.5 text-[8px] text-muted/45">Arrastra el video para reposicionarlo.</p></div></div>
+        <button aria-label="Restablecer transformación" className="grid h-7 w-7 place-items-center rounded-md text-muted/55 hover:bg-white/[0.04] hover:text-ink" onClick={onReset} title="Restablecer" type="button"><RotateCcw size={13}/></button>
+      </div>
+      <TransformRange label="Escala" max={2.5} min={0.5} onChange={onScale} step={0.01} value={scale} valueLabel={Math.round(scale*100)+"%"} />
+      <TransformRange label="Posición X" max={1} min={-1} onChange={onOffsetX} step={0.01} value={offsetX} valueLabel={Math.round(offsetX*100)+"%"} />
+      <TransformRange label="Posición Y" max={1} min={-1} onChange={onOffsetY} step={0.01} value={offsetY} valueLabel={Math.round(offsetY*100)+"%"} />
+    </div>
+  );
+}
+function TransformRange({ label, max, min, onChange, step, value, valueLabel }: {
+  label:string; max:number; min:number; onChange:(value:number)=>void; step:number; value:number; valueLabel:string;
+}) {
+  return <label className="mb-3 block"><span className="flex items-center justify-between text-[8px] font-medium text-muted/55">{label}<b className="font-mono font-medium text-ink/70">{valueLabel}</b></span><input className="mt-2 w-full accent-cyan" max={max} min={min} onChange={(event)=>onChange(Number(event.currentTarget.value))} step={step} type="range" value={value}/></label>;
+}

@@ -47,6 +47,9 @@ const PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
 interface VideoPlayerProps {
   aspectRatio: number;
   cameraPreview?: CameraPreview | null;
+  canvasOffsetX?: number;
+  canvasOffsetY?: number;
+  canvasScale?: number;
   draftRange?: PreviewRange | null;
   draftTracks?: DraftTracks | null;
   durationUs: number;
@@ -57,6 +60,7 @@ interface VideoPlayerProps {
   kind: PlaybackKind;
   markers?: number[];
   mode: "original" | "result";
+  onCanvasOffsetChange?: (x: number, y: number) => void;
   onError: (message: string) => void;
   onMutedChange?: (muted: boolean) => void;
   onPlaybackRateChange?: (rate: number) => void;
@@ -79,6 +83,9 @@ function isTypingTarget(target: EventTarget | null): boolean {
 export function VideoPlayer({
   aspectRatio,
   cameraPreview,
+  canvasOffsetX = 0,
+  canvasOffsetY = 0,
+  canvasScale = 1,
   draftRange,
   draftTracks,
   durationUs,
@@ -89,6 +96,7 @@ export function VideoPlayer({
   kind,
   markers = [],
   mode,
+  onCanvasOffsetChange,
   onError,
   onMutedChange,
   onPlaybackRateChange,
@@ -105,15 +113,20 @@ export function VideoPlayer({
     useState<PlaybackState>("idle");
 
   const [playheadUs, setPlayheadUs] = useState(0);
-  const [playbackRate, setPlaybackRate] = useState(externalPlaybackRate ?? 1);
-  const [volume, setVolume] = useState(externalVolume ?? 1);
-  const [muted, setMuted] = useState(externalMuted ?? false);
+  const [localPlaybackRate, setLocalPlaybackRate] = useState(1);
+  const [localVolume, setLocalVolume] = useState(1);
+  const [localMuted, setLocalMuted] = useState(false);
+  const playbackRate = externalPlaybackRate ?? localPlaybackRate;
+  const volume = externalVolume ?? localVolume;
+  const muted = externalMuted ?? localMuted;
+  const panRef = useRef<{ pointerId:number; startX:number; startY:number; offsetX:number; offsetY:number; moved:boolean } | null>(null);
+  const suppressClickRef = useRef(false);
 
   const assetUrl = playbackAssetUrl(path);
 
-  useEffect(() => { if (externalPlaybackRate === undefined) return; setPlaybackRate(externalPlaybackRate); if (videoRef.current) videoRef.current.playbackRate = externalPlaybackRate; }, [externalPlaybackRate]);
-  useEffect(() => { if (externalVolume === undefined) return; const next = Math.min(1, Math.max(0, externalVolume)); setVolume(next); if (videoRef.current) videoRef.current.volume = next; }, [externalVolume]);
-  useEffect(() => { if (externalMuted === undefined) return; setMuted(externalMuted); if (videoRef.current) videoRef.current.muted = externalMuted; }, [externalMuted]);
+  useEffect(() => { if (videoRef.current) videoRef.current.playbackRate = playbackRate; }, [playbackRate]);
+  useEffect(() => { if (videoRef.current) videoRef.current.volume = Math.min(1, Math.max(0, volume)); }, [volume]);
+  useEffect(() => { if (videoRef.current) videoRef.current.muted = muted; }, [muted]);
 
   const tracks = useMemo(
     () =>
@@ -240,8 +253,8 @@ export function VideoPlayer({
   const changeVolume = (value: number) => {
     const next = Math.min(1, Math.max(0, value));
 
-    setVolume(next);
-    setMuted(next === 0);
+    setLocalVolume(next);
+    setLocalMuted(next === 0);
     onVolumeChange?.(next);
     onMutedChange?.(next === 0);
 
@@ -254,7 +267,7 @@ export function VideoPlayer({
   const toggleMute = () => {
     const next = !muted;
 
-    setMuted(next);
+    setLocalMuted(next);
     onMutedChange?.(next);
 
     if (videoRef.current) {
@@ -263,7 +276,7 @@ export function VideoPlayer({
   };
 
   const changeRate = (rate: number) => {
-    setPlaybackRate(rate);
+    setLocalPlaybackRate(rate);
     onPlaybackRateChange?.(rate);
 
     if (videoRef.current) {
@@ -281,7 +294,32 @@ export function VideoPlayer({
     }
   };
 
-  const maxStageVh = Math.max(28, Math.min(52, 18 + viewerScale * 0.34));
+  const maxStageVh = Math.max(24, Math.min(52, 12 + viewerScale * 0.4));
+  const manualScale = Math.min(2.5, Math.max(0.5, canvasScale));
+  const manualOffsetX = Math.min(1, Math.max(-1, canvasOffsetX));
+  const manualOffsetY = Math.min(1, Math.max(-1, canvasOffsetY));
+
+  const beginCanvasPan = (event: import("react").PointerEvent<HTMLDivElement>) => {
+    if (mode !== "result" || !onCanvasOffsetChange) return;
+    panRef.current = { pointerId:event.pointerId, startX:event.clientX, startY:event.clientY, offsetX:manualOffsetX, offsetY:manualOffsetY, moved:false };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+  const moveCanvasPan = (event: import("react").PointerEvent<HTMLDivElement>) => {
+    const pan=panRef.current;
+    if (!pan || pan.pointerId!==event.pointerId || !onCanvasOffsetChange) return;
+    const bounds=event.currentTarget.getBoundingClientRect();
+    const dx=((event.clientX-pan.startX)/Math.max(1,bounds.width))*2;
+    const dy=((event.clientY-pan.startY)/Math.max(1,bounds.height))*2;
+    if (Math.abs(dx)>0.005 || Math.abs(dy)>0.005) pan.moved=true;
+    onCanvasOffsetChange(Math.min(1,Math.max(-1,pan.offsetX+dx)),Math.min(1,Math.max(-1,pan.offsetY+dy)));
+  };
+  const endCanvasPan = (event: import("react").PointerEvent<HTMLDivElement>) => {
+    const pan=panRef.current;
+    if (!pan || pan.pointerId!==event.pointerId) return;
+    suppressClickRef.current=pan.moved;
+    panRef.current=null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+  };
 
   const VolumeIcon =
     muted || volume === 0
@@ -393,7 +431,11 @@ export function VideoPlayer({
     >
       <div className="video-stage-shell">
         <div
-          className="video-stage relative grid place-items-center overflow-hidden"
+          className={`video-stage relative grid place-items-center overflow-hidden ${mode==="result"&&onCanvasOffsetChange?"cursor-grab active:cursor-grabbing":""}`}
+          onPointerDown={beginCanvasPan}
+          onPointerMove={moveCanvasPan}
+          onPointerUp={endCanvasPan}
+          onPointerCancel={endCanvasPan}
           style={{
             aspectRatio,
             maxHeight: `${maxStageVh}vh`,
@@ -406,7 +448,7 @@ export function VideoPlayer({
                 ? "object-cover"
                 : "object-contain"
             } will-change-transform`}
-            onClick={() => void togglePlayback()}
+            onClick={() => { if (suppressClickRef.current) { suppressClickRef.current=false; return; } void togglePlayback(); }}
             onEnded={() =>
               setPlaybackState(
                 nextPlaybackState(
@@ -463,9 +505,7 @@ export function VideoPlayer({
             ref={videoRef}
             src={assetUrl}
             style={{
-              transform: `scale(${
-                activeCamera?.zoom ?? 1
-              })`,
+              transform: `translate(${manualOffsetX * 25}%, ${manualOffsetY * 25}%) scale(${manualScale * (activeCamera?.zoom ?? 1)})`,
               transformOrigin: `${
                 (activeCamera?.centerX ?? 0.5) *
                 100
@@ -493,6 +533,8 @@ export function VideoPlayer({
               Cargando…
             </span>
           ) : null}
+
+          {mode==="result" ? <span className="player-transform-frame" aria-hidden="true"><i/><i/><i/><i/></span> : null}
 
           {activeCamera ? (
             <span className="player-camera-badge">

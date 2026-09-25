@@ -29,6 +29,9 @@ pub struct ExportConfig {
     bitrate: String,
     include_audio: bool,
     aspect_ratio: f64,
+    canvas_scale: f64,
+    canvas_offset_x: f64,
+    canvas_offset_y: f64,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -82,6 +85,22 @@ fn validate(config: &ExportConfig, edl: &EdlManifest, duration_us: u64) -> Resul
         return Err(ExportError::new(
             "invalid-aspect",
             "La relación de aspecto no es válida.",
+        ));
+    }
+    if !config.canvas_scale.is_finite() || !(0.5..=2.5).contains(&config.canvas_scale) {
+        return Err(ExportError::new(
+            "invalid-canvas-scale",
+            "La escala del lienzo no es válida.",
+        ));
+    }
+    if !config.canvas_offset_x.is_finite()
+        || !config.canvas_offset_y.is_finite()
+        || config.canvas_offset_x.abs() > 1.0
+        || config.canvas_offset_y.abs() > 1.0
+    {
+        return Err(ExportError::new(
+            "invalid-canvas-position",
+            "La posición del lienzo no es válida.",
         ));
     }
     let output = Path::new(&config.output_path);
@@ -240,7 +259,23 @@ fn command(config: &ExportConfig, source: &Path, edl: &EdlManifest, encoder: &st
         0.5,
     );
     let keep = keep_expression(edl);
-    let vf=format!("[0:v]crop='iw/({zoom})':'ih/({zoom})':'(iw-iw/({zoom}))*({center_x})':'(ih-ih/({zoom}))*({center_y})',select='{keep}',setpts=N/FRAME_RATE/TB,crop='min(iw,ih*{ar})':'min(ih,iw/{ar})',scale={w}:{h}:force_original_aspect_ratio=decrease,pad={w}:{h}:(ow-iw)/2:(oh-ih)/2:black,setsar=1[v]",ar=config.aspect_ratio,w=config.width,h=config.height);
+    let scaled_w = ((config.width as f64 * config.canvas_scale / 2.0).round() as u32 * 2).max(2);
+    let scaled_h = ((config.height as f64 * config.canvas_scale / 2.0).round() as u32 * 2).max(2);
+    let crop_x = format!("max(0,(iw-{w})/2-(iw-{w})*({ox})/2)", w=config.width, ox=config.canvas_offset_x);
+    let crop_y = format!("max(0,(ih-{h})/2-(ih-{h})*({oy})/2)", h=config.height, oy=config.canvas_offset_y);
+    let pad_x = format!("max(0,({w}-iw)/2+({w}-iw)*({ox})/2)", w=config.width, ox=config.canvas_offset_x);
+    let pad_y = format!("max(0,({h}-ih)/2+({h}-ih)*({oy})/2)", h=config.height, oy=config.canvas_offset_y);
+    let vf=format!(
+        "[0:v]crop='iw/({zoom})':'ih/({zoom})':'(iw-iw/({zoom}))*({center_x})':'(ih-ih/({zoom}))*({center_y})',select='{keep}',setpts=N/FRAME_RATE/TB,scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h},scale={sw}:{sh},crop='min(iw,{w})':'min(ih,{h})':'{cx}':'{cy}',pad={w}:{h}:'{px}':'{py}':black,setsar=1[v]",
+        w=config.width,
+        h=config.height,
+        sw=scaled_w,
+        sh=scaled_h,
+        cx=crop_x,
+        cy=crop_y,
+        px=pad_x,
+        py=pad_y
+    );
     let mut cmd = Command::new("ffmpeg");
     cmd.args(["-y", "-hide_banner", "-loglevel", "error", "-nostdin", "-i"])
         .arg(source)
@@ -560,6 +595,9 @@ mod tests {
             bitrate: "low".into(),
             include_audio: true,
             aspect_ratio: 16.0 / 9.0,
+            canvas_scale: 1.0,
+            canvas_offset_x: 0.0,
+            canvas_offset_y: 0.0,
         };
         let rendered = command(&config, &source, &edl, "libx264").output().unwrap();
         assert!(
