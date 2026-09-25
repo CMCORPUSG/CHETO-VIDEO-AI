@@ -595,7 +595,7 @@ function cameraLabel(mode: string) {
 
 function audioLabel(item: AudioDecision) {
   if (item.operation === "mute_range") return "Mute";
-  if (item.operation === "gain_range") return String(item.parameters.gainDb ?? 0) + " dB";
+  if (item.operation === "gain_range") return (typeof item.parameters.gainDb === "number" ? item.parameters.gainDb : 0) + " dB";
   if (item.operation === "noise_reduction_range") return "Limpiar";
   if (item.operation === "noise_reduction") return "Ruido";
   if (item.operation === "voice_focus") return "Voz";

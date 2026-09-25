@@ -197,10 +197,15 @@ function operationLabel(item: AudioDecision) {
     case "voice_focus": return "Enfoque de voz";
     case "hum_filter": return "Filtro de zumbido";
     case "normalize": return "Normalización";
-    case "master_gain": return `Ganancia maestra ${String(item.parameters.gainDb ?? 0)} dB`;
+    case "master_gain": return `Ganancia maestra ${numberParameter(item, "gainDb")} dB`;
     case "mute_range": return "Silenciar tramo";
-    case "gain_range": return `Ganancia ${String(item.parameters.gainDb ?? 0)} dB`;
+    case "gain_range": return `Ganancia ${numberParameter(item, "gainDb")} dB`;
     case "noise_reduction_range": return "Limpieza de tramo";
     default: return item.operation;
   }
+}
+
+function numberParameter(item: AudioDecision, key: string) {
+  const value = item.parameters[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }

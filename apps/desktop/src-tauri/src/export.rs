@@ -224,26 +224,50 @@ fn audio_parameter_f64(item: &AudioDecision, key: &str, default: f64) -> f64 {
 fn audio_filters(edl: &EdlManifest) -> String {
     let mut filters = Vec::<String>::new();
 
-    if let Some(item) = edl.tracks.audio.iter().find(|item| item.operation == "master_gain") {
+    if let Some(item) = edl
+        .tracks
+        .audio
+        .iter()
+        .find(|item| item.operation == "master_gain")
+    {
         let gain_db = audio_parameter_f64(item, "gainDb", 0.0).clamp(-24.0, 18.0);
         if gain_db.abs() >= 0.05 {
             filters.push(format!("volume={gain_db}dB"));
         }
     }
-    if edl.tracks.audio.iter().any(|item| item.operation == "noise_reduction") {
+    if edl
+        .tracks
+        .audio
+        .iter()
+        .any(|item| item.operation == "noise_reduction")
+    {
         filters.push("afftdn=nr=10:nf=-35".into());
     }
-    if edl.tracks.audio.iter().any(|item| item.operation == "voice_focus") {
+    if edl
+        .tracks
+        .audio
+        .iter()
+        .any(|item| item.operation == "voice_focus")
+    {
         filters.push("highpass=f=80".into());
         filters.push("lowpass=f=12000".into());
     }
-    if let Some(item) = edl.tracks.audio.iter().find(|item| item.operation == "hum_filter") {
+    if let Some(item) = edl
+        .tracks
+        .audio
+        .iter()
+        .find(|item| item.operation == "hum_filter")
+    {
         let hz = audio_parameter_f64(item, "hz", 50.0).clamp(45.0, 65.0);
         filters.push(format!("bandreject=f={hz}:width_type=h:width=4"));
     }
 
     for item in &edl.tracks.audio {
-        let enable = format!("between(t,{},{})", seconds(item.start_us), seconds(item.end_us));
+        let enable = format!(
+            "between(t,{},{})",
+            seconds(item.start_us),
+            seconds(item.end_us)
+        );
         match item.operation.as_str() {
             "mute_range" => filters.push(format!("volume=0:enable='{enable}'")),
             "gain_range" => {
@@ -257,7 +281,12 @@ fn audio_filters(edl: &EdlManifest) -> String {
         }
     }
 
-    if edl.tracks.audio.iter().any(|item| item.operation == "normalize") {
+    if edl
+        .tracks
+        .audio
+        .iter()
+        .any(|item| item.operation == "normalize")
+    {
         filters.push("loudnorm=I=-16:LRA=11:TP=-1.5".into());
     }
 
