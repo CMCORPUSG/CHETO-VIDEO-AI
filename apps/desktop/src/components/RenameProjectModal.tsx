@@ -1,6 +1,5 @@
 import { Pencil } from "lucide-react";
 import {
-  useEffect,
   useState,
   type FormEvent,
 } from "react";
@@ -23,9 +22,6 @@ export function RenameProjectModal({
     project?.name ?? "",
   );
 
-  useEffect(() => {
-    setName(project?.name ?? "");
-  }, [project]);
 
   const handleSubmit = (
     event: FormEvent<HTMLFormElement>,

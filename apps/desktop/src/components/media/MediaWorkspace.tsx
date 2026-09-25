@@ -1,4 +1,4 @@
-﻿import { BookmarkPlus, Camera, CheckCircle2, ChevronLeft, ChevronRight, Cpu, Download, FileVideo, Film, Gauge, LoaderCircle, PanelLeftClose, PanelRightClose, Redo2, Scissors, Trash2, Undo2, ZoomIn, ZoomOut } from "lucide-react";
+import { BookmarkPlus, Camera, CheckCircle2, ChevronLeft, ChevronRight, Cpu, Download, FileVideo, Film, Gauge, LoaderCircle, PanelLeftClose, PanelRightClose, Redo2, Scissors, Trash2, Undo2, ZoomIn, ZoomOut } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { formatFileSize } from "../../lib/format";
 import type { ProjectBundle } from "../../project/contracts";
@@ -52,7 +52,7 @@ export function MediaWorkspace({ bundle, onLog, onNotify }: MediaWorkspaceProps)
   const [markers, setMarkers] = useState<number[]>(() => {
     try {
       const value = window.localStorage.getItem(markerStorageKey);
-      const parsed = value ? JSON.parse(value) : [];
+      const parsed: unknown = value ? JSON.parse(value) : [];
 
       return Array.isArray(parsed)
         ? parsed.filter((item): item is number => typeof item === "number")
