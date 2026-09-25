@@ -1,4 +1,4 @@
-﻿import { ShieldAlert, Trash2 } from "lucide-react";
+import { ShieldAlert, Trash2 } from "lucide-react";
 import type { LocalProject } from "../types/project";
 import { Button } from "./Button";
 import { Modal } from "./Modal";
@@ -21,9 +21,9 @@ export function ConfirmDeleteModal({
       size="small"
       title="Eliminar referencia"
     >
-      <div className="p-5">
+      <div className="p-4">
         <div className="flex gap-4">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-danger/15 bg-danger/[0.07] text-danger">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-danger/[0.07] text-danger ring-1 ring-danger/15">
             <ShieldAlert size={17} />
           </span>
 
@@ -40,7 +40,7 @@ export function ConfirmDeleteModal({
           </div>
         </div>
 
-        <div className="mt-5 flex justify-end gap-2 border-t border-white/[0.06] pt-4">
+        <div className="mt-4 flex justify-end gap-2 border-t border-white/[0.06] pt-3.5">
           <Button
             onClick={onClose}
             variant="secondary"

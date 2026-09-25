@@ -1,4 +1,4 @@
-﻿import { Pencil } from "lucide-react";
+import { Pencil } from "lucide-react";
 import {
   useEffect,
   useState,
@@ -48,10 +48,10 @@ export function RenameProjectModal({
       title="Renombrar proyecto"
     >
       <form
-        className="p-5"
+        className="p-4"
         onSubmit={handleSubmit}
       >
-        <div className="mb-4 flex items-center gap-2 text-muted/50">
+        <div className="mb-3 flex items-center gap-2 text-muted/45">
           <Pencil size={14} />
 
           <span className="text-[9px]">
@@ -77,7 +77,7 @@ export function RenameProjectModal({
           value={name}
         />
 
-        <div className="mt-5 flex justify-end gap-2 border-t border-white/[0.06] pt-4">
+        <div className="mt-4 flex justify-end gap-2 border-t border-white/[0.06] pt-3.5">
           <Button
             onClick={onClose}
             variant="secondary"

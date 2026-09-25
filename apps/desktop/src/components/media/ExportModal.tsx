@@ -1,4 +1,4 @@
-﻿import { save } from "@tauri-apps/plugin-dialog";
+import { save } from "@tauri-apps/plugin-dialog";
 import {
   CheckCircle2,
   FolderOpen,
@@ -229,8 +229,8 @@ export function ExportModal({
       size="large"
       title="Exportar video"
     >
-      <div className="p-5">
-        <div className="grid gap-4 sm:grid-cols-2">
+      <div className="p-4">
+        <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Nombre">
             <input
               className="cheto-input"
@@ -385,7 +385,7 @@ export function ExportModal({
           </Field>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 overflow-hidden rounded-lg border border-white/[0.06] bg-white/[0.015]">
+        <div className="mt-4 grid grid-cols-2 overflow-hidden rounded-lg bg-white/[0.015] ring-1 ring-white/[0.05]">
           <Summary
             label="Duración final"
             value={formatTimecode(
@@ -411,7 +411,7 @@ export function ExportModal({
           />
         </div>
 
-        <div className="mt-3 flex items-start gap-2 rounded-lg border border-white/[0.05] bg-white/[0.015] p-3">
+        <div className="mt-3 flex items-start gap-2 rounded-lg bg-white/[0.015] p-3 ring-1 ring-white/[0.045]">
           <Info
             className="mt-0.5 shrink-0 text-cyan/60"
             size={13}
@@ -426,7 +426,7 @@ export function ExportModal({
         </div>
 
         {progress ? (
-          <div className="mt-4 rounded-lg border border-white/[0.06] bg-[#070c13] p-3">
+          <div className="mt-4 rounded-lg bg-[#070c13] p-3 ring-1 ring-white/[0.055]">
             <div className="flex justify-between text-[9px] text-muted/55">
               <span>
                 {progress.stage ===
@@ -468,13 +468,13 @@ export function ExportModal({
         ) : null}
 
         {error ? (
-          <div className="mt-4 rounded-lg border border-danger/15 bg-danger/[0.05] p-3 text-[10px] text-danger">
+          <div className="mt-4 rounded-lg bg-danger/[0.05] p-3 text-[10px] text-danger ring-1 ring-danger/15">
             {error}
           </div>
         ) : null}
 
         {result ? (
-          <div className="mt-4 rounded-lg border border-success/15 bg-success/[0.04] p-4">
+          <div className="mt-4 rounded-lg bg-success/[0.04] p-4 ring-1 ring-success/15">
             <div className="flex items-center gap-2 text-success">
               <CheckCircle2
                 size={14}
@@ -522,7 +522,7 @@ export function ExportModal({
           </div>
         ) : null}
 
-        <div className="mt-5 flex justify-end gap-2 border-t border-white/[0.06] pt-4">
+        <div className="mt-4 flex justify-end gap-2 border-t border-white/[0.06] pt-3.5">
           {!busy ? (
             <Button
               onClick={onClose}

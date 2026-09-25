@@ -1,4 +1,4 @@
-﻿import {
+import {
   CheckCircle2,
   FileVideo,
   FolderOpen,
@@ -208,7 +208,7 @@ export function NewProjectModal({
       title="Nuevo proyecto"
     >
       <form
-        className="space-y-5 p-5"
+        className="space-y-4 p-4"
         onSubmit={(event) =>
           void handleSubmit(event)
         }
@@ -243,7 +243,7 @@ export function NewProjectModal({
           </span>
 
           {isAnalyzing ? (
-            <div className="flex min-h-[190px] flex-col items-center justify-center rounded-xl border border-cyan/15 bg-cyan/[0.025] text-center">
+            <div className="flex min-h-[160px] flex-col items-center justify-center rounded-lg bg-cyan/[0.025] text-center ring-1 ring-cyan/15">
               <LoaderCircle
                 className="animate-spin text-cyan"
                 size={25}
@@ -259,7 +259,7 @@ export function NewProjectModal({
               </p>
             </div>
           ) : metadata ? (
-            <div className="overflow-hidden rounded-xl border border-success/15 bg-success/[0.025]">
+            <div className="overflow-hidden rounded-lg bg-success/[0.025] ring-1 ring-success/15">
               <div className="flex items-start gap-3 border-b border-white/[0.05] p-4">
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-success/[0.07] text-success">
                   <FileVideo
@@ -396,7 +396,7 @@ export function NewProjectModal({
             </div>
           ) : (
             <button
-              className="group flex min-h-[210px] w-full flex-col items-center justify-center rounded-xl border border-dashed border-white/[0.09] bg-white/[0.012] px-6 py-8 text-center transition hover:border-cyan/25 hover:bg-cyan/[0.025]"
+              className="group flex min-h-[170px] w-full flex-col items-center justify-center rounded-lg border border-dashed border-white/[0.09] bg-white/[0.012] px-6 py-7 text-center transition-colors hover:border-cyan/25 hover:bg-cyan/[0.025]"
               onClick={() =>
                 void selectAndAnalyze()
               }
@@ -408,7 +408,7 @@ export function NewProjectModal({
                 />
               </span>
 
-              <p className="mt-4 text-[12px] font-semibold text-ink">
+              <p className="mt-3.5 text-[12px] font-semibold text-ink">
                 Seleccionar video
               </p>
 
@@ -417,7 +417,7 @@ export function NewProjectModal({
                 copiado ni modificado.
               </p>
 
-              <span className="mt-4 rounded-md border border-white/[0.08] bg-white/[0.025] px-3 py-2 text-[9px] font-medium text-muted/70">
+              <span className="mt-3 inline-flex min-h-8 items-center rounded-md bg-white/[0.035] px-3 text-[9px] font-medium text-muted/75 ring-1 ring-white/[0.07]">
                 Abrir selector nativo
               </span>
 
@@ -451,7 +451,7 @@ export function NewProjectModal({
           ) : null}
         </div>
 
-        <div className="flex items-start gap-2 rounded-lg border border-white/[0.05] bg-white/[0.018] p-3">
+        <div className="flex items-start gap-2 rounded-lg bg-white/[0.018] p-3 ring-1 ring-white/[0.045]">
           <Info
             className="mt-0.5 shrink-0 text-cyan/65"
             size={13}
