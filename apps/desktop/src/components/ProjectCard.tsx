@@ -1,4 +1,4 @@
-﻿import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import {
   ArrowUpRight,
   FileVideo,
@@ -29,9 +29,9 @@ export function ProjectCard({
     "LEGACY";
 
   return (
-    <Card className="group relative flex min-h-[230px] flex-col transition-[border-color,background-color,transform] duration-150 hover:-translate-y-px hover:border-white/[0.11] hover:bg-[#0d1521]">
+    <Card className="group relative flex min-h-[230px] flex-col transition-[background-color,transform,box-shadow] duration-150 hover:-translate-y-px hover:bg-[#0d1521] hover:ring-white/[0.09]">
       <div className="flex items-start justify-between px-5 pt-5">
-        <div className="grid h-9 w-9 place-items-center rounded-lg border border-white/[0.07] bg-white/[0.035] text-muted/70">
+        <div className="grid h-9 w-9 place-items-center rounded-lg bg-white/[0.035] text-muted/70 ring-1 ring-white/[0.055]">
           <FileVideo
             aria-hidden="true"
             size={16}
@@ -136,7 +136,7 @@ export function ProjectCard({
 
         <button
           aria-label={`Abrir ${project.name}`}
-          className="group/open flex h-8 items-center gap-1.5 rounded-md border border-white/[0.08] bg-white/[0.025] px-3 text-[10px] font-medium text-muted transition-colors hover:border-white/[0.13] hover:bg-white/[0.05] hover:text-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan/60"
+          className="group/open flex h-8 items-center gap-1.5 rounded-md bg-white/[0.035] px-3 text-[10px] font-medium text-muted/80 ring-1 ring-white/[0.065] transition-colors hover:bg-white/[0.06] hover:text-ink hover:ring-white/[0.11] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/55"
           onClick={() => onOpen(project)}
           type="button"
         >
