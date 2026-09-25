@@ -235,13 +235,15 @@ fn audio_filters(edl: &EdlManifest) -> String {
             filters.push(format!("volume={gain_db}dB"));
         }
     }
-    if edl
+    if let Some(item) = edl
         .tracks
         .audio
         .iter()
-        .any(|item| item.operation == "noise_reduction")
+        .find(|item| item.operation == "noise_reduction")
     {
-        filters.push("afftdn=nr=10:nf=-35".into());
+        let amount = audio_parameter_f64(item, "amount", 0.55).clamp(0.0, 1.0);
+        let nr = 4.0 + amount * 12.0;
+        filters.push(format!("afftdn=nr={nr:.1}:nf=-35"));
     }
     if edl
         .tracks
@@ -260,6 +262,16 @@ fn audio_filters(edl: &EdlManifest) -> String {
     {
         let hz = audio_parameter_f64(item, "hz", 50.0).clamp(45.0, 65.0);
         filters.push(format!("bandreject=f={hz}:width_type=h:width=4"));
+    }
+
+    if let Some(item) = edl
+        .tracks
+        .audio
+        .iter()
+        .find(|item| item.operation == "peak_limiter")
+    {
+        let limit = audio_parameter_f64(item, "limit", 0.95).clamp(0.1, 1.0);
+        filters.push(format!("alimiter=limit={limit:.2}"));
     }
 
     for item in &edl.tracks.audio {
