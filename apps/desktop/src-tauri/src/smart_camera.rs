@@ -273,6 +273,31 @@ fn file_modified_at(path: &Path) -> Option<String> {
         .map(|value| DateTime::<Utc>::from(value).to_rfc3339_opts(SecondsFormat::Millis, true))
 }
 
+fn zoom_for_activity(
+    settings: Config,
+    content_mode: ContentMode,
+    score: f64,
+    distance: f64,
+) -> f64 {
+    let evidence = if settings.change_threshold <= f64::EPSILON {
+        0.0
+    } else {
+        ((score - settings.change_threshold) / settings.change_threshold).clamp(0.0, 1.0)
+    };
+    let distance = distance.clamp(0.0, 0.7);
+
+    let zoom = match content_mode {
+        ContentMode::Software => settings.zoom + evidence * 0.08 + distance * 0.08,
+        ContentMode::Presentation => settings.zoom + evidence * 0.04 + distance * 0.03,
+        ContentMode::Gameplay => settings.zoom + evidence * 0.025 + distance * 0.015,
+        ContentMode::Auto | ContentMode::General => {
+            settings.zoom + evidence * 0.04 + distance * 0.025
+        }
+    };
+
+    zoom.clamp(1.0, MAX_ZOOM)
+}
+
 fn valid(item: &CameraSuggestion, duration_us: u64, minimum_us: u64) -> bool {
     item.end_us > item.start_us
         && item.end_us <= duration_us
@@ -564,11 +589,13 @@ fn analyze_frames(
                             .min(1.0)
                             * 0.25)
                         .min(0.97);
+                    let zoom =
+                        zoom_for_activity(settings, content_mode, stable_score, distance);
                     suggestions.push(proposal(
                         kind,
                         candidate_timestamp,
                         end,
-                        settings.zoom,
+                        zoom,
                         stable_x,
                         stable_y,
                         settings.transition_us,
@@ -1175,6 +1202,19 @@ mod tests {
         let document: SmartCameraDocument = serde_json::from_value(json).unwrap();
         assert_eq!(document.content_mode, ContentMode::Auto);
     }
+    #[test]
+    fn content_aware_zoom_is_stronger_for_software_than_gameplay() {
+        let gameplay_settings = effective_config(CameraProfile::Normal, ContentMode::Gameplay);
+        let software_settings = effective_config(CameraProfile::Normal, ContentMode::Software);
+        let gameplay_zoom =
+            zoom_for_activity(gameplay_settings, ContentMode::Gameplay, 0.06, 0.25);
+        let software_zoom =
+            zoom_for_activity(software_settings, ContentMode::Software, 0.06, 0.25);
+        assert!(software_zoom > gameplay_zoom);
+        assert!((1.0..=MAX_ZOOM).contains(&software_zoom));
+        assert!((1.0..=MAX_ZOOM).contains(&gameplay_zoom));
+    }
+
     #[test]
     fn temporal_order_is_stable() {
         let values = consolidate(
