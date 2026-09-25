@@ -25,13 +25,8 @@ cache/
 output/
 projects/local/
 logs/*.log
-transcript.json
-transcript.json.tmp
-transcript.partial.json
 smart_cut.json
 smart_camera.json
-captions.json
-audio-transcription-*.wav
 worker/build/
 worker/dist/
 
@@ -54,12 +49,6 @@ playwright-report/
 test-results/
 
 apps/desktop/src-tauri/gen/
-
-# TASK-005 local debug artifacts
-*.bak-task005a
-/debug-transcript.json.tmp
-/debug-transcript.partial.json
-/test_transcription_debug.py
 
 # Local UI review artifacts
 /CHETO_UI_FIX.txt
