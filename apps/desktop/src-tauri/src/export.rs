@@ -224,6 +224,12 @@ fn audio_parameter_f64(item: &AudioDecision, key: &str, default: f64) -> f64 {
 fn audio_filters(edl: &EdlManifest) -> String {
     let mut filters = Vec::<String>::new();
 
+    if let Some(item) = edl.tracks.audio.iter().find(|item| item.operation == "master_gain") {
+        let gain_db = audio_parameter_f64(item, "gainDb", 0.0).clamp(-24.0, 18.0);
+        if gain_db.abs() >= 0.05 {
+            filters.push(format!("volume={gain_db}dB"));
+        }
+    }
     if edl.tracks.audio.iter().any(|item| item.operation == "noise_reduction") {
         filters.push("afftdn=nr=10:nf=-35".into());
     }

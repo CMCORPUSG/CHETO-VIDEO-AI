@@ -62,6 +62,8 @@ export function AudioWorkspace({
   const voice = globalOperation(audio, "voice_focus");
   const hum = globalOperation(audio, "hum_filter");
   const normalize = globalOperation(audio, "normalize");
+  const masterGain = globalOperation(audio, "master_gain");
+  const masterGainDb = Number(masterGain?.parameters.gainDb ?? 0);
 
   const toggleGlobal = (operation: string, parameters: Record<string, unknown> = {}) => {
     const exists = globalOperation(audio, operation);
@@ -70,6 +72,15 @@ export function AudioWorkspace({
         ? audio.filter((item) => item.id !== exists.id)
         : [...audio, { id: id(), startUs: 0, endUs: durationUs, operation, parameters }],
     );
+  };
+
+  const setMasterGain = (gainDb: number) => {
+    const without = audio.filter((item) => item.operation !== "master_gain");
+    if (Math.abs(gainDb) < 0.05) {
+      onAudioChange(without);
+      return;
+    }
+    onAudioChange([...without, { id: masterGain?.id ?? id(), startUs: 0, endUs: durationUs, operation: "master_gain", parameters: { gainDb } }]);
   };
 
   const addRange = (operation: string, parameters: Record<string, unknown>) => {
@@ -126,7 +137,10 @@ export function AudioWorkspace({
         <Control label="Velocidad" value={`${rate.toFixed(2)}x`}>
           <input aria-label="Velocidad de reproducción" className="w-full accent-cyan" max="2" min="0.5" onChange={(event) => onRateChange(Number(event.currentTarget.value))} step="0.05" type="range" value={rate} />
         </Control>
-        <Control label="Volumen" value={muted ? "Silenciado" : `${Math.round(volume * 100)}%`}>
+        <Control label="Ganancia exportación" value={`${masterGainDb > 0 ? "+" : ""}${masterGainDb.toFixed(1)} dB`}>
+          <input aria-label="Ganancia final de exportación" className="w-full accent-cyan" disabled={!hasAudio} max="12" min="-12" onChange={(event) => setMasterGain(Number(event.currentTarget.value))} step="0.5" type="range" value={masterGainDb} />
+        </Control>
+        <Control label="Volumen de escucha" value={muted ? "Silenciado" : `${Math.round(volume * 100)}%`}>
           <input aria-label="Volumen de previsualización" className="w-full accent-cyan" disabled={!hasAudio} max="1" min="0" onChange={(event) => onVolumeChange(Number(event.currentTarget.value))} step="0.01" type="range" value={muted ? 0 : volume} />
         </Control>
         <button className={`mt-2 flex h-8 w-full items-center justify-center gap-2 rounded-md px-3 text-[9px] font-semibold ring-1 transition-colors ${muted ? "bg-danger/[0.07] text-danger ring-danger/15" : "bg-white/[0.025] text-muted/70 ring-white/[0.06] hover:bg-white/[0.045] hover:text-ink"}`} disabled={!hasAudio} onClick={() => onMutedChange(!muted)} type="button">
@@ -183,6 +197,7 @@ function operationLabel(item: AudioDecision) {
     case "voice_focus": return "Enfoque de voz";
     case "hum_filter": return "Filtro de zumbido";
     case "normalize": return "Normalización";
+    case "master_gain": return `Ganancia maestra ${String(item.parameters.gainDb ?? 0)} dB`;
     case "mute_range": return "Silenciar tramo";
     case "gain_range": return `Ganancia ${String(item.parameters.gainDb ?? 0)} dB`;
     case "noise_reduction_range": return "Limpieza de tramo";

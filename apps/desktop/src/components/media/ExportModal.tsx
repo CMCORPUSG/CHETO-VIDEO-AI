@@ -139,6 +139,11 @@ export function ExportModal({
 
   useEffect(() => {
     if (!open) return;
+    if (!path) {
+      const sourceFolder = bundle.source.path.replace(/[\\/][^\\/]+$/, "");
+      const suggested = sourceFolder ? sourceFolder + "\\" + name + ".mp4" : name + ".mp4";
+      setPath(suggested);
+    }
 
     let cleanup:
       | (() => void)
@@ -161,7 +166,10 @@ export function ExportModal({
     return () => cleanup?.();
   }, [
     bundle.project.projectId,
+    bundle.source.path,
+    name,
     open,
+    path,
   ]);
 
   const browse = async () => {
