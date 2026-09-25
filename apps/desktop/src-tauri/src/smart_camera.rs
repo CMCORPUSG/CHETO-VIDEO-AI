@@ -589,8 +589,7 @@ fn analyze_frames(
                             .min(1.0)
                             * 0.25)
                         .min(0.97);
-                    let zoom =
-                        zoom_for_activity(settings, content_mode, stable_score, distance);
+                    let zoom = zoom_for_activity(settings, content_mode, stable_score, distance);
                     suggestions.push(proposal(
                         kind,
                         candidate_timestamp,
@@ -1206,10 +1205,8 @@ mod tests {
     fn content_aware_zoom_is_stronger_for_software_than_gameplay() {
         let gameplay_settings = effective_config(CameraProfile::Normal, ContentMode::Gameplay);
         let software_settings = effective_config(CameraProfile::Normal, ContentMode::Software);
-        let gameplay_zoom =
-            zoom_for_activity(gameplay_settings, ContentMode::Gameplay, 0.06, 0.25);
-        let software_zoom =
-            zoom_for_activity(software_settings, ContentMode::Software, 0.06, 0.25);
+        let gameplay_zoom = zoom_for_activity(gameplay_settings, ContentMode::Gameplay, 0.06, 0.25);
+        let software_zoom = zoom_for_activity(software_settings, ContentMode::Software, 0.06, 0.25);
         assert!(software_zoom > gameplay_zoom);
         assert!((1.0..=MAX_ZOOM).contains(&software_zoom));
         assert!((1.0..=MAX_ZOOM).contains(&gameplay_zoom));
