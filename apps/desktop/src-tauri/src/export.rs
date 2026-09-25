@@ -221,6 +221,16 @@ fn audio_parameter_f64(item: &AudioDecision, key: &str, default: f64) -> f64 {
         .unwrap_or(default)
 }
 
+fn selected_audio_stream(edl: &EdlManifest) -> usize {
+    edl.tracks
+        .audio
+        .iter()
+        .find(|item| item.operation == "source_stream")
+        .and_then(|item| item.parameters.get("index"))
+        .and_then(|value| value.as_u64())
+        .unwrap_or(0) as usize
+}
+
 fn audio_filters(edl: &EdlManifest) -> String {
     let mut filters = Vec::<String>::new();
 
@@ -404,10 +414,11 @@ fn command(config: &ExportConfig, source: &Path, edl: &EdlManifest, encoder: &st
         .args(["-filter_complex"]);
     if config.include_audio {
         let af = audio_filters(edl);
+        let audio_stream = selected_audio_stream(edl);
         let audio_chain = if af.is_empty() {
-            format!("[0:a]aselect='{keep}',asetpts=N/SR/TB[a]")
+            format!("[0:a:{audio_stream}]aselect='{keep}',asetpts=N/SR/TB[a]")
         } else {
-            format!("[0:a]aselect='{keep}',asetpts=N/SR/TB,{af}[a]")
+            format!("[0:a:{audio_stream}]aselect='{keep}',asetpts=N/SR/TB,{af}[a]")
         };
         cmd.arg(format!("{vf};{audio_chain}"))
             .args(["-map", "[v]", "-map", "[a]"]);
@@ -555,6 +566,15 @@ pub async fn start_export(
                 "El archivo fuente no existe.",
             ));
         }
+        if config.include_audio {
+            let selected_stream = selected_audio_stream(&bundle.edl);
+            if selected_stream >= bundle.source.streams.audio as usize {
+                return Err(ExportError::new(
+                    "invalid-audio-stream",
+                    "La pista de audio seleccionada ya no existe en la fuente.",
+                ));
+            }
+        }
         let edited = edited_duration(&bundle.edl, duration);
         let _ = app.emit(
             "export-progress",
@@ -688,6 +708,21 @@ mod tests {
         assert!(filters.contains("alimiter=limit=0.94"));
         assert!(filters.contains("bandreject=f=4200"));
         assert!(filters.contains("between(t,1.000000,2.000000)"));
+    }
+
+    #[test]
+    fn selected_audio_stream_defaults_to_first_and_reads_edl_choice() {
+        let default_edl: EdlManifest = serde_json::from_str(
+            r#"{"schemaVersion":1,"projectId":"p","sourceId":"s","sourceDurationUs":100,"timebase":{"unit":"microseconds"},"tracks":{"cuts":[],"camera":[],"broll":[],"audio":[]},"output":{"resolutionMode":"source","fpsMode":"source","aspectRatioMode":"source"},"updatedAt":"x"}"#,
+        )
+        .unwrap();
+        assert_eq!(selected_audio_stream(&default_edl), 0);
+
+        let selected: EdlManifest = serde_json::from_str(
+            r#"{"schemaVersion":1,"projectId":"p","sourceId":"s","sourceDurationUs":100,"timebase":{"unit":"microseconds"},"tracks":{"cuts":[],"camera":[],"broll":[],"audio":[{"id":"stream","startUs":0,"endUs":100,"operation":"source_stream","parameters":{"index":2}}]},"output":{"resolutionMode":"source","fpsMode":"source","aspectRatioMode":"source"},"updatedAt":"x"}"#,
+        )
+        .unwrap();
+        assert_eq!(selected_audio_stream(&selected), 2);
     }
 
     #[test]

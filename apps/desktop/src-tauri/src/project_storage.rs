@@ -122,7 +122,7 @@ pub struct SourceAudioSnapshot {
 pub struct StreamCounts {
     total: u64,
     video: u64,
-    audio: u64,
+    pub(crate) audio: u64,
     data: u64,
     other: u64,
 }

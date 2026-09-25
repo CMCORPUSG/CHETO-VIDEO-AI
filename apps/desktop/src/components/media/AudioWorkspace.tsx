@@ -26,6 +26,7 @@ interface AudioWorkspaceProps {
   onRateChange: (value: number) => void;
   onVolumeChange: (value: number) => void;
   rate: number;
+  sourceAudioStreams: number;
   selectionInUs: number | null;
   selectionOutUs: number | null;
   volume: number;
@@ -54,6 +55,7 @@ export function AudioWorkspace({
   onRateChange,
   onVolumeChange,
   rate,
+  sourceAudioStreams,
   selectionInUs,
   selectionOutUs,
   volume,
@@ -64,6 +66,14 @@ export function AudioWorkspace({
   const hum = globalOperation(audio, "hum_filter");
   const normalize = globalOperation(audio, "normalize");
   const masterGain = globalOperation(audio, "master_gain");
+  const sourceStream = globalOperation(audio, "source_stream");
+  const sourceStreamIndex = Math.max(
+    0,
+    Math.min(
+      Math.max(0, sourceAudioStreams - 1),
+      numberParameter(sourceStream ?? { id: "", startUs: 0, endUs: durationUs, operation: "source_stream", parameters: {} }, "index"),
+    ),
+  );
   const masterGainDb = Number(masterGain?.parameters.gainDb ?? 0);
   const [rangeGainDb, setRangeGainDb] = useState(-12);
   const [rangeNoiseAmount, setRangeNoiseAmount] = useState(0.45);
@@ -107,6 +117,43 @@ export function AudioWorkspace({
           Procesamiento local y no destructivo. Las decisiones se guardan en el EDL y se aplican al exportar.
         </p>
       </div>
+
+      {sourceAudioStreams > 1 ? (
+        <Card className="p-3">
+          <div className="flex items-start gap-2">
+            <span className="grid h-7 w-7 place-items-center rounded-md bg-primary/[0.08] text-primary"><Headphones size={14} /></span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-semibold text-ink">Stream de audio fuente</p>
+              <p className="mt-1 text-[8px] leading-4 text-muted/50">
+                Este archivo contiene {sourceAudioStreams} streams de audio reales. El elegido se conservará al exportar.
+              </p>
+              <select
+                aria-label="Stream de audio para exportar"
+                className="mt-3 h-8 w-full rounded-md border border-white/[0.07] bg-[#070c13] px-2 text-[9px] text-ink"
+                onChange={(event) => {
+                  const index = Number(event.currentTarget.value);
+                  const without = audio.filter((item) => item.operation !== "source_stream");
+                  onAudioChange([
+                    ...without,
+                    {
+                      id: sourceStream?.id ?? id(),
+                      startUs: 0,
+                      endUs: durationUs,
+                      operation: "source_stream",
+                      parameters: { index },
+                    },
+                  ]);
+                }}
+                value={sourceStreamIndex}
+              >
+                {Array.from({ length: sourceAudioStreams }, (_, index) => (
+                  <option key={index} value={index}>Pista {index + 1}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </Card>
+      ) : null}
 
       <Card className="p-3">
         <div className="flex items-start gap-2">
@@ -211,6 +258,7 @@ function operationLabel(item: AudioDecision) {
     case "voice_focus": return "Enfoque de voz";
     case "hum_filter": return "Filtro de zumbido";
     case "normalize": return "Normalización";
+    case "source_stream": return `Pista fuente ${numberParameter(item, "index") + 1}`;
     case "peak_limiter": return "Protección de picos";
     case "master_gain": return `Ganancia maestra ${numberParameter(item, "gainDb")} dB`;
     case "mute_range": return "Silenciar tramo";
