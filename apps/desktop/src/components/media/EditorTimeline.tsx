@@ -1,4 +1,4 @@
-﻿import { Minus, Plus, ScanLine } from "lucide-react";
+import { Minus, Plus, ScanLine } from "lucide-react";
 import {
   useEffect,
   useMemo,
@@ -25,6 +25,7 @@ import {
 export type TimelineSelection = { id: string; track: "cuts" | "camera" } | null;
 
 interface EditorTimelineProps {
+  audioPresent?: boolean;
   camera: CameraDecision[];
   cuts: CutDecision[];
   draftCamera?: CameraDecision[];
@@ -50,6 +51,7 @@ type DragState = {
 };
 
 export function EditorTimeline({
+  audioPresent = false,
   camera,
   cuts,
   draftCamera = [],
@@ -424,6 +426,7 @@ export function EditorTimeline({
               />
             ))}
           </TimelineLane>
+          {audioPresent ? <TimelineLane contentWidth={contentWidth} label="Audio" tone="audio"><TimelineBlock className="is-audio" endUs={safeDuration} label="Audio original" pixelsPerSecond={pixelsPerSecond} startUs={0} title={"Audio original · " + formatTimecode(safeDuration)} /></TimelineLane> : null}
           {markers.map((marker, index) => (
             <button
               aria-label={`Ir al marcador ${index + 1}`}

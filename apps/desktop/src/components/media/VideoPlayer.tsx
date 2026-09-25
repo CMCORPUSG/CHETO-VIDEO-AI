@@ -1,4 +1,4 @@
-﻿import {
+import {
   Expand,
   Pause,
   Play,
@@ -51,13 +51,20 @@ interface VideoPlayerProps {
   draftTracks?: DraftTracks | null;
   durationUs: number;
   edl: EdlManifest;
+  externalMuted?: boolean;
+  externalPlaybackRate?: number;
+  externalVolume?: number;
   kind: PlaybackKind;
   markers?: number[];
   mode: "original" | "result";
   onError: (message: string) => void;
+  onMutedChange?: (muted: boolean) => void;
+  onPlaybackRateChange?: (rate: number) => void;
   onTimeChange?: (sourceUs: number) => void;
+  onVolumeChange?: (volume: number) => void;
   path: string;
   seekToUs?: number | null;
+  viewerScale?: number;
 }
 
 function isTypingTarget(target: EventTarget | null): boolean {
@@ -76,13 +83,20 @@ export function VideoPlayer({
   draftTracks,
   durationUs,
   edl,
+  externalMuted,
+  externalPlaybackRate,
+  externalVolume,
   kind,
   markers = [],
   mode,
   onError,
+  onMutedChange,
+  onPlaybackRateChange,
   onTimeChange,
+  onVolumeChange,
   path,
   seekToUs,
+  viewerScale = 78,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -91,11 +105,15 @@ export function VideoPlayer({
     useState<PlaybackState>("idle");
 
   const [playheadUs, setPlayheadUs] = useState(0);
-  const [playbackRate, setPlaybackRate] = useState(1);
-  const [volume, setVolume] = useState(1);
-  const [muted, setMuted] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(externalPlaybackRate ?? 1);
+  const [volume, setVolume] = useState(externalVolume ?? 1);
+  const [muted, setMuted] = useState(externalMuted ?? false);
 
   const assetUrl = playbackAssetUrl(path);
+
+  useEffect(() => { if (externalPlaybackRate === undefined) return; setPlaybackRate(externalPlaybackRate); if (videoRef.current) videoRef.current.playbackRate = externalPlaybackRate; }, [externalPlaybackRate]);
+  useEffect(() => { if (externalVolume === undefined) return; const next = Math.min(1, Math.max(0, externalVolume)); setVolume(next); if (videoRef.current) videoRef.current.volume = next; }, [externalVolume]);
+  useEffect(() => { if (externalMuted === undefined) return; setMuted(externalMuted); if (videoRef.current) videoRef.current.muted = externalMuted; }, [externalMuted]);
 
   const tracks = useMemo(
     () =>
@@ -224,6 +242,8 @@ export function VideoPlayer({
 
     setVolume(next);
     setMuted(next === 0);
+    onVolumeChange?.(next);
+    onMutedChange?.(next === 0);
 
     if (videoRef.current) {
       videoRef.current.volume = next;
@@ -235,6 +255,7 @@ export function VideoPlayer({
     const next = !muted;
 
     setMuted(next);
+    onMutedChange?.(next);
 
     if (videoRef.current) {
       videoRef.current.muted = next;
@@ -243,6 +264,7 @@ export function VideoPlayer({
 
   const changeRate = (rate: number) => {
     setPlaybackRate(rate);
+    onPlaybackRateChange?.(rate);
 
     if (videoRef.current) {
       videoRef.current.playbackRate = rate;
@@ -258,6 +280,8 @@ export function VideoPlayer({
       );
     }
   };
+
+  const maxStageVh = Math.max(28, Math.min(52, 18 + viewerScale * 0.34));
 
   const VolumeIcon =
     muted || volume === 0
@@ -372,7 +396,8 @@ export function VideoPlayer({
           className="video-stage relative grid place-items-center overflow-hidden"
           style={{
             aspectRatio,
-            width: `min(100%, calc(52vh * ${aspectRatio}))`,
+            maxHeight: `${maxStageVh}vh`,
+            width: `min(100%, calc(${maxStageVh}vh * ${aspectRatio}))`,
           }}
         >
           <video

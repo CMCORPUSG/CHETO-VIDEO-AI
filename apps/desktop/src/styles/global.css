@@ -1989,3 +1989,33 @@ input[type="checkbox"] {
   accent-color: #00c8ef;
 }
 
+
+/* CHETO EDITOR V7 */
+.editor-shell { --tools-width: 340px; grid-template-columns: clamp(280px, var(--tools-width), 420px) minmax(420px, 1fr) clamp(260px, var(--inspector-width), 420px) !important; }
+.editor-tool-panel { display:grid !important; grid-template-columns:72px minmax(0,1fr); gap:0 !important; padding:0 !important; }
+.editor-tool-rail { display:flex; min-height:0; flex-direction:column; gap:3px; padding:7px 5px; background:#07101a; }
+.editor-tool-content { background:#0a121d; }
+.editor-tool-button { min-height:54px !important; border-radius:7px !important; }
+.editor-tool-button.is-active.tool-audio { background:rgb(0 184 217 / 11%) !important; color:#58d8ef !important; box-shadow:2px 0 0 #00c8ef inset; }
+.editor-shell.tools-collapsed { grid-template-columns:72px minmax(420px,1fr) clamp(260px,var(--inspector-width),420px) !important; }
+.editor-shell.tools-collapsed .editor-tool-panel { grid-template-columns:72px; }
+.editor-shell.tools-collapsed .editor-tool-content { display:none; }
+.editor-tools-resizer { left:calc(clamp(280px,var(--tools-width),420px) - 4px) !important; }
+.editor-shell.tools-collapsed .editor-tools-resizer { left:68px !important; }
+.editor-horizontal-resizer { left:clamp(280px,var(--tools-width),420px) !important; }
+.editor-shell.tools-collapsed .editor-horizontal-resizer { left:72px !important; }
+.editor-viewer { overflow:hidden !important; }
+.editor-viewer-stage { padding:2px 0 6px; }
+.video-player { display:flex; max-height:100%; flex-direction:column; }
+.video-stage-shell { min-height:0 !important; max-height:none !important; flex:1 1 auto; }
+.viewer-scale-control { min-width:150px; }
+.viewer-scale-control input[type="range"] { width:92px; }
+.editor-inspector-panel { padding:0 !important; background:#09111b !important; }
+.editor-inspector-tabs { display:grid; grid-template-columns:repeat(3,1fr); border-bottom:1px solid rgb(255 255 255 / 6%); background:#08101a; }
+.editor-inspector-tabs button { min-height:42px !important; border:0 !important; border-bottom:2px solid transparent !important; background:transparent !important; color:rgb(169 184 204 / 52%) !important; font-size:9px !important; }
+.editor-inspector-tabs button.is-active { border-bottom-color:#00c8ef !important; background:rgb(0 200 239 / 5%) !important; color:#64d9ed !important; }
+.audio-track-card { border-radius:8px; background:rgb(255 255 255 / 2.4%); padding:10px; box-shadow:0 0 0 1px rgb(255 255 255 / 6%) inset; }
+.audio-wave-preview { height:20px; border-radius:3px; background:linear-gradient(180deg,transparent 47%,rgb(34 197 94 / 48%) 47% 53%,transparent 53%),repeating-linear-gradient(90deg,rgb(34 197 94 / 18%) 0 2px,transparent 2px 4px); }
+.editor-timeline-lane-audio .editor-timeline-block { border-color:rgb(34 197 94 / 24%) !important; background:linear-gradient(180deg,rgb(17 102 65 / 88%),rgb(10 73 49 / 88%)) !important; }
+.editor-timeline-block.is-audio { color:rgb(220 252 231 / 88%) !important; }
+@media (max-width:1280px){ .editor-shell{grid-template-columns:72px minmax(360px,1fr) clamp(250px,var(--inspector-width),340px) !important;} .editor-tool-panel{grid-template-columns:72px;} .editor-tool-content,.editor-tools-resizer{display:none !important;} .editor-horizontal-resizer{left:72px !important;} }

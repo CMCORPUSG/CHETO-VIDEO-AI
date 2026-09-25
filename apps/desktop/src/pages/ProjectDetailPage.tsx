@@ -31,7 +31,7 @@ export function ProjectDetailPage({ isRelocating, onBack, onDelete, onLog, onNot
   const trackCounts = countEdlTracks(projectBundle);
 
   if (projectBundle && project.status === "ready") {
-    return <div className="min-h-0 w-full max-w-none"><div className="mb-2 flex h-10 items-center justify-between gap-3"><button className="flex items-center gap-2 text-xs font-semibold text-muted transition hover:text-cyan" onClick={onBack} type="button"><ArrowLeft aria-hidden="true" size={15} /> Proyectos</button><p className="min-w-0 truncate text-sm font-bold text-ink">{project.name}</p><StatusBadge label="Fuente verificada" tone="success" /></div><MediaWorkspace bundle={projectBundle} onLog={onLog} onNotify={onNotify} /></div>;
+    return <div className="h-full min-h-0 w-full max-w-none overflow-hidden"><MediaWorkspace bundle={projectBundle} onLog={onLog} onNotify={onNotify} /></div>;
   }
 
   return (
