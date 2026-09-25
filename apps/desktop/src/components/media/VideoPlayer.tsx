@@ -353,6 +353,19 @@ export function VideoPlayer({
         }
       : null);
 
+  const cameraZoom = activeCamera?.zoom ?? 1;
+  const cameraCenterX = activeCamera?.centerX ?? 0.5;
+  const cameraCenterY = activeCamera?.centerY ?? 0.5;
+  const cameraPanX = (cameraZoom - 1) * (0.5 - cameraCenterX) * 100;
+  const cameraPanY = (cameraZoom - 1) * (0.5 - cameraCenterY) * 100;
+  const cameraTransitionSeconds =
+    Math.max(
+      0,
+      activeCamera?.transitionUs ??
+        cameraPreview?.transitionUs ??
+        0,
+    ) / 1_000_000;
+
   const timelineUs =
     mode === "result"
       ? sourceToEditedUs(
@@ -442,87 +455,82 @@ export function VideoPlayer({
             width: `min(100%, calc(${maxStageVh}vh * ${aspectRatio}))`,
           }}
         >
-          <video
-            className={`h-full w-full ${
-              mode === "result"
-                ? "object-cover"
-                : "object-contain"
-            } will-change-transform`}
-            onClick={() => { if (suppressClickRef.current) { suppressClickRef.current=false; return; } void togglePlayback(); }}
-            onEnded={() =>
-              setPlaybackState(
-                nextPlaybackState(
-                  playbackState,
-                  "end",
-                ),
-              )
-            }
-            onError={() => {
-              setPlaybackState("error");
-
-              onError(
-                "No se pudo decodificar la fuente de reproducción.",
-              );
+          <div
+            className="video-canvas-layer h-full w-full will-change-transform"
+            style={{
+              transform: `translate(${manualOffsetX * 25}%, ${manualOffsetY * 25}%) scale(${manualScale})`,
+              transformOrigin: "50% 50%",
             }}
-            onLoadedMetadata={() =>
-              setPlaybackState(
-                nextPlaybackState(
-                  playbackState,
-                  "ready",
-                ),
-              )
-            }
-            onPause={() => {
-              if (!videoRef.current?.ended) {
+          >
+            <video
+              className={`h-full w-full ${
+                mode === "result"
+                  ? "object-cover"
+                  : "object-contain"
+              } will-change-transform`}
+              onClick={() => { if (suppressClickRef.current) { suppressClickRef.current=false; return; } void togglePlayback(); }}
+              onEnded={() =>
                 setPlaybackState(
                   nextPlaybackState(
                     playbackState,
-                    "pause",
+                    "end",
                   ),
-                );
+                )
               }
-            }}
-            onPlay={() =>
-              setPlaybackState(
-                nextPlaybackState(
-                  playbackState,
-                  "play",
-                ),
-              )
-            }
-            onTimeUpdate={(event) =>
-              updatePlayhead(
-                secondsToUs(
-                  event.currentTarget.currentTime,
-                ),
-                event.currentTarget,
-              )
-            }
-            onWaiting={() =>
-              setPlaybackState("loading")
-            }
-            preload="metadata"
-            ref={videoRef}
-            src={assetUrl}
-            style={{
-              transform: `translate(${manualOffsetX * 25}%, ${manualOffsetY * 25}%) scale(${manualScale * (activeCamera?.zoom ?? 1)})`,
-              transformOrigin: `${
-                (activeCamera?.centerX ?? 0.5) *
-                100
-              }% ${
-                (activeCamera?.centerY ?? 0.5) *
-                100
-              }%`,
-              transition: `transform ${
-                Math.max(
-                  0,
-                  activeCamera?.transitionUs ??
-                    cameraPreview?.transitionUs ??
-                    0,
-                ) / 1_000_000
-              }s ease-in-out`,
-            }}
-          />
+              onError={() => {
+                setPlaybackState("error");
+
+                onError(
+                  "No se pudo decodificar la fuente de reproducción.",
+                );
+              }}
+              onLoadedMetadata={() =>
+                setPlaybackState(
+                  nextPlaybackState(
+                    playbackState,
+                    "ready",
+                  ),
+                )
+              }
+              onPause={() => {
+                if (!videoRef.current?.ended) {
+                  setPlaybackState(
+                    nextPlaybackState(
+                      playbackState,
+                      "pause",
+                    ),
+                  );
+                }
+              }}
+              onPlay={() =>
+                setPlaybackState(
+                  nextPlaybackState(
+                    playbackState,
+                    "play",
+                  ),
+                )
+              }
+              onTimeUpdate={(event) =>
+                updatePlayhead(
+                  secondsToUs(
+                    event.currentTarget.currentTime,
+                  ),
+                  event.currentTarget,
+                )
+              }
+              onWaiting={() =>
+                setPlaybackState("loading")
+              }
+              preload="metadata"
+              ref={videoRef}
+              src={assetUrl}
+              style={{
+                transform: `translate(${cameraPanX}%, ${cameraPanY}%) scale(${cameraZoom})`,
+                transformOrigin: "50% 50%",
+                transition: `transform ${cameraTransitionSeconds}s ease-in-out`,
+              }}
+            />
+          </div>
 
           <span className="player-source-badge">
             {kind.toUpperCase()}
