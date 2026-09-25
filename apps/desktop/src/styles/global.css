@@ -2033,3 +2033,15 @@ input[type="checkbox"] {
 .canvas-transform-panel input[type="range"] { accent-color:#00c8ef; }
 @media (max-height:760px){ .editor-shell{--timeline-height:190px;} .video-stage-shell{max-height:44vh !important;} }
 @media (max-height:680px){ .editor-shell{--timeline-height:165px;} .editor-viewer-toolbar{min-height:30px;} .video-stage-shell{max-height:38vh !important;} }
+
+.editor-timeline-lane-audio .is-audio-operation {
+  z-index: 3;
+  margin-block: 5px;
+  height: calc(100% - 10px);
+  border-color: rgb(45 212 191 / 35%) !important;
+  background: rgb(13 148 136 / 78%) !important;
+  color: #ecfeff !important;
+}
+.editor-timeline-lane-audio .audio-op-mute_range { background: rgb(185 28 28 / 78%) !important; border-color: rgb(248 113 113 / 40%) !important; }
+.editor-timeline-lane-audio .audio-op-gain_range { background: rgb(37 99 235 / 72%) !important; border-color: rgb(96 165 250 / 36%) !important; }
+.editor-timeline-lane-audio .audio-op-noise_reduction_range { background: rgb(13 148 136 / 76%) !important; }

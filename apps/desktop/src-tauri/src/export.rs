@@ -1,5 +1,5 @@
 use crate::{
-    project_storage::{CameraDecision, EdlManifest, ProjectStorage},
+    project_storage::{AudioDecision, CameraDecision, EdlManifest, ProjectStorage},
     proxy_ffmpeg::nvenc_capabilities,
 };
 use serde::{Deserialize, Serialize};
@@ -131,6 +131,12 @@ fn validate(config: &ExportConfig, edl: &EdlManifest, duration_us: u64) -> Resul
                 .iter()
                 .map(|v| ("encuadre", v.start_us, v.end_us)),
         )
+        .chain(
+            edl.tracks
+                .audio
+                .iter()
+                .map(|v| ("audio", v.start_us, v.end_us)),
+        )
     {
         if start >= end || end > duration_us {
             return Err(ExportError::new(
@@ -208,6 +214,50 @@ fn keep_expression(edl: &EdlManifest) -> String {
         )
     }
 }
+fn audio_parameter_f64(item: &AudioDecision, key: &str, default: f64) -> f64 {
+    item.parameters
+        .get(key)
+        .and_then(|value| value.as_f64())
+        .unwrap_or(default)
+}
+
+fn audio_filters(edl: &EdlManifest) -> String {
+    let mut filters = Vec::<String>::new();
+
+    if edl.tracks.audio.iter().any(|item| item.operation == "noise_reduction") {
+        filters.push("afftdn=nr=10:nf=-35".into());
+    }
+    if edl.tracks.audio.iter().any(|item| item.operation == "voice_focus") {
+        filters.push("highpass=f=80".into());
+        filters.push("lowpass=f=12000".into());
+    }
+    if let Some(item) = edl.tracks.audio.iter().find(|item| item.operation == "hum_filter") {
+        let hz = audio_parameter_f64(item, "hz", 50.0).clamp(45.0, 65.0);
+        filters.push(format!("bandreject=f={hz}:width_type=h:width=4"));
+    }
+
+    for item in &edl.tracks.audio {
+        let enable = format!("between(t,{},{})", seconds(item.start_us), seconds(item.end_us));
+        match item.operation.as_str() {
+            "mute_range" => filters.push(format!("volume=0:enable='{enable}'")),
+            "gain_range" => {
+                let gain_db = audio_parameter_f64(item, "gainDb", 0.0).clamp(-60.0, 18.0);
+                filters.push(format!("volume={gain_db}dB:enable='{enable}'"));
+            }
+            "noise_reduction_range" => {
+                filters.push(format!("afftdn=nr=8:nf=-35:enable='{enable}'"));
+            }
+            _ => {}
+        }
+    }
+
+    if edl.tracks.audio.iter().any(|item| item.operation == "normalize") {
+        filters.push("loudnorm=I=-16:LRA=11:TP=-1.5".into());
+    }
+
+    filters.join(",")
+}
+
 fn edited_duration(edl: &EdlManifest, duration: u64) -> u64 {
     let mut ranges = edl
         .tracks
@@ -297,7 +347,13 @@ fn command(config: &ExportConfig, source: &Path, edl: &EdlManifest, encoder: &st
         .arg(source)
         .args(["-filter_complex"]);
     if config.include_audio {
-        cmd.arg(format!("{vf};[0:a]aselect='{keep}',asetpts=N/SR/TB[a]"))
+        let af = audio_filters(edl);
+        let audio_chain = if af.is_empty() {
+            format!("[0:a]aselect='{keep}',asetpts=N/SR/TB[a]")
+        } else {
+            format!("[0:a]aselect='{keep}',asetpts=N/SR/TB,{af}[a]")
+        };
+        cmd.arg(format!("{vf};{audio_chain}"))
             .args(["-map", "[v]", "-map", "[a]"]);
     } else {
         cmd.arg(vf).args(["-map", "[v]", "-an"]);

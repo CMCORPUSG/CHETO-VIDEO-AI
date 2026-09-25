@@ -195,11 +195,11 @@ pub struct BrollDecision {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct AudioDecision {
-    id: String,
-    start_us: u64,
-    end_us: u64,
-    operation: String,
-    parameters: serde_json::Value,
+    pub(crate) id: String,
+    pub(crate) start_us: u64,
+    pub(crate) end_us: u64,
+    pub(crate) operation: String,
+    pub(crate) parameters: serde_json::Value,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -208,7 +208,7 @@ pub struct EdlTracks {
     pub(crate) cuts: Vec<CutDecision>,
     pub(crate) camera: Vec<CameraDecision>,
     broll: Vec<BrollDecision>,
-    audio: Vec<AudioDecision>,
+    pub(crate) audio: Vec<AudioDecision>,
 }
 
 impl EdlTracks {

@@ -8,7 +8,7 @@ import {
   type ReactNode,
   type WheelEvent,
 } from "react";
-import type { CameraDecision, CutDecision } from "../../project/contracts";
+import type { AudioDecision, CameraDecision, CutDecision } from "../../project/contracts";
 import { formatRulerTime, formatTimecode } from "../../editor/timecode";
 import {
   MAX_TIMELINE_ZOOM,
@@ -25,6 +25,7 @@ import {
 export type TimelineSelection = { id: string; track: "cuts" | "camera" } | null;
 
 interface EditorTimelineProps {
+  audio: AudioDecision[];
   audioPresent?: boolean;
   camera: CameraDecision[];
   cuts: CutDecision[];
@@ -51,6 +52,7 @@ type DragState = {
 };
 
 export function EditorTimeline({
+  audio,
   audioPresent = false,
   camera,
   cuts,
@@ -426,7 +428,10 @@ export function EditorTimeline({
               />
             ))}
           </TimelineLane>
-          {audioPresent ? <TimelineLane contentWidth={contentWidth} label="Audio" tone="audio"><TimelineBlock className="is-audio" endUs={safeDuration} label="Audio original" pixelsPerSecond={pixelsPerSecond} startUs={0} title={"Audio original · " + formatTimecode(safeDuration)} /></TimelineLane> : null}
+          {audioPresent ? <TimelineLane contentWidth={contentWidth} label="Audio" tone="audio">
+              <TimelineBlock className="is-audio" endUs={safeDuration} label="Audio original" pixelsPerSecond={pixelsPerSecond} startUs={0} title={"Audio original · " + formatTimecode(safeDuration)} />
+              {audio.map((item) => <TimelineBlock className={"is-audio-operation audio-op-"+item.operation} endUs={item.endUs} key={item.id} label={audioLabel(item)} pixelsPerSecond={pixelsPerSecond} startUs={item.startUs} title={audioLabel(item)+"\n"+formatTimecode(item.startUs)+" → "+formatTimecode(item.endUs)} />)}
+            </TimelineLane> : null}
           {markers.map((marker, index) => (
             <button
               aria-label={`Ir al marcador ${index + 1}`}
@@ -587,3 +592,14 @@ function cameraLabel(mode: string) {
 
 
 
+
+function audioLabel(item: AudioDecision) {
+  if (item.operation === "mute_range") return "Mute";
+  if (item.operation === "gain_range") return String(item.parameters.gainDb ?? 0) + " dB";
+  if (item.operation === "noise_reduction_range") return "Limpiar";
+  if (item.operation === "noise_reduction") return "Ruido";
+  if (item.operation === "voice_focus") return "Voz";
+  if (item.operation === "hum_filter") return "Hum";
+  if (item.operation === "normalize") return "Normalizar";
+  return item.operation;
+}
