@@ -56,14 +56,15 @@ export function ExportModal({
   onClose,
   open,
 }: Props) {
-  const [name, setName] = useState(
-    `${bundle.project.name.replace(
-      /[^\w-]+/g,
-      "_",
-    )}_editado`,
-  );
+  const initialName = `${bundle.project.name.replace(
+    /[^\w-]+/g,
+    "_",
+  )}_editado`;
 
-  const [path, setPath] = useState("");
+  const [name, setName] = useState(initialName);
+  const [path, setPath] = useState(() =>
+    suggestedOutputPath(bundle.source.path, initialName),
+  );
   const [resolution, setResolution] =
     useState<ExportResolution>(
       "original",
@@ -139,11 +140,6 @@ export function ExportModal({
 
   useEffect(() => {
     if (!open) return;
-    if (!path) {
-      const sourceFolder = bundle.source.path.replace(/[\\/][^\\/]+$/, "");
-      const suggested = sourceFolder ? sourceFolder + "\\" + name + ".mp4" : name + ".mp4";
-      setPath(suggested);
-    }
 
     let cleanup:
       | (() => void)
@@ -166,10 +162,7 @@ export function ExportModal({
     return () => cleanup?.();
   }, [
     bundle.project.projectId,
-    bundle.source.path,
-    name,
     open,
-    path,
   ]);
 
   const browse = async () => {
@@ -611,4 +604,10 @@ function Summary({
       </p>
     </div>
   );
+}
+
+
+function suggestedOutputPath(sourcePath: string, name: string) {
+  const sourceFolder = sourcePath.replace(/[\\/][^\\/]+$/, "");
+  return sourceFolder ? sourceFolder + "\\" + name + ".mp4" : name + ".mp4";
 }
