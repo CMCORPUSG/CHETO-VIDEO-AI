@@ -207,22 +207,42 @@ fn config_for(profile: CameraProfile) -> Config {
 
 fn effective_config(profile: CameraProfile, content_mode: ContentMode) -> Config {
     let mut settings = config_for(profile);
-    // Auto/general/gameplay intentionally retain the validated conservative
-    // detector. Software/presentation are separate policy lanes for future
-    // cursor/UI/narration signals; their visual detector is only moderately
-    // more responsive and still retains the same anti-jitter constraints.
-    if matches!(
-        content_mode,
-        ContentMode::Software | ContentMode::Presentation
-    ) {
-        settings.sample_interval_us = settings
-            .sample_interval_us
-            .saturating_sub(500_000)
-            .max(1_000_000);
-        settings.change_threshold *= 0.90;
-        settings.zoom = settings.zoom.min(1.35);
-        settings.max_suggestions = settings.max_suggestions.min(768);
+
+    match content_mode {
+        ContentMode::Software => {
+            // Tutorials need to react to meaningful UI-region changes more often,
+            // while keeping the stream lightweight enough for 1–2 hour sources.
+            settings.sample_interval_us = settings
+                .sample_interval_us
+                .saturating_sub(1_000_000)
+                .max(1_000_000);
+            settings.change_threshold *= 0.72;
+            settings.minimum_duration_us = settings.minimum_duration_us.max(1_400_000);
+            settings.hold_duration_us = 4_500_000;
+            settings.minimum_interval_us = 3_000_000;
+            settings.transition_us = 500_000;
+            settings.zoom = settings.zoom.max(1.28).min(1.42);
+            settings.focus_distance *= 0.78;
+            settings.max_suggestions = settings.max_suggestions.min(640);
+        }
+        ContentMode::Presentation => {
+            settings.sample_interval_us = settings
+                .sample_interval_us
+                .saturating_sub(500_000)
+                .max(1_000_000);
+            settings.change_threshold *= 0.84;
+            settings.hold_duration_us = 5_500_000;
+            settings.minimum_interval_us = 5_000_000;
+            settings.transition_us = 650_000;
+            settings.zoom = settings.zoom.min(1.30);
+            settings.max_suggestions = settings.max_suggestions.min(512);
+        }
+        ContentMode::Gameplay | ContentMode::Auto | ContentMode::General => {
+            // Gameplay remains intentionally conservative: fast scene movement
+            // must not be mistaken for a reason to constantly zoom.
+        }
     }
+
     settings
 }
 
@@ -1131,9 +1151,11 @@ mod tests {
         assert_eq!(gameplay.change_threshold, automatic.change_threshold);
         assert!(software.sample_interval_us <= gameplay.sample_interval_us);
         assert!(software.change_threshold < gameplay.change_threshold);
-        assert!(software.zoom <= 1.35);
+        assert!(software.minimum_interval_us < gameplay.minimum_interval_us);
+        assert!(software.transition_us <= gameplay.transition_us);
+        assert!((1.28..=1.42).contains(&software.zoom));
         assert!(gameplay.max_suggestions < 1_000);
-        assert!(software.max_suggestions <= 768);
+        assert!(software.max_suggestions <= 640);
     }
 
     #[test]

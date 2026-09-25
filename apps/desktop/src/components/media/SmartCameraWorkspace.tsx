@@ -132,18 +132,18 @@ export function SmartCameraWorkspace({ bundle, edl, onDraftChange, onEdlChange, 
 
       <p className="text-[9px] leading-3.5 text-muted">
         {contentMode === "software"
-          ? "Software: encuadre más activo y estable para zonas de trabajo."
+          ? "Software / Tutorial: analiza cambios de región con mayor frecuencia, mantiene el foco varios segundos y usa transiciones suaves. Optimizado para fuentes largas."
           : contentMode === "gameplay"
-            ? "Gameplay: movimientos conservadores para evitar zooms innecesarios."
+            ? "Gameplay: detector conservador. Evita seguir cada movimiento del juego y solo propone cambios visuales sostenidos."
             : contentMode === "presentation"
-              ? "Presentación: prioriza áreas estables de contenido."
-              : "Automático: comportamiento general conservador."}
+              ? "Presentación: prioriza áreas estables y cambios de diapositiva con zoom moderado."
+              : "Automático: comportamiento general conservador y seguro."}
       </p>
     </div>
     {busy && progress ? <div className="mt-5"><div className="mb-2 flex justify-between text-xs text-muted"><span>{stageLabel(progress.stage)}</span><span>{Math.floor(cameraProgressPercent(progress))} %</span></div><div className="h-2 rounded-full bg-canvas"><div className="h-full rounded-full bg-cyan transition-[width]" style={{ width: `${cameraProgressPercent(progress)}%` }} /></div></div> : null}
     {stale ? <p className="mt-4 flex items-center gap-2 text-sm text-warning"><ShieldAlert size={16} />El original cambió. Reanaliza antes de aplicar propuestas anteriores.</p> : null}
     {error ? <p className="mt-4 text-sm text-danger">{error}</p> : null}
-    {document ? <><div className="mt-4 grid grid-cols-2 gap-2"><Stat label="Total" value={document.statistics.total} /><Stat label="Zoom" value={document.statistics.zoom} /><Stat label="Enfoque" value={document.statistics.focus} /><Stat label="Selección" value={selected.length} /></div><p className="mt-3 text-xs text-muted">Marca movimientos para probar 10/30 s sin escribir el EDL.</p><div className="mt-3 max-h-[34rem] space-y-3 overflow-auto pr-1">{document.suggestions.map((item) => <SuggestionCard applied={edl.tracks.camera.some(camera=>camera.id===item.id)} item={item} key={item.id} onPreview={() => preview(item)} onReview={(status) => void review(item, status)} onSeek={() => {onSeek(item.startUs);if(edl.tracks.camera.some(camera=>camera.id===item.id))onSelect?.(item.id);}} onToggle={()=>toggleDraft(item)} selected={selected.includes(item.id)} />)}{document.suggestions.length === 0 ? <p className="rounded-lg border border-line bg-canvas/40 p-4 text-sm text-muted">No se detectaron cambios visuales suficientemente sólidos con este perfil.</p> : null}</div></> : null}
+    {document ? <><div className="mt-4 grid grid-cols-2 gap-2"><Stat label="Total" value={document.statistics.total} /><Stat label="Zoom" value={document.statistics.zoom} /><Stat label="Enfoque" value={document.statistics.focus} /><Stat label="Selección" value={selected.length} /></div><p className="mt-3 text-xs text-muted">Marca movimientos para probar 10/30 s sin escribir el EDL. En videos largos se limita la densidad de propuestas para evitar cientos de movimientos innecesarios.</p><div className="mt-3 max-h-[34rem] space-y-3 overflow-auto pr-1">{document.suggestions.map((item) => <SuggestionCard applied={edl.tracks.camera.some(camera=>camera.id===item.id)} item={item} key={item.id} onPreview={() => preview(item)} onReview={(status) => void review(item, status)} onSeek={() => {onSeek(item.startUs);if(edl.tracks.camera.some(camera=>camera.id===item.id))onSelect?.(item.id);}} onToggle={()=>toggleDraft(item)} selected={selected.includes(item.id)} />)}{document.suggestions.length === 0 ? <p className="rounded-lg border border-line bg-canvas/40 p-4 text-sm text-muted">No se detectaron cambios visuales suficientemente sólidos con este perfil.</p> : null}</div></> : null}
   </Card>;
 }
 
