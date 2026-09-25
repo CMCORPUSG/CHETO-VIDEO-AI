@@ -22,7 +22,7 @@ import {
   usToPixels,
 } from "../../editor/timeline";
 
-export type TimelineSelection = { id: string; track: "cuts" | "camera" } | null;
+export type TimelineSelection = { id: string; track: "cuts" | "camera" | "audio" } | null;
 
 interface EditorTimelineProps {
   audio: AudioDecision[];
@@ -33,6 +33,7 @@ interface EditorTimelineProps {
   draftCuts?: CutDecision[];
   durationUs: number;
   markers?: number[];
+  onChangeAudio: (item: AudioDecision) => void;
   onChangeCamera: (item: CameraDecision) => void;
   onChangeCut: (item: CutDecision) => void;
   onSeek: (timeUs: number) => void;
@@ -48,7 +49,7 @@ type DragState = {
   originEndUs: number;
   originStartUs: number;
   pointerX: number;
-  track: "cuts" | "camera";
+  track: "cuts" | "camera" | "audio";
 };
 
 export function EditorTimeline({
@@ -60,6 +61,7 @@ export function EditorTimeline({
   draftCuts = [],
   durationUs,
   markers = [],
+  onChangeAudio,
   onChangeCamera,
   onChangeCut,
   onSeek,
@@ -79,7 +81,7 @@ export function EditorTimeline({
     id: string;
     startUs: number;
     endUs: number;
-    track: "cuts" | "camera";
+    track: "cuts" | "camera" | "audio";
   } | null>(null);
   const safeDuration = Math.max(1, durationUs);
   const contentWidth = timelineWidth(
@@ -136,8 +138,9 @@ export function EditorTimeline({
       ...markers,
       ...cuts.flatMap((item) => [item.startUs, item.endUs]),
       ...camera.flatMap((item) => [item.startUs, item.endUs]),
+      ...audio.flatMap((item) => [item.startUs, item.endUs]),
     ],
-    [camera, cuts, markers, playheadUs, safeDuration],
+    [audio, camera, cuts, markers, playheadUs, safeDuration],
   );
 
   const zoom = (next: number, anchorRatio = 0.5) => {
@@ -204,8 +207,8 @@ export function EditorTimeline({
 
   const beginDrag = (
     event: PointerEvent<HTMLSpanElement>,
-    track: "cuts" | "camera",
-    item: CutDecision | CameraDecision,
+    track: "cuts" | "camera" | "audio",
+    item: CutDecision | CameraDecision | AudioDecision,
     edge?: "start" | "end",
   ) => {
     event.stopPropagation();
@@ -284,10 +287,18 @@ export function EditorTimeline({
           startUs: preview.startUs,
           endUs: preview.endUs,
         });
-    } else {
+    } else if (drag.track === "camera") {
       const item = camera.find((value) => value.id === drag.id);
       if (item)
         onChangeCamera({
+          ...item,
+          startUs: preview.startUs,
+          endUs: preview.endUs,
+        });
+    } else {
+      const item = audio.find((value) => value.id === drag.id);
+      if (item)
+        onChangeAudio({
           ...item,
           startUs: preview.startUs,
           endUs: preview.endUs,
@@ -297,8 +308,8 @@ export function EditorTimeline({
     setPreview(null);
   };
   const displayedRange = (
-    track: "cuts" | "camera",
-    item: CutDecision | CameraDecision,
+    track: "cuts" | "camera" | "audio",
+    item: CutDecision | CameraDecision | AudioDecision,
   ) => (preview?.track === track && preview.id === item.id ? preview : item);
 
   return (
@@ -430,7 +441,18 @@ export function EditorTimeline({
           </TimelineLane>
           {audioPresent ? <TimelineLane contentWidth={contentWidth} label="Audio" tone="audio">
               <TimelineBlock className="is-audio" endUs={safeDuration} label="Audio original" pixelsPerSecond={pixelsPerSecond} startUs={0} title={"Audio original · " + formatTimecode(safeDuration)} />
-              {audio.map((item) => <TimelineBlock className={"is-audio-operation audio-op-"+item.operation} endUs={item.endUs} key={item.id} label={audioLabel(item)} pixelsPerSecond={pixelsPerSecond} startUs={item.startUs} title={audioLabel(item)+"\n"+formatTimecode(item.startUs)+" → "+formatTimecode(item.endUs)} />)}
+              {audio.map((item) => (
+                <EditableAudioBlock
+                  item={item}
+                  key={item.id}
+                  onMove={updateDrag}
+                  onRelease={finishDrag}
+                  onStart={beginDrag}
+                  pixelsPerSecond={pixelsPerSecond}
+                  range={displayedRange("audio", item)}
+                  selected={selected?.track === "audio" && selected.id === item.id}
+                />
+              ))}
             </TimelineLane> : null}
           {markers.map((marker, index) => (
             <button
@@ -602,4 +624,46 @@ function audioLabel(item: AudioDecision) {
   if (item.operation === "hum_filter") return "Hum";
   if (item.operation === "normalize") return "Normalizar";
   return item.operation;
+}
+
+function EditableAudioBlock({
+  item,
+  onMove,
+  onRelease,
+  onStart,
+  pixelsPerSecond,
+  range,
+  selected,
+}: {
+  item: AudioDecision;
+  onMove: (event: PointerEvent<HTMLSpanElement>) => void;
+  onRelease: () => void;
+  onStart: (
+    event: PointerEvent<HTMLSpanElement>,
+    track: "cuts" | "camera" | "audio",
+    item: CutDecision | CameraDecision | AudioDecision,
+    edge?: "start" | "end",
+  ) => void;
+  pixelsPerSecond: number;
+  range: { startUs: number; endUs: number };
+  selected: boolean;
+}) {
+  const label = audioLabel(item);
+  return (
+    <span
+      className={`editor-timeline-block is-editable is-audio-operation audio-op-${item.operation} ${selected ? "is-selected" : ""}`}
+      onPointerDown={(event) => onStart(event, "audio", item)}
+      onPointerMove={onMove}
+      onPointerUp={onRelease}
+      style={{
+        left: usToPixels(range.startUs, pixelsPerSecond),
+        width: Math.max(8, usToPixels(range.endUs - range.startUs, pixelsPerSecond)),
+      }}
+      title={label + "\n" + formatTimecode(range.startUs) + " → " + formatTimecode(range.endUs)}
+    >
+      <i className="timeline-handle left" onPointerDown={(event) => onStart(event, "audio", item, "start")} />
+      <b>{label}</b>
+      <i className="timeline-handle right" onPointerDown={(event) => onStart(event, "audio", item, "end")} />
+    </span>
+  );
 }
