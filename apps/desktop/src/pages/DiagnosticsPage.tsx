@@ -1,4 +1,4 @@
-﻿import {
+import {
   CheckCircle2,
   ClipboardCopy,
   Download,
@@ -38,8 +38,8 @@ const filters: Array<{
 }> = [
   { id: "all", label: "Todos" },
   { id: "info", label: "Info" },
-  { id: "warning", label: "Warning" },
-  { id: "error", label: "Error" },
+  { id: "warning", label: "Avisos" },
+  { id: "error", label: "Errores" },
 ];
 
 const levelStyles: Record<LogLevel, string> = {
@@ -185,23 +185,23 @@ export function DiagnosticsPage({
 
   return (
     <div className="mx-auto w-full max-w-[1300px] space-y-6">
-      <header className="border-b border-white/[0.055] pb-5">
+      <header className="pb-1">
         <p className="text-[9px] font-medium uppercase tracking-[0.14em] text-muted/40">
           Sistema
         </p>
 
-        <h2 className="mt-1 text-[20px] font-semibold tracking-tight text-ink">
+        <h2 className="mt-1 text-[18px] font-semibold tracking-tight text-ink">
           Diagnóstico
         </h2>
 
-        <p className="mt-2 text-[11px] text-muted/55">
+        <p className="mt-1.5 text-[10px] text-muted/55">
           Estado del entorno local y registro
           técnico de la aplicación.
         </p>
       </header>
 
-      <section className="grid overflow-hidden rounded-xl border border-white/[0.06] bg-[#090f18] lg:grid-cols-2">
-        <article className="p-5 lg:border-r lg:border-white/[0.05]">
+      <section className="grid overflow-hidden rounded-lg bg-[#0a111b] ring-1 ring-white/[0.055] lg:grid-cols-2">
+        <article className="p-4 lg:border-r lg:border-white/[0.05]">
           <div className="flex items-start justify-between gap-4">
             <span className="grid h-9 w-9 place-items-center rounded-lg bg-success/[0.07] text-success">
               <CheckCircle2
@@ -230,7 +230,7 @@ export function DiagnosticsPage({
           </p>
         </article>
 
-        <article className="border-t border-white/[0.05] p-5 lg:border-t-0">
+        <article className="border-t border-white/[0.05] p-4 lg:border-t-0">
           <div className="flex items-start justify-between gap-4">
             <span
               className={cn(
@@ -309,8 +309,8 @@ export function DiagnosticsPage({
         </article>
       </section>
 
-      <section className="overflow-hidden rounded-xl border border-white/[0.06] bg-[#090f18]">
-        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/[0.06] px-5 py-4">
+      <section className="overflow-hidden rounded-lg bg-[#0a111b] ring-1 ring-white/[0.055]">
+        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/[0.06] px-4 py-3.5">
           <div>
             <p className="text-[9px] font-medium uppercase tracking-[0.12em] text-muted/40">
               Registro local
@@ -326,7 +326,7 @@ export function DiagnosticsPage({
           </span>
         </header>
 
-        <div className="flex items-center gap-1.5 border-b border-white/[0.05] px-5 py-2.5">
+        <div className="flex items-center gap-1.5 border-b border-white/[0.05] px-4 py-2.5">
           {filters.map((filter) => (
             <button
               aria-pressed={
@@ -357,7 +357,7 @@ export function DiagnosticsPage({
 
         <div
           aria-label="Registro de diagnóstico"
-          className="min-h-[300px] max-h-[440px] overflow-auto bg-[#05090e] p-4 font-mono text-[9px] leading-6"
+          className="min-h-[280px] max-h-[420px] overflow-auto bg-[#05090e] p-3.5 font-mono text-[9px] leading-6"
         >
           {filteredEvents.length ? (
             filteredEvents.map(

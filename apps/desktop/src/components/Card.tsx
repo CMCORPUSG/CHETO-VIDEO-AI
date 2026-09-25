@@ -1,4 +1,4 @@
-﻿import type { HTMLAttributes, ReactNode } from "react";
+import type { HTMLAttributes, ReactNode } from "react";
 import { cn } from "../lib/cn";
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
@@ -13,7 +13,7 @@ export function Card({
   return (
     <div
       className={cn(
-        "min-w-0 max-w-full overflow-hidden rounded-xl border border-white/[0.06] bg-[#0b121c] shadow-[0_12px_36px_rgba(0,0,0,.16)]",
+        "min-w-0 max-w-full overflow-hidden rounded-lg bg-[#0a111b] ring-1 ring-white/[0.055]",
         className,
       )}
       {...props}

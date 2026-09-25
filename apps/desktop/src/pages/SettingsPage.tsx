@@ -1,4 +1,4 @@
-﻿import {
+import {
   Camera,
   CloudOff,
   Cpu,
@@ -67,17 +67,17 @@ export function SettingsPage({
   };
 
   return (
-    <div className="mx-auto w-full max-w-[1200px] space-y-8">
-      <header className="border-b border-white/[0.055] pb-5">
+    <div className="mx-auto w-full max-w-[1180px] space-y-6">
+      <header className="pb-1">
         <p className="text-[9px] font-medium uppercase tracking-[0.14em] text-muted/40">
           Aplicación
         </p>
 
-        <h2 className="mt-1 text-[20px] font-semibold tracking-tight text-ink">
+        <h2 className="mt-1 text-[18px] font-semibold tracking-tight text-ink">
           Configuración
         </h2>
 
-        <p className="mt-2 text-[11px] text-muted/55">
+        <p className="mt-1.5 text-[10px] text-muted/55">
           Preferencias locales de CHETO VIDEO AI.
         </p>
       </header>
@@ -89,7 +89,7 @@ export function SettingsPage({
           title="General"
         />
 
-        <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-[#090f18]">
+        <div className="overflow-hidden rounded-lg bg-[#0a111b] ring-1 ring-white/[0.055]">
           <SettingRow
             icon={<Moon size={15} />}
             label="Tema"
@@ -116,7 +116,7 @@ export function SettingsPage({
           title="Perfil local"
         />
 
-        <div className="rounded-xl border border-white/[0.06] bg-[#090f18] p-5">
+        <div className="rounded-lg bg-[#0a111b] p-4 ring-1 ring-white/[0.055]">
           <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
             <div className="flex items-center gap-4">
               <span className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.035] text-muted">
@@ -209,8 +209,8 @@ export function SettingsPage({
           title="Procesamiento y privacidad"
         />
 
-        <div className="grid overflow-hidden rounded-xl border border-white/[0.06] bg-[#090f18] lg:grid-cols-2">
-          <div className="p-5 lg:border-r lg:border-white/[0.05]">
+        <div className="grid overflow-hidden rounded-lg bg-[#0a111b] ring-1 ring-white/[0.055] lg:grid-cols-2">
+          <div className="p-4 lg:border-r lg:border-white/[0.05]">
             <div className="flex items-start justify-between gap-3">
               <span className="grid h-9 w-9 place-items-center rounded-lg bg-white/[0.035] text-muted/60">
                 <Cpu size={15} />
@@ -229,7 +229,7 @@ export function SettingsPage({
             </p>
           </div>
 
-          <div className="border-t border-white/[0.05] p-5 lg:border-t-0">
+          <div className="border-t border-white/[0.05] p-4 lg:border-t-0">
             <div className="flex items-start justify-between gap-3">
               <span className="grid h-9 w-9 place-items-center rounded-lg bg-success/[0.06] text-success">
                 <CloudOff size={15} />
@@ -266,7 +266,7 @@ function SectionTitle({
   title: string;
 }) {
   return (
-    <div className="mb-3 flex items-start gap-2">
+    <div className="mb-2.5 flex items-start gap-2">
       <span className="mt-0.5 text-muted/45">
         {icon}
       </span>
@@ -294,7 +294,7 @@ function SettingRow({
   value: string;
 }) {
   return (
-    <div className="flex min-h-[58px] items-center justify-between gap-4 border-b border-white/[0.05] px-5 last:border-b-0">
+    <div className="flex min-h-[50px] items-center justify-between gap-4 border-b border-white/[0.05] px-4 last:border-b-0">
       <div className="flex items-center gap-3">
         {icon ? (
           <span className="text-muted/45">
