@@ -2065,3 +2065,43 @@ input[type="checkbox"] {
   .editor-shell { --timeline-height: 160px; grid-template-rows: minmax(190px, 1fr) var(--timeline-height) !important; }
   .editor-viewer-toolbar { min-height: 28px !important; }
 }
+
+
+/* CHETO EDITOR V10 · compact controls + camera conflict UX */
+.editor-export-button {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  height: 27px !important;
+  min-height: 27px !important;
+  padding: 0 9px !important;
+  gap: 4px !important;
+  border-radius: 5px !important;
+  font-size: 9px !important;
+  line-height: 1 !important;
+}
+
+.editor-export-button > span:last-child {
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+.timeline-inspector-apply {
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: 27px !important;
+  min-height: 27px !important;
+  padding: 0 9px !important;
+  border-radius: 5px !important;
+  font-size: 9px !important;
+}
+
+.timeline-inspector .btn,
+.timeline-inspector button {
+  max-width: 100%;
+}
+
+.timeline-inspector p {
+  overflow-wrap: anywhere;
+}

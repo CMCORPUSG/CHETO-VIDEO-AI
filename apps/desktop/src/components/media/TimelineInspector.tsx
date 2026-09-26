@@ -13,7 +13,7 @@ interface TimelineInspectorProps {
   onApplyCamera: (item: CameraDecision) => void;
   onApplyCut: (item: CutDecision) => void;
   onDelete: () => void;
-  onReplaceCamera: (item: CameraDecision, conflictId: string) => void;
+  onReplaceCamera: (item: CameraDecision, conflictIds: string[]) => void;
 }
 
 export function TimelineInspector({
@@ -42,7 +42,7 @@ export function TimelineInspector({
     (item?.transitionUs ?? 500_000) / 1000,
   );
   const [error, setError] = useState<string | null>(null);
-  const [conflictId, setConflictId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   if (!selected) return null;
   const editedCamera = (startUs: number, endUs: number) => item ? editCamera(item, { startUs, endUs, mode, zoom, centerX: centerX / 100, centerY: centerY / 100, easing, transitionUs: Math.max(0, Math.round(transitionMs * 1000)) }) : null;
   const apply = () => {
@@ -59,27 +59,33 @@ export function TimelineInspector({
       return;
     }
     if (item) {
-      const conflict = camera.find(
+      const conflicts = camera.filter(
         (value) =>
           value.id !== item.id &&
           value.startUs < endUs &&
           value.endUs > startUs,
       );
-      if (conflict) {
-        setConflictId(conflict.id);
-        setError(
-          `Conflicto: ${cameraLabel(item.mode)} ${formatTimecode(startUs)}–${formatTimecode(endUs)} se superpone con ${cameraLabel(conflict.mode)} ${formatTimecode(conflict.startUs)}–${formatTimecode(conflict.endUs)}.`,
+      const edited = editedCamera(startUs, endUs)!;
+
+      if (conflicts.length > 0) {
+        onReplaceCamera(
+          edited,
+          conflicts.map((value) => value.id),
         );
-        return;
+        setNotice(
+          `Se resolvieron automáticamente ${conflicts.length} encuadre(s) solapado(s).`,
+        );
+      } else {
+        onApplyCamera(edited);
+        setNotice("Encuadre actualizado.");
       }
-      onApplyCamera(editedCamera(startUs, endUs)!);
     } else if (cut) {
       onApplyCut({
         ...cut,
         ...resizeRange(startUs, endUs, "end", endUs, durationUs),
       });
     }
-    setConflictId(null); setError(null);
+    setError(null);
   };
   return (
     <Card className="timeline-inspector mb-2 p-2">
@@ -166,10 +172,12 @@ export function TimelineInspector({
         ) : null}
       </div>
       {error ? <p className="mt-2 text-[9px] text-danger">{error}</p> : null}
-      {conflictId && item ? <div className="mt-2 flex gap-1"><Button onClick={()=>{setConflictId(null);setError(null)}} variant="secondary">Cancelar cambio</Button><Button onClick={()=>{const startUs=parseTimecode(start);const endUs=parseTimecode(end);if(startUs!==null&&endUs!==null)onReplaceCamera(editedCamera(startUs,endUs)!,conflictId);setConflictId(null);setError(null)}} variant="danger">Reemplazar existente</Button></div> : null}
-      <Button className="mt-2 w-full" onClick={apply}>
-        Aplicar cambios al EDL
-      </Button>
+      {notice ? <p className="mt-2 text-[9px] leading-4 text-warning/80">{notice}</p> : null}
+      <div className="mt-2 flex justify-end">
+        <Button className="timeline-inspector-apply" onClick={apply}>
+          Guardar cambios
+        </Button>
+      </div>
     </Card>
   );
 }
