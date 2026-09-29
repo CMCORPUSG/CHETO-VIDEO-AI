@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { TitleDecision, TitlePresetId, TransitionDecision, TransitionKind } from "../../project/contracts";
 import { createTitle } from "../../visual/titles";
 import { editTemplateParameter, resetTemplateDesign, resetTemplateParameter, resolveManifest, resolveTemplateInstance, swapTemplate } from "../../templates/engine";
 import { TEMPLATE_REGISTRY, TEMPLATE_RENDERER_VERSION, type ParameterDefinition, type TemplateManifest } from "../../templates/registry";
 import { TitlePreview } from "./TitlePreview";
 import { TitleLayerInspector } from "./TitleLayerInspector";
+import { PackWorkspace } from "./PackWorkspace";
 
 const field = "w-full rounded border border-line bg-canvas px-2 py-1.5 text-xs text-ink";
 const TRANSITIONS: { id: TransitionKind; label: string }[] = [
@@ -23,13 +24,16 @@ function sampleFor(manifest: TemplateManifest) {
   sample.instanceId = sample.id;
   sample.text = manifest.preview.text;
   sample.secondaryText = manifest.preview.secondaryText;
+  sample.templateId = manifest.templateId;
+  sample.templateVersion = manifest.templateVersion;
+  sample.templateSnapshot = manifest;
   sample.fontSize = Math.max(sample.fontSize, 148);
   sample.endUs = 5_000_000;
   thumbnailSamples.set(key, sample);
   return sample;
 }
 
-function TemplateCard({ manifest, onAdd }: { manifest: TemplateManifest; onAdd: (id: TitlePresetId) => void }) {
+function TemplateCard({ manifest, onAdd }: { manifest: TemplateManifest; onAdd: (item: TemplateManifest) => void }) {
   const thumbnailRef = useRef<HTMLSpanElement>(null);
   const [thumbnailWidth, setThumbnailWidth] = useState(0);
   const [hovered, setHovered] = useState(false);
@@ -48,9 +52,9 @@ function TemplateCard({ manifest, onAdd }: { manifest: TemplateManifest; onAdd: 
     return () => observer.disconnect();
   }, []);
   const sample = sampleFor(manifest);
-  return <button className="title-preset-card overflow-hidden rounded-lg border border-line bg-panel text-left text-[10px] hover:border-cyan" draggable key={manifest.templateId} onClick={() => onAdd(manifest.legacyPresetId as TitlePresetId)} onDragStart={event => event.dataTransfer.setData("application/x-cheto-title-preset", manifest.legacyPresetId)} onMouseEnter={() => setHovered(true)} onMouseLeave={() => { setHovered(false); setElapsed(0); }} title={`${manifest.description} · ${manifest.category}`} type="button">
+  return <button className="title-preset-card overflow-hidden rounded-lg border border-line bg-panel text-left text-[10px] hover:border-cyan" draggable key={manifest.templateId} onClick={() => onAdd(manifest)} onDragStart={event => event.dataTransfer.setData("application/x-cheto-title-preset", manifest.templateId.startsWith("cheto.pack.") ? `${manifest.templateId}@${manifest.templateVersion}` : manifest.legacyPresetId)} onMouseEnter={() => setHovered(true)} onMouseLeave={() => { setHovered(false); setElapsed(0); }} title={`${manifest.description} · ${manifest.category}`} type="button">
     <span className="template-thumbnail" ref={thumbnailRef}><span className="template-thumbnail-stage" style={{transform:`scale(${Math.max(0.01,thumbnailWidth / 1920)})`}}><TitlePreview title={sample} timeUs={hovered ? elapsed % 5_000_000 : 1_600_000} aspectRatio={16 / 9}/></span></span>
-    <span className="block border-t border-line px-2 py-1"><strong className="block">{manifest.name}</strong><small className="text-[8px] text-muted">{manifest.category} · {manifest.kind}</small></span>
+    <span className="block border-t border-line px-2 py-1"><strong className="block">{manifest.name}</strong><small className="text-[8px] text-muted">{manifest.category} · {manifest.kind} · {manifest.templateId.startsWith("cheto.pack.") ? "Pack local" : "Built-in"}</small></span>
   </button>;
 }
 
@@ -64,8 +68,8 @@ function ParameterControl({ definition, value, onChange, onReset }: { definition
   return <label className="block">{label}<input className={field} max={definition.max} min={definition.min} onChange={event => onChange(Number(event.target.value))} step={definition.step ?? 0.01} type="number" value={Number(value)}/></label>;
 }
 
-export function TitleWorkspace({ onAddTitle, onAddTransition, selectedTitle, selectedTransition, selectedLayerId, onSelectLayer, onChangeTitle, onChangeTransition, onDuplicateTitle, durationUs, aspectRatio = 16 / 9 }: {
-  onAddTitle: (preset: TitlePresetId) => void;
+export function TitleWorkspace({ onAddTitle, onAddTransition, selectedTitle, selectedTransition, selectedLayerId, onSelectLayer, onChangeTitle, onChangeTransition, onDuplicateTitle, onPackEvent, durationUs, aspectRatio = 16 / 9 }: {
+  onAddTitle: (preset: TitlePresetId | TemplateManifest) => void;
   onAddTransition: (kind: TransitionKind) => void;
   selectedTitle: TitleDecision | null;
   selectedTransition: TransitionDecision | null;
@@ -74,12 +78,15 @@ export function TitleWorkspace({ onAddTitle, onAddTransition, selectedTitle, sel
   onChangeTitle: (title: TitleDecision) => void;
   onChangeTransition: (transition: TransitionDecision) => void;
   onDuplicateTitle?: (title: TitleDecision) => void;
+  onPackEvent?: (event: string, level?: "warning" | "error") => void;
   durationUs: number;
   aspectRatio?: number;
 }) {
   const [category, setCategory] = useState("Todas");
   const [tab, setTab] = useState<"basico" | "plantillas" | "animacion">(selectedTitle ? "basico" : "plantillas");
   const [query, setQuery] = useState("");
+  const [, setRegistryRevision] = useState(0);
+  const onRegistryChange = useCallback(() => setRegistryRevision(value => value + 1), []);
   const templates = TEMPLATE_REGISTRY.listTemplates();
   const categories = [...new Set(templates.map(item => item.category))];
   const visible = templates.filter(item => (category === "Todas" || item.category === category) && `${item.name} ${item.description} ${item.tags.join(" ")}`.toLocaleLowerCase().includes(query.toLocaleLowerCase()));
@@ -88,7 +95,8 @@ export function TitleWorkspace({ onAddTitle, onAddTransition, selectedTitle, sel
   const patchTitle = (patch: Partial<TitleDecision>) => selectedTitle && onChangeTitle({ ...selectedTitle, ...patch });
   return <div className="space-y-4 text-xs text-ink">
     <nav aria-label="Panel de títulos" className="grid grid-cols-3 gap-1 rounded-lg border border-line bg-canvas p-1">{([ ["basico","Básico"], ["plantillas","Plantillas"], ["animacion","Animación"] ] as const).map(([id,name]) => <button aria-selected={tab===id} className={`rounded px-1 py-2 text-[10px] font-semibold ${tab===id?"bg-cyan/15 text-cyan":"text-muted hover:text-ink"}`} key={id} onClick={()=>setTab(id)} role="tab" type="button">{name}</button>)}</nav>
-    {tab==="plantillas" && <section className="template-gallery-container"><h3 className="mb-2 font-bold text-cyan">Plantillas de títulos</h3><p className="mb-2 text-[10px] text-muted">18 familias locales. Arrastra a la pista o pulsa una tarjeta.</p>
+    {tab==="plantillas" && <PackWorkspace templates={templates} onRegistryChange={onRegistryChange} onEvent={onPackEvent}/>}
+    {tab==="plantillas" && <section className="template-gallery-container"><h3 className="mb-2 font-bold text-cyan">Plantillas de títulos</h3><p className="mb-2 text-[10px] text-muted">Plantillas built-in y paquetes locales. Arrastra a la pista o pulsa una tarjeta.</p>
       <input aria-label="Buscar plantillas" className={`${field} mb-2`} onChange={event => setQuery(event.target.value)} placeholder="Buscar por nombre o estilo" value={query}/>
       <select aria-label="Categoría de títulos" className={`${field} mb-2`} onChange={event => setCategory(event.target.value)} value={category}><option>Todas</option>{categories.map(value => <option key={value}>{value}</option>)}</select>
       <div className="template-gallery-grid">{visible.map(manifest => <TemplateCard key={manifest.templateId} manifest={manifest} onAdd={onAddTitle}/>)}</div>

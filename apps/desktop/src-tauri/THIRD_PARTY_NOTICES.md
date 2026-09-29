@@ -1,5 +1,11 @@
 # Avisos de recursos incluidos en 13D
 
+## Bibliotecas usadas por .chetopack (13F)
+
+- `zip` 8.6.0: lectura y escritura del contenedor ZIP local; licencia MIT.
+- `sha2` 0.11.0: cálculo de SHA-256 para los archivos del paquete; licencia MIT OR Apache-2.0.
+- Las fuentes que un usuario empaquete conservan su licencia propia, declarada en `licenses/LICENSES.json`. CHETO no presupone permisos de redistribución por el mero hecho de seleccionar un archivo.
+
 Esta distribución incluye únicamente archivos seleccionados en `resources/visual-13d`. El manifiesto `manifest.json` identifica los recursos de la biblioteca multimedia; las fuentes y sus licencias se describen aquí. Los originales de video importados por el usuario permanecen fuera del paquete.
 
 ## UI SFX

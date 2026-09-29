@@ -138,7 +138,7 @@ export type TitlePresetId = "whisper-fade" | "rise-settle" | "stack-reveal" | "m
 export interface TitleLayoutOverride { x?: number; y?: number; scale?: number; rotation?: number; maxWidth?: number }
 export interface TitleLayerOverride {
   text?: string;
-  font?: "Inter" | "Instrument Serif";
+  font?: string;
   fontSize?: number;
   fontWeight?: number;
   italic?: boolean;
@@ -176,7 +176,7 @@ export interface TitleDecision extends TimedTrackItem {
   positionY: number;
   anchor: "center" | "left" | "right";
   scale: number;
-  font: "Inter" | "Instrument Serif";
+  font: string;
   fontWeight: number;
   fontSize: number;
   color: string;

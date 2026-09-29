@@ -3,6 +3,7 @@ use crate::{
         active_audio_assets, audio_mix_graph, edited_time, overlay_graph, seamless_music_loop,
         AudioAssetInput,
     },
+    chetopack,
     project_storage::{AudioDecision, CameraDecision, EdlManifest, ProjectStorage},
     proxy_ffmpeg::nvenc_capabilities,
     visual_render,
@@ -1178,6 +1179,9 @@ fn render(
     source_size: (u32, u32),
     source_audio_present: bool,
 ) -> Result<(), ExportError> {
+    let prepared_edl = chetopack::prepare_render_edl(app, edl, config.width)
+        .map_err(|error| ExportError::new("pack-resources", error))?;
+    let edl = &prepared_edl;
     visual_render::prepare_assets(edl).map_err(|error| ExportError::new("title-assets", error))?;
     let output = PathBuf::from(&config.output_path);
     let file_name = output
@@ -1503,6 +1507,8 @@ pub async fn render_result_chunk(
         let source_start = source_at_edited(&edl, start, duration);
         let source_end = source_at_edited(&edl, start + length, duration);
         let local = localize_edl(&edl, source_start, source_end.max(source_start + 1));
+        let local = chetopack::prepare_render_edl(&app, &local, request.width)
+            .map_err(|error| ExportError::new("pack-resources", error))?;
         let camera_samples = camera_render_samples(&local, source_start);
         let mut hash = DefaultHasher::new();
         crate::template_engine::RENDERER_VERSION.hash(&mut hash);

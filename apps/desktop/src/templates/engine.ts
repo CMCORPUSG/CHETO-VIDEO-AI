@@ -167,6 +167,7 @@ export function swapTemplate(title: TitleDecision, targetTemplateId: string, tar
   if (!manifest) return null;
   const fresh = attachTemplateIdentity(createLegacy(manifest.legacyPresetId as TitlePresetId, title.startUs, title.endUs + 1));
   let swapped: TitleDecision = { ...fresh, id: title.id, instanceId: title.instanceId ?? title.id, startUs: title.startUs, endUs: title.endUs };
+  swapped = { ...swapped, templateId: manifest.templateId, templateVersion: manifest.templateVersion, templateSnapshot: manifest, parameters: {} };
   for (const id of ["text","secondaryText","accentColor"]) {
     const value = title[id as keyof TitleDecision];
     swapped = editTemplateParameter(swapped, id, value);

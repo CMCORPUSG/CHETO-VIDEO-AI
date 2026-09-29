@@ -2,6 +2,7 @@ mod asset_library;
 mod asset_mix;
 mod audio_intelligence;
 mod audio_preview;
+mod chetopack;
 mod conflicts;
 mod cover;
 mod diagnostics;
@@ -27,6 +28,14 @@ pub fn run() {
         .manage(smart_camera::SmartCameraManager::default())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
+            chetopack::inspect_chetopack,
+            chetopack::list_chetopacks,
+            chetopack::verify_chetopack,
+            chetopack::resolve_chetopack_resource,
+            chetopack::install_chetopack,
+            chetopack::uninstall_chetopack,
+            chetopack::load_installed_templates,
+            chetopack::export_chetopack,
             audio_intelligence::analyze_audio_events,
             audio_intelligence::cancel_audio_events,
             diagnostics::get_diagnostic_context,

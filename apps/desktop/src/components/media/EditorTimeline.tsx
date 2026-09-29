@@ -26,6 +26,7 @@ import {
 import { canLoadTimelineVisuals, timelineThumbnail, timelineWaveform, visibleThumbnailTimes, waveformPath, type WaveformView } from "../../editor/visuals";
 import { manualClipSegments } from "../../editor/manual-trim";
 import type { EdlManifest } from "../../project/contracts";
+import { TEMPLATE_REGISTRY, type TemplateManifest } from "../../templates/registry";
 
 export type TimelineSelection = { id: string; track: "cuts" | "camera" | "audio" | "assets" | "titles" | "transitions" | "video" | "audio-source" | "marker" } | null;
 
@@ -51,7 +52,7 @@ interface EditorTimelineProps {
   onChangeAudio: (item: AudioDecision) => void;
   onChangeAsset?: (item: AssetDecision) => void;
   onChangeTitle?: (item: TitleDecision) => void;
-  onDropTitle?: (preset: TitlePresetId, atUs: number) => void;
+  onDropTitle?: (preset: TitlePresetId | TemplateManifest, atUs: number) => void;
   onDropAsset?: (assetId: string, atUs: number, kind: AssetDecision["kind"]) => void;
   onChangeCamera: (item: CameraDecision) => void;
   onChangeCut: (item: CutDecision) => void;
@@ -476,11 +477,14 @@ export function EditorTimeline({
   };
   const dropTitle = (event: import("react").DragEvent<HTMLDivElement>) => {
     event.preventDefault();
-    const preset = event.dataTransfer.getData("application/x-cheto-title-preset") as TitlePresetId;
+    const preset = event.dataTransfer.getData("application/x-cheto-title-preset");
     if (!preset || !viewportRef.current) return;
+    const [templateId, version] = preset.split("@");
+    const selected = version ? TEMPLATE_REGISTRY.getTemplate(templateId, version) : preset as TitlePresetId;
+    if (!selected) return;
     const bounds = viewportRef.current.getBoundingClientRect();
     const raw = pixelsToUs(event.clientX - bounds.left + viewportRef.current.scrollLeft - 74, pixelsPerSecond);
-    onDropTitle?.(preset, Math.max(0, Math.min(safeDuration, snapTimeUs(raw, snapCandidates, pixelsPerSecond, event.altKey))));
+    onDropTitle?.(selected, Math.max(0, Math.min(safeDuration, snapTimeUs(raw, snapCandidates, pixelsPerSecond, event.altKey))));
   };
 
   return (

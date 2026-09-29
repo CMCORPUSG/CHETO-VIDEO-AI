@@ -35,6 +35,7 @@ export interface TemplateManifest {
   safeArea: Record<TemplateVariant, number>;
   fontRefs: string[];
   assetRefs: string[];
+  graphicLayer?: { assetId: string; positionX: number; positionY: number; width: number };
   recommendedProfiles: string[];
   intensity: TemplateIntensity;
   preview: { text: string; secondaryText: string };
@@ -55,11 +56,13 @@ const EASINGS = new Set<EasingId>(["linear","easeIn","easeOut","easeInOut","ease
 const SAFE_ID = /^[a-z0-9][a-z0-9.-]*$/;
 const PARAMETER_ID = /^[a-z][a-zA-Z0-9]*$/;
 const VERSION = /^\d+\.\d+\.\d+$/;
+const PACK_RESOURCE_ID = /^pack:[a-z][a-z0-9.-]{5,119}@(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*):(fonts\/[a-zA-Z0-9._-]+\.(?:ttf|otf)|assets\/(?:images|overlays|other)\/[a-zA-Z0-9._-]+\.(?:png|jpg|jpeg|webp|gif)|previews\/[a-zA-Z0-9._-]+\.(?:png|jpg|jpeg|webp|gif))$/;
+export const isPackResourceId = (id: string, prefix?: "fonts/" | "assets/" | "previews/") => PACK_RESOURCE_ID.test(id) && (!prefix || id.split(":").at(-1)?.startsWith(prefix) === true);
 const DEFAULT_ANIMATION_IN = { durationMs: 500, easing: "easeOut" as const };
 const DEFAULT_ANIMATION_OUT = { durationMs: 350, easing: "linear" as const };
 
 type Catalog = typeof catalogJson;
-type RawManifest = Catalog["templates"][number] & { parameters?: ParameterDefinition[]; animationIn?: TemplateManifest["animationIn"]; animationOut?: TemplateManifest["animationOut"]; assetRefs?: string[] };
+type RawManifest = Catalog["templates"][number] & { parameters?: ParameterDefinition[]; animationIn?: TemplateManifest["animationIn"]; animationOut?: TemplateManifest["animationOut"]; assetRefs?: string[]; graphicLayer?: TemplateManifest["graphicLayer"] };
 
 function expandManifest(raw: RawManifest, catalog: Catalog): TemplateManifest {
   const mergedParameters = [...catalog.parameters as ParameterDefinition[]];
@@ -93,6 +96,7 @@ function expandManifest(raw: RawManifest, catalog: Catalog): TemplateManifest {
     safeArea: catalog.safeArea,
     fontRefs: raw.fontRefs ?? catalog.fontRefs,
     assetRefs: raw.assetRefs ?? catalog.assetRefs,
+    graphicLayer: raw.graphicLayer,
     recommendedProfiles: raw.recommendedProfiles,
     intensity: raw.intensity as TemplateIntensity,
     preview: raw.preview,
@@ -118,8 +122,9 @@ function validateTemplateShape(manifest: TemplateManifest): string[] {
   if (manifest.supportedAspectRatios.some(ratio => !RATIOS.has(ratio))) errors.push("aspect ratio inválido");
   if (Object.keys(manifest.responsiveVariants).some(variant => !VARIANTS.has(variant as TemplateVariant))) errors.push("variante inválida");
   if (manifest.recipe.some(primitive => !PRIMITIVES.has(primitive))) errors.push("primitive desconocida");
-  if (manifest.fontRefs.some(font => !(font in FONT_REGISTRY))) errors.push("font desconocida");
-  if (manifest.assetRefs.some(asset => !SAFE_ID.test(asset) || asset.includes(".."))) errors.push("asset inseguro o inexistente");
+  if (manifest.fontRefs.some(font => !(font in FONT_REGISTRY) && !isPackResourceId(font, "fonts/"))) errors.push("font desconocida");
+  if (manifest.assetRefs.some(asset => !isPackResourceId(asset, "assets/"))) errors.push("asset inseguro o inexistente");
+  if (manifest.graphicLayer && (!manifest.assetRefs.includes(manifest.graphicLayer.assetId) || [manifest.graphicLayer.positionX, manifest.graphicLayer.positionY, manifest.graphicLayer.width].some(value => !Number.isFinite(value) || value < 0 || value > 1) || manifest.graphicLayer.width < 0.02)) errors.push("capa gráfica inválida");
   const ids = new Set<string>();
   for (const parameter of manifest.parameters) {
     if (!PARAMETER_ID.test(parameter.id) || ids.has(parameter.id)) errors.push(`parámetro duplicado/inválido: ${parameter.id}`);
@@ -147,6 +152,8 @@ function validateTemplateShape(manifest: TemplateManifest): string[] {
 export class TemplateRegistry {
   private readonly byIdentity = new Map<string, TemplateManifest>();
   private readonly byLegacy = new Map<string, TemplateManifest>();
+  private readonly packIdentities = new Set<string>();
+  private readonly packFonts = new Set<string>();
   readonly errors: string[] = [];
 
   constructor(manifests: TemplateManifest[]) {
@@ -163,6 +170,27 @@ export class TemplateRegistry {
 
   getTemplate(templateId: string, version: string): TemplateManifest | null { return this.byIdentity.get(`${templateId}@${version}`) ?? null; }
   getLegacy(presetId: string): TemplateManifest | null { return this.byLegacy.get(presetId) ?? null; }
+  listPackFonts(): string[] { return [...this.packFonts]; }
+  replacePackTemplates(manifests: TemplateManifest[]): string[] {
+    const problems: string[] = [];
+    const next = new Map<string, TemplateManifest>();
+    for (const manifest of manifests) {
+      const key = `${manifest.templateId}@${manifest.templateVersion}`;
+      const errors = validateTemplate(manifest);
+      if (!manifest.templateId.startsWith("cheto.pack.")) errors.push("identidad de paquete inválida");
+      if (this.byIdentity.has(key) && !this.packIdentities.has(key)) errors.push("colisión con plantilla built-in");
+      if (next.has(key)) errors.push("template duplicado entre paquetes");
+      if (errors.length) { problems.push(`${key}: ${errors.join(", ")}`); continue; }
+      next.set(key, manifest);
+    }
+    if (problems.length) return problems;
+    for (const key of this.packIdentities) this.byIdentity.delete(key);
+    this.packIdentities.clear();
+    this.packFonts.clear();
+    for (const [key, manifest] of next) { this.byIdentity.set(key, manifest); this.packIdentities.add(key); }
+    for (const manifest of next.values()) for (const font of manifest.fontRefs) if (isPackResourceId(font, "fonts/")) this.packFonts.add(font);
+    return [];
+  }
   listTemplates(filter: { kind?: TemplateKind; category?: string; tags?: string[]; recommendedProfile?: string; intensity?: TemplateIntensity; aspectRatio?: string; search?: string } = {}): TemplateManifest[] {
     const query = filter.search?.trim().toLocaleLowerCase() ?? "";
     return [...this.byIdentity.values()].filter(item =>

@@ -240,7 +240,14 @@ pub(crate) fn overlay_graph(
     for (slot, (index, item)) in overlays.iter().enumerate() {
         let start = edited_time(edl, item.start_us);
         let end = edited_time(edl, item.end_us);
-        let scale = item.scale.clamp(0.05, 1.0);
+        let scale = item.scale.clamp(
+            0.05,
+            if item.asset_id.starts_with("pack:") {
+                4.0
+            } else {
+                1.0
+            },
+        );
         let opacity = item.opacity.clamp(0.0, 1.0);
         graph.push(format!("[{index}:v:0]format=rgba,scale=iw*{scale:.3}:ih*{scale:.3},colorchannelmixer=aa={opacity:.3},setpts=PTS-STARTPTS+{}/TB[overlay{slot}]", seconds(start)));
         graph.push(format!("[video{slot}][overlay{slot}]overlay=x='(W-w)*{:.3}':y='(H-h)*{:.3}':eof_action=pass:enable='between(t,{},{})'[video{}]", item.position_x.clamp(0.0, 1.0), item.position_y.clamp(0.0, 1.0), seconds(start), seconds(end), slot + 1));

@@ -63,6 +63,161 @@ pub(crate) fn resolve_manifest(title: &TitleDecision) -> Result<Option<&Value>, 
     Err(format!("TEMPLATE_VERSION_MISSING {id}@{version}"))
 }
 
+pub(crate) fn validate_pack_template(value: &Value) -> Result<(), String> {
+    let id = value["templateId"].as_str().ok_or("templateId ausente")?;
+    let version = value["templateVersion"]
+        .as_str()
+        .ok_or("templateVersion ausente")?;
+    let family = value["legacyPresetId"].as_str().ok_or("familia ausente")?;
+    if !id.starts_with("cheto.pack.")
+        || id.len() > 180
+        || !id
+            .bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'.' || b == b'-')
+        || version.split('.').count() != 3
+        || !version
+            .split('.')
+            .all(|part| !part.is_empty() && part.bytes().all(|b| b.is_ascii_digit()))
+    {
+        return Err("identidad de plantilla inválida".into());
+    }
+    if value["schemaVersion"] != 1 || value["rendererVersion"] != RENDERER_VERSION {
+        return Err("versión del renderer incompatible".into());
+    }
+    let builtin = catalog()["templates"]
+        .as_array()
+        .and_then(|items| items.iter().find(|item| item["legacyPresetId"] == family))
+        .ok_or("familia base desconocida")?;
+    if value["recipe"] != builtin["recipe"] {
+        return Err("receta no soportada por el renderer".into());
+    }
+    if value["kind"] != builtin["kind"]
+        || value["layers"] != builtin["layers"]
+        || value["responsiveVariants"] != builtin["responsiveVariants"]
+        || value["supportedAspectRatios"] != catalog()["supportedAspectRatios"]
+        || value["safeArea"] != catalog()["safeArea"]
+    {
+        return Err("estructura de familia incompatible".into());
+    }
+    let layers = value["layers"].as_array().ok_or("capas inválidas")?;
+    let parameters = value["parameters"]
+        .as_array()
+        .ok_or("parámetros inválidos")?;
+    let allowed_parameters: std::collections::HashSet<&str> = catalog()["parameters"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|item| item["id"].as_str())
+        .chain(["descriptionText", "glowIntensity"])
+        .collect();
+    if parameters.len() > 64
+        || layers.len() > 32
+        || parameters.iter().any(|item| {
+            !item["id"]
+                .as_str()
+                .is_some_and(|id| allowed_parameters.contains(id))
+        })
+    {
+        return Err("parámetros no soportados".into());
+    }
+    let mut parameter_ids = std::collections::HashSet::new();
+    for parameter in parameters {
+        let id = parameter["id"].as_str().ok_or("parámetro sin ID")?;
+        if !parameter_ids.insert(id)
+            || ![
+                "text",
+                "multilineText",
+                "number",
+                "percentage",
+                "color",
+                "boolean",
+                "enum",
+                "font",
+                "fontWeight",
+                "position",
+                "scale",
+            ]
+            .contains(&parameter["type"].as_str().unwrap_or(""))
+            || !parameter["default"].is_string()
+                && !parameter["default"].is_boolean()
+                && !parameter["default"].is_number()
+        {
+            return Err("definición de parámetro inválida".into());
+        }
+    }
+    if !layers
+        .iter()
+        .any(|item| item["parameterId"] == "text" && item["type"] == "text")
+        || layers
+            .iter()
+            .any(|item| item["type"] == "shape" && item["editable"] == true)
+    {
+        return Err("capas inválidas".into());
+    }
+    let variants = value["responsiveVariants"]
+        .as_object()
+        .ok_or("variantes inválidas")?;
+    if variants.is_empty()
+        || variants.keys().any(|key| {
+            !["landscape", "portrait", "square", "classic", "ultrawide"].contains(&key.as_str())
+        })
+    {
+        return Err("variantes incompatibles".into());
+    }
+    if value["fontRefs"].as_array().is_none_or(|items| {
+        items.iter().any(|item| {
+            !item.as_str().is_some_and(|font| {
+                ["inter", "instrument-serif"].contains(&font)
+                    || crate::chetopack::parse_resource_id(font)
+                        .is_ok_and(|(_, _, path)| path.starts_with("fonts/"))
+            })
+        })
+    }) {
+        return Err("fuente no soportada".into());
+    }
+    if value["assetRefs"].as_array().is_none_or(|items| {
+        items.iter().any(|item| {
+            !item.as_str().is_some_and(|asset| {
+                crate::chetopack::parse_resource_id(asset)
+                    .is_ok_and(|(_, _, path)| path.starts_with("assets/"))
+            })
+        })
+    }) {
+        return Err("asset de plantilla inválido".into());
+    }
+    if !value["graphicLayer"].is_null() {
+        let graphic = &value["graphicLayer"];
+        let asset = graphic["assetId"]
+            .as_str()
+            .ok_or("assetId gráfico ausente")?;
+        if !value["assetRefs"]
+            .as_array()
+            .is_some_and(|refs| refs.iter().any(|item| item == asset))
+            || !["positionX", "positionY", "width"].iter().all(|key| {
+                graphic[*key]
+                    .as_f64()
+                    .is_some_and(|number| number.is_finite() && (0.0..=1.0).contains(&number))
+            })
+            || graphic["width"].as_f64().unwrap_or(0.0) < 0.02
+        {
+            return Err("capa gráfica inválida".into());
+        }
+    }
+    if value["durationMs"]["minimum"].as_u64().unwrap_or(0) < 100
+        || value["durationMs"]["maximum"].as_u64().unwrap_or(0) > 3_600_000
+    {
+        return Err("duración inválida".into());
+    }
+    if value.to_string().contains("http://")
+        || value.to_string().contains("https://")
+        || value.to_string().contains("file://")
+        || value.to_string().contains(":\\\\")
+    {
+        return Err("referencia externa o ruta privada".into());
+    }
+    Ok(())
+}
+
 fn parameter_number(title: &TitleDecision, id: &str) -> Option<f64> {
     title
         .parameters

@@ -644,7 +644,20 @@ pub(crate) fn filters(edl: &EdlManifest, width: u32, height: u32) -> Vec<String>
             }
             _ => {}
         }
-        let main_font = if title.font == "Instrument Serif" {
+        let pack_font = title
+            .font
+            .strip_prefix("pack-font-")
+            .and_then(|value| {
+                value
+                    .strip_suffix(".ttf")
+                    .or_else(|| value.strip_suffix(".otf"))
+            })
+            .is_some_and(|digest| {
+                digest.len() == 64 && digest.bytes().all(|byte| byte.is_ascii_hexdigit())
+            });
+        let main_font = if pack_font {
+            title.font.as_str()
+        } else if title.font == "Instrument Serif" {
             "InstrumentSerif-Italic.ttf"
         } else {
             match title.font_weight {
@@ -837,6 +850,9 @@ pub(crate) fn filters(edl: &EdlManifest, width: u32, height: u32) -> Vec<String>
             } else {
                 "Inter.ttf"
             };
+            if main_font.starts_with("pack-font-") {
+                secondary_font = main_font;
+            }
             let mut secondary_color = if title.preset_id == "corporate-clean" {
                 "317781"
             } else if matches!(
