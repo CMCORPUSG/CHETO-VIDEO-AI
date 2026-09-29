@@ -6,6 +6,7 @@ import { RenameProjectModal } from "./components/RenameProjectModal";
 import { ToastRegion } from "./components/ToastRegion";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { createId } from "./lib/id";
+import { appendDiagnostic, DIAGNOSTIC_SESSION_ID, pruneDiagnostics } from "./lib/diagnosticLog";
 import { loadProjects, projectStorageKeys } from "./lib/projectStore";
 import { checkVideoSource, detectFfprobe, probeVideo, selectVideoPath } from "./media/service";
 import { DiagnosticsPage } from "./pages/DiagnosticsPage";
@@ -43,7 +44,7 @@ const pageTitles: Record<PageId, string> = {
 const storageKeys = {
   projects: projectStorageKeys.current,
   profile: "cheto-video-ai.profile.v1",
-  logs: "cheto-video-ai.diagnostics.v1",
+  logs: "cheto-video-ai.diagnostics.v2",
 };
 
 function manifestIndex(bundle: ProjectBundle) {
@@ -77,42 +78,58 @@ export function App() {
     name: "Usuario",
     avatar: localStorage.getItem("cheto-video-ai.profile-avatar"),
   }));
+  useEffect(() => {
+    const theme = profile.theme ?? "dark";
+    const query = window.matchMedia("(prefers-color-scheme: light)");
+    const apply = () => { document.documentElement.dataset.theme = theme === "system" ? (query.matches ? "light" : "dark") : theme; };
+    apply();
+    query.addEventListener("change", apply);
+    return () => query.removeEventListener("change", apply);
+  }, [profile.theme]);
   const [events, setEvents] = useLocalStorage<DiagnosticEvent[]>(storageKeys.logs, []);
   const hasLoggedStartup = useRef(false);
   const hasCheckedFfprobe = useRef(false);
   const hasInitializedProjectStorage = useRef(false);
-
-  const notify = useCallback((message: string, tone: ToastTone = "success") => {
-    setToasts((current) => [...current.slice(-3), { id: createId(), message, tone }]);
-  }, []);
-
-  const dismissToast = useCallback((id: string) => {
-    setToasts((current) => current.filter((toast) => toast.id !== id));
-  }, []);
 
   const addLog = useCallback((message: string, level: LogLevel = "info") => {
     const event: DiagnosticEvent = {
       id: createId(),
       level,
       message,
+      sessionId: DIAGNOSTIC_SESSION_ID,
       timestamp: new Date().toISOString(),
     };
-    setEvents((current) => [...current, event].slice(-500));
+    setEvents((current) => appendDiagnostic(current, event));
   }, [setEvents]);
+
+  const notify = useCallback((message: string, tone: ToastTone = "success") => {
+    setToasts((current) => [...current.slice(-3), { id: createId(), message, tone }]);
+    if (tone === "error") addLog(message, "error");
+  }, [addLog]);
+
+  const dismissToast = useCallback((id: string) => {
+    setToasts((current) => current.filter((toast) => toast.id !== id));
+  }, []);
 
   useEffect(() => {
     if (hasLoggedStartup.current) return;
     hasLoggedStartup.current = true;
+    localStorage.removeItem("cheto-video-ai.diagnostics.v1");
     const timestamp = new Date().toISOString();
     const startupEvents: DiagnosticEvent[] = [
-      { id: createId(), level: "info", message: "Aplicación iniciada.", timestamp },
-      { id: createId(), level: "info", message: "Workspace local cargado.", timestamp },
+      { id: createId(), level: "info", message: "Aplicación iniciada.", sessionId: DIAGNOSTIC_SESSION_ID, timestamp },
+      { id: createId(), level: "info", message: "Workspace local cargado.", sessionId: DIAGNOSTIC_SESSION_ID, timestamp },
     ];
-    setEvents((current) => [
-      ...current,
-      ...startupEvents,
-    ].slice(-500));
+    setEvents((current) => startupEvents.reduce((acc, event) => appendDiagnostic(acc, event), pruneDiagnostics(current)));
   }, [setEvents]);
+
+  useEffect(() => {
+    const onError = (event: ErrorEvent) => addLog(`UI_ERROR: ${event.message}`, "error");
+    const onRejection = (event: PromiseRejectionEvent) => addLog(`PROMISE_REJECTION: ${event.reason instanceof Error ? event.reason.message : String(event.reason)}`, "error");
+    window.addEventListener("error", onError);
+    window.addEventListener("unhandledrejection", onRejection);
+    return () => { window.removeEventListener("error", onError); window.removeEventListener("unhandledrejection", onRejection); };
+  }, [addLog]);
 
   useEffect(() => {
     if (hasCheckedFfprobe.current) return;
@@ -155,6 +172,8 @@ export function App() {
       const persistedProject = { ...project, manifest: manifestIndex(bundle) };
       setProjects((current) => [persistedProject, ...current]);
       setProjectBundles((current) => ({ ...current, [project.id]: bundle }));
+      setSelectedProjectId(project.id);
+      setActivePage("project");
       setMediaDiagnostics((current) => ({ ...current, lastFileName: project.source.fileName, lastProbeMs: probeMs }));
       addLog("PROJECT_MANIFEST_CREATED");
       addLog("PROJECT_EDL_CREATED");
@@ -191,7 +210,7 @@ export function App() {
   const openProject = (project: LocalProject) => {
     setSelectedProjectId(project.id);
     setActivePage("project");
-    addLog(`Proyecto abierto: ${project.name}.`);
+    addLog(`Proyecto abierto: ${project.name} · projectId=${project.id}.`);
     void prepareProjectBundle(project);
     if (!project.source.path) return;
     void checkVideoSource(project.source.path, project.source.sizeBytes, project.source.lastModifiedMs).then((check) => {
@@ -243,6 +262,23 @@ export function App() {
     } finally {
       setIsRelocating(false);
     }
+  };
+
+  const replaceProjectSource = async (projectId: string, path: string) => {
+    const project = projects.find(item => item.id === projectId);
+    if (!project) throw new Error("El proyecto ya no está disponible.");
+    const result = await probeVideo(path);
+    const updated: LocalProject = { ...project, metadata: result.metadata, source: { fileName: result.metadata.fileName, lastModifiedMs: result.metadata.lastModifiedMs, path: result.metadata.path, sizeBytes: result.metadata.sizeBytes }, status: "ready" };
+    const previous = projectBundles[projectId] ?? await loadProjectBundle(projectId);
+    const replacement = replaceBundleSource(previous, updated);
+    replacement.edl = { ...replacement.edl, sourceOnTimeline: false, audioOnTimeline: false, tracks: { cuts: [], camera: [], broll: [], audio: [] } };
+    const saved = await updateProjectSource(replacement);
+    setProjects(current => current.map(item => item.id === projectId ? { ...updated, manifest: manifestIndex(saved) } : item));
+    setProjectBundles(current => ({ ...current, [projectId]: saved }));
+    // La fuente cambia, pero la transformación editorial del lienzo pertenece al proyecto.
+    // Conservarla evita que un reemplazo convierta una escala válida en el default roto 0.
+    window.localStorage.removeItem(`cheto.editor.markers.${projectId}`);
+    addLog(`PROJECT_SOURCE_REPLACED ${result.metadata.fileName}`);
   };
 
   const renameProject = async (name: string) => {
@@ -320,19 +356,24 @@ export function App() {
         onLog={addLog}
         onNotify={notify}
         onRelocate={(project) => void relocateProject(project)}
+        onReplaceSource={replaceProjectSource}
         project={selectedProject}
         projectBundle={projectBundles[selectedProject.id] ?? null}
         storageError={projectStorageErrors[selectedProject.id] || null}
         storageLoading={projectStorageLoading[selectedProject.id] ?? false}
       />
     ) : <ProjectsPage {...sharedProjectProps} />,
-    diagnostics: <DiagnosticsPage events={events} media={mediaDiagnostics} onNotify={notify} />,
+    diagnostics: <DiagnosticsPage events={events} media={mediaDiagnostics} onClear={() => setEvents([])} onNotify={notify} sessionId={DIAGNOSTIC_SESSION_ID} />,
     settings: (
       <SettingsPage
         onAvatarChange={updateAvatar}
         onAvatarRemove={removeAvatar}
         onError={(message) => notify(message, "error")}
         onNameSave={updateProfileName}
+        onProfileChange={(changes) => {
+          setProfile(current => ({ ...current, ...changes }));
+          if (changes.defaultExportFolder !== undefined) localStorage.setItem("cheto-video-ai.default-export-folder", changes.defaultExportFolder);
+        }}
         profile={profile}
       />
     ),

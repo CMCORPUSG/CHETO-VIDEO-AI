@@ -67,7 +67,7 @@ export function UserProfile({
         <DropdownMenu.Trigger asChild>
           <button
             aria-label="Abrir perfil local"
-            className="group flex h-[52px] w-full items-center justify-center gap-2.5 rounded-lg bg-white/[0.025] px-2 ring-1 ring-white/[0.055] transition-[background-color,box-shadow] duration-150 hover:bg-white/[0.045] hover:ring-white/[0.09] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/55 md:justify-start"
+            className="app-profile-button group flex h-[52px] w-full items-center justify-center gap-2.5 rounded-lg bg-white/[0.025] px-2 ring-1 ring-white/[0.055] transition-[background-color,box-shadow] duration-150 hover:bg-white/[0.045] hover:ring-white/[0.09] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan/55 md:justify-start"
             type="button"
           >
             <span className="relative grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-md bg-white/[0.04] text-muted ring-1 ring-white/[0.06]">
@@ -112,7 +112,7 @@ export function UserProfile({
             align="start"
             side="top"
             sideOffset={8}
-            className="menu-enter z-[100] min-w-[210px] rounded-lg border border-white/[0.08] bg-[#0d1623] p-1.5 shadow-[0_18px_50px_rgba(0,0,0,.45)]"
+            className="app-profile-menu menu-enter z-[100] min-w-[210px] rounded-lg border border-white/[0.08] bg-[#0d1623] p-1.5 shadow-[0_18px_50px_rgba(0,0,0,.45)]"
           >
             <div className="px-2.5 pb-2 pt-1.5">
               <p className="truncate text-[11px] font-semibold text-ink">

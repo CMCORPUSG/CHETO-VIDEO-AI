@@ -250,7 +250,7 @@ function NumberField({
           onChange={(event) => onChange(Number(event.target.value))}
           step={step}
           type="number"
-          value={Number.isFinite(value) ? value : 0}
+          value={Number.isFinite(value) ? Number(value.toFixed(suffix === "%" ? 1 : suffix === "×" ? 2 : 0)) : 0}
         />
         <i className="px-1 py-1 font-normal normal-case">{suffix}</i>
       </span>

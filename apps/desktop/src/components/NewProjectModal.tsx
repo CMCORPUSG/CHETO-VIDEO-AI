@@ -7,10 +7,12 @@ import {
   RefreshCw,
 } from "lucide-react";
 import {
+  useRef,
   useState,
   type FormEvent,
 } from "react";
 import { formatFileSize } from "../lib/format";
+import { importThumbnail } from "../editor/visuals";
 import {
   formatChannels,
   formatCodec,
@@ -78,6 +80,8 @@ export function NewProjectModal({
     useState(false);
   const [isCreating, setIsCreating] =
     useState(false);
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
+  const thumbnailPath = useRef("");
 
   const reset = () => {
     setName("");
@@ -85,6 +89,8 @@ export function NewProjectModal({
     setFileError("");
     setIsAnalyzing(false);
     setIsCreating(false);
+    thumbnailPath.current = "";
+    setThumbnailUrl(null);
   };
 
   const closeAndReset = () => {
@@ -114,11 +120,17 @@ export function NewProjectModal({
 
       setIsAnalyzing(true);
       setProbe(null);
+      setThumbnailUrl(null);
+      thumbnailPath.current = path;
 
       const result =
         await probeVideo(path);
 
       setProbe(result);
+      const previewUs = Math.min(Math.round((result.metadata.durationSeconds ?? 0) * 100_000), 10_000_000);
+      void importThumbnail(path, previewUs)
+        .then((url) => { if (thumbnailPath.current === path) setThumbnailUrl(url); })
+        .catch(() => { if (thumbnailPath.current === path) setThumbnailUrl(null); });
 
       if (!name.trim()) {
         setName(
@@ -205,7 +217,7 @@ export function NewProjectModal({
       onClose={closeAndReset}
       open={open}
       size="large"
-      title="Nuevo proyecto"
+      title="Importar video"
     >
       <form
         className="space-y-4 p-4"
@@ -260,6 +272,10 @@ export function NewProjectModal({
             </div>
           ) : metadata ? (
             <div className="overflow-hidden rounded-lg bg-success/[0.025] ring-1 ring-success/15">
+              <div className="import-preview-frame">
+                {thumbnailUrl ? <img alt={`Fotograma de ${metadata.fileName}`} src={thumbnailUrl} /> : <FileVideo aria-hidden="true" size={28} />}
+                <span>{formatDuration(metadata.durationSeconds)}</span>
+              </div>
               <div className="flex items-start gap-3 border-b border-white/[0.05] p-4">
                 <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-success/[0.07] text-success">
                   <FileVideo
@@ -483,7 +499,7 @@ export function NewProjectModal({
           >
             {isCreating
               ? "Creando…"
-              : "Crear proyecto"}
+              : "Importar y abrir editor"}
           </Button>
         </div>
       </form>

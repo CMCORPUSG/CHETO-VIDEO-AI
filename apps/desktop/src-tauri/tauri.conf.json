@@ -31,6 +31,7 @@
   },
   "bundle": {
     "active": false,
-    "targets": "all"
+    "targets": "all",
+    "resources": ["resources/visual-13d/**/*", "THIRD_PARTY_NOTICES.md"]
   }
 }

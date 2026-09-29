@@ -18,3 +18,14 @@ export function resolveAspectRatio(mode: AspectMode, sourceRatio: number, custom
 export function clampPanelWidth(width: number, minimum: number, maximum: number): number {
   return Math.min(maximum, Math.max(minimum, width));
 }
+
+export function fitViewer(width: number, height: number, aspectRatio: number, viewerScale = 100) {
+  if (width <= 0 || height <= 0 || !Number.isFinite(aspectRatio) || aspectRatio <= 0) return { width: 0, height: 0 };
+  const scale = Math.min(1, Math.max(0.35, viewerScale / 100));
+  const fittedHeight = Math.min(height, width / aspectRatio) * scale;
+  return { width: fittedHeight * aspectRatio, height: fittedHeight };
+}
+
+export function canvasTranslationPercent(scale: number, offset: number) {
+  return Math.abs(scale - 1) * 50 * Math.min(1, Math.max(-1, offset));
+}

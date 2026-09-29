@@ -22,6 +22,8 @@ export interface CameraSuggestion {
 }
 
 export interface CameraStatistics {
+  duplicateExisting?: number;
+  duplicateBatch?: number;
   accepted: number;
   focus: number;
   pending: number;
@@ -32,6 +34,8 @@ export interface CameraStatistics {
 }
 
 export interface SmartCameraDocument {
+  detectorVersion?: string;
+  ruleVersion?: string;
   contentMode?: ContentMode;
   createdAt: string;
   profile: CameraProfile;
@@ -56,6 +60,7 @@ export interface SmartCameraProgress {
 export interface CameraPreview {
   centerX: number;
   centerY: number;
+  easing?: string;
   endUs: number;
   id: string;
   startUs: number;
@@ -79,7 +84,7 @@ export function cameraProgressPercent(progress: SmartCameraProgress): number {
 }
 
 export function toCameraPreview(item: CameraSuggestion): CameraPreview {
-  return { centerX: item.centerX, centerY: item.centerY, endUs: item.endUs, id: item.id, startUs: item.startUs, transitionUs: item.transitionUs, zoom: item.zoom };
+  return { centerX: item.centerX, centerY: item.centerY, easing: "ease_in_out", endUs: item.endUs, id: item.id, startUs: item.startUs, transitionUs: item.transitionUs, zoom: item.zoom };
 }
 
 export function activeCameraAt(preview: CameraPreview | null, timeUs: number): CameraPreview | null {

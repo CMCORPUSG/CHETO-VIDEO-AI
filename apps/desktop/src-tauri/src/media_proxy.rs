@@ -561,6 +561,8 @@ pub fn get_playback_source(
         })?;
     emit_diagnostic(&app, &project_id, "PLAYBACK_SOURCE_RESOLVED");
     Ok(PlaybackSource {
+        project_id,
+        source_id: bundle.source.source_id,
         kind,
         path: path.to_string_lossy().into_owned(),
         duration_us,

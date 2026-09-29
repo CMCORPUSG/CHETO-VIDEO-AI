@@ -13,6 +13,20 @@ export function playbackErrorMessage(error: unknown): string {
   return "No se pudo completar la operación multimedia.";
 }
 
+export function formatCommandError(error: unknown, context: Record<string, unknown> = {}) {
+  const fields: Record<string, unknown> = {};
+  if (error && typeof error === "object") Object.assign(fields, error);
+  let serialized = "";
+  if (error && typeof error === "object") {
+    try { serialized = JSON.stringify(error); } catch { serialized = ""; }
+  }
+  const message = error instanceof Error ? error.message : typeof error === "string" ? error : typeof fields.message === "string" ? fields.message : serialized || "Error multimedia desconocido";
+  const code = typeof fields.code === "string" ? fields.code : "";
+  const stderr = typeof fields.stderr === "string" ? fields.stderr.trim().slice(-1200) : "";
+  const details = [code && `code=${code}`, stderr && `stderr=${stderr}`, ...Object.entries(context).filter(([, value]) => value !== undefined && value !== null).map(([key, value]) => `${key}=${String(value)}`)].filter(Boolean);
+  return details.length ? `${message} · ${details.join(" · ")}` : message;
+}
+
 export async function getProxyStatus(projectId: string): Promise<ProxyStatus> {
   requireTauri();
   return invoke<ProxyStatus>("get_proxy_status", { projectId });

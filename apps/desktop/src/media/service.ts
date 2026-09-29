@@ -1,6 +1,5 @@
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import { isSupportedVideo } from "../lib/format";
 import type { FfprobeStatus, NativeProbeResponse, ProbeResult, SourceCheck } from "./models";
 import { parseProbeJson } from "./normalize";
 
@@ -22,11 +21,10 @@ export async function selectVideoPath(): Promise<string | null> {
     directory: false,
     multiple: false,
     title: "Seleccionar video fuente",
-    filters: [{ name: "Videos", extensions: ["mp4", "mov", "mkv", "avi"] }],
+    filters: [{ name: "Videos habituales", extensions: ["mp4", "mov", "mkv", "avi", "webm"] }, { name: "Todos los archivos", extensions: ["*"] }],
   });
   if (!selection) return null;
   if (typeof selection !== "string") throw new Error("La selección nativa no devolvió una ruta válida.");
-  if (!isSupportedVideo(selection)) throw new Error("Este formato todavía no está soportado.");
   return selection;
 }
 

@@ -1,6 +1,24 @@
-export type ExportResolution = "original" | "720" | "1080" | "1440" | "2160";
+import type { HardwareProfile } from "../hardware/profile";
+
+export type ExportResolution = "original" | "480" | "720" | "1080" | "1440" | "2160";
 export type ExportFps = "original" | "24" | "25" | "30" | "50" | "60";
-export type ExportBitrate = "auto" | "low" | "medium" | "high";
+export type ExportBitrate = "auto" | "low" | "medium" | "high" | "max";
+export type ExportPreset = "fast" | "balanced" | "high" | "maximum" | "custom";
+export type FitMode = "cover" | "contain" | "center";
+export type BackgroundMode = "black" | "blur" | "color";
+
+export function recommendedPreset(profile: HardwareProfile | null, sourceWidth: number, sourceHeight: number, durationUs: number, freeBytes: number): Exclude<ExportPreset, "custom"> {
+  if (!profile || (freeBytes > 0 && freeBytes < 3_000_000_000) || profile.ramAvailableBytes < 3_000_000_000) return "fast";
+  if (sourceWidth * sourceHeight >= 3840 * 2160 || durationUs >= 7_200_000_000) return "balanced";
+  return "balanced";
+}
+
+export function presetSettings(preset: Exclude<ExportPreset, "custom">): { resolution: ExportResolution; bitrate: ExportBitrate } {
+  if (preset === "fast") return { resolution: "original", bitrate: "low" };
+  if (preset === "balanced") return { resolution: "original", bitrate: "medium" };
+  if (preset === "high") return { resolution: "original", bitrate: "high" };
+  return { resolution: "original", bitrate: "max" };
+}
 export interface ExportConfig {
   projectId: string;
   outputPath: string;
@@ -10,9 +28,13 @@ export interface ExportConfig {
   bitrate: ExportBitrate;
   includeAudio: boolean;
   aspectRatio: number;
+  preset?: ExportPreset;
   canvasScale: number;
   canvasOffsetX: number;
   canvasOffsetY: number;
+  fitMode: FitMode;
+  backgroundMode: BackgroundMode;
+  backgroundColor: string;
 }
 export interface ExportProgress {
   projectId: string;
@@ -70,6 +92,8 @@ export function validateExportConfig(config: ExportConfig): string | null {
     return "La escala del lienzo no es válida.";
   if (Math.abs(config.canvasOffsetX) > 1 || Math.abs(config.canvasOffsetY) > 1)
     return "La posición del lienzo no es válida.";
+  if (!/^(#[0-9a-fA-F]{6})$/.test(config.backgroundColor))
+    return "El color de fondo no es válido.";
   return null;
 }
 export function estimatedSizeBytes(
@@ -77,7 +101,7 @@ export function estimatedSizeBytes(
   bitrate: ExportBitrate,
   includeAudio: boolean,
 ) {
-  const videoMbps = { auto: 5, low: 2, medium: 5, high: 10 }[bitrate];
+  const videoMbps = { auto: 5, low: 2, medium: 5, high: 10, max: 16 }[bitrate];
   return Math.round(
     (((durationUs / 1_000_000) * (videoMbps + (includeAudio ? 0.192 : 0))) /
       8) *

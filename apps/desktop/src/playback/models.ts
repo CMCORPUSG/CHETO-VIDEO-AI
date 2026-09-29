@@ -28,6 +28,8 @@ export interface ProxyStatus {
 }
 
 export interface PlaybackSource {
+  projectId: string;
+  sourceId: string;
   durationUs: number;
   kind: PlaybackKind;
   path: string;

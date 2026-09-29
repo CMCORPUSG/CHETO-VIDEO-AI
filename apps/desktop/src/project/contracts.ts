@@ -64,10 +64,23 @@ export interface SourceManifest {
   };
 }
 
+export type AutomationMode = "assisted" | "automatic";
+export type DecisionOrigin = "manual" | "automatic" | "proposal";
+export interface AutomationDecisionMeta {
+  key: string;
+  detector: string;
+  detectorVersion: string;
+  ruleVersion?: string;
+  origin: DecisionOrigin;
+  confidence: number | null;
+  manualAction?: "accepted" | "rejected" | "modified";
+}
+
 interface TimedTrackItem {
   endUs: number;
   id: string;
   startUs: number;
+  automation?: AutomationDecisionMeta;
 }
 
 export interface CutDecision extends TimedTrackItem {
@@ -100,15 +113,110 @@ export interface AudioDecision extends TimedTrackItem {
   parameters: Record<string, unknown>;
 }
 
+export interface AssetDecision extends TimedTrackItem {
+  assetId: string;
+  assetPath: string;
+  sourceDurationUs: number;
+  kind: "sfx" | "music" | "overlay";
+  gainDb: number;
+  fadeInUs: number;
+  fadeOutUs: number;
+  loop: boolean;
+  ducking: boolean;
+  duckDb: number;
+  attackMs: number;
+  releaseMs: number;
+  positionX: number;
+  positionY: number;
+  scale: number;
+  opacity: number;
+  muted: boolean;
+}
+
+export type TitlePresetId = "whisper-fade" | "rise-settle" | "stack-reveal" | "mask-wipe-up" | "split-line" | "underline-sweep" | "lower-third" | "zoom-out-stat" | "callout"
+  | "editorial-master" | "future-glow" | "content-create" | "neon-statement" | "kinetic-pop" | "letter-cascade-pro" | "dynamic-slide" | "typewriter-tech" | "word-highlight" | "split-impact" | "stacked-reveal-pro" | "underline-editorial" | "lower-third-premium" | "stat-hero" | "tutorial-step" | "quote-editorial" | "gaming-impact" | "corporate-clean";
+export interface TitleLayoutOverride { x?: number; y?: number; scale?: number; rotation?: number; maxWidth?: number }
+export interface TitleLayerOverride {
+  text?: string;
+  font?: "Inter" | "Instrument Serif";
+  fontSize?: number;
+  fontWeight?: number;
+  italic?: boolean;
+  underline?: boolean;
+  case?: "original" | "upper" | "lower" | "title";
+  fill?: string;
+  alignment?: "left" | "center" | "right";
+  letterSpacing?: number;
+  lineHeight?: number;
+  strokeColor?: string;
+  strokeWidth?: number;
+  shadowColor?: string;
+  shadowOpacity?: number;
+  shadowBlur?: number;
+  shadowOffsetX?: number;
+  shadowOffsetY?: number;
+  glowColor?: string;
+  glowIntensity?: number;
+  opacity?: number;
+  layoutOverrides?: Partial<Record<import("../templates/registry").TemplateVariant, TitleLayoutOverride>>;
+}
+export interface TitleDecision extends TimedTrackItem {
+  instanceId?: string;
+  templateId?: string;
+  templateVersion?: string;
+  parameters?: Record<string, string | number | boolean>;
+  templateSnapshot?: import("../templates/registry").TemplateManifest;
+  layerOverrides?: Record<string, TitleLayerOverride>;
+  layoutOverrides?: Partial<Record<import("../templates/registry").TemplateVariant, TitleLayoutOverride>>;
+  presetId: TitlePresetId;
+  text: string;
+  secondaryText: string;
+  descriptionText?: string;
+  positionX: number;
+  positionY: number;
+  anchor: "center" | "left" | "right";
+  scale: number;
+  font: "Inter" | "Instrument Serif";
+  fontWeight: number;
+  fontSize: number;
+  color: string;
+  accentColor: string;
+  alignment: "left" | "center" | "right";
+  tracking: number;
+  lineHeight: number;
+  opacity: number;
+  safeArea: number;
+  animationInUs: number;
+  animationOutUs: number;
+  easing: "linear" | "ease-out";
+  background: boolean;
+}
+
+export type TransitionKind = "fade-black" | "cross-dissolve" | "push" | "slide-wipe" | "whip-pan" | "zoom";
+export interface TransitionDecision {
+  id: string;
+  kind: TransitionKind;
+  atUs: number;
+  durationUs: number;
+}
+
 export interface EdlManifest {
+  manualTrim?: { sourceInUs: number; sourceOutUs: number };
+  manualSplitPointsUs?: number[];
+  audioOnTimeline?: boolean;
+  automation?: { mode: AutomationMode; rulesVersion: string };
   output: { aspectRatioMode: "source"; fpsMode: "source"; resolutionMode: "source" };
   projectId: string;
   schemaVersion: 1;
   sourceDurationUs: number | null;
+  sourceOnTimeline?: boolean;
   sourceId: string;
   timebase: { unit: "microseconds" };
   tracks: {
     audio: AudioDecision[];
+    assets?: AssetDecision[];
+    titles?: TitleDecision[];
+    transitions?: TransitionDecision[];
     broll: BrollDecision[];
     camera: CameraDecision[];
     cuts: CutDecision[];

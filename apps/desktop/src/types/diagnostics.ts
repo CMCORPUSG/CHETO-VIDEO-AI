@@ -4,6 +4,7 @@ export interface DiagnosticEvent {
   id: string;
   level: LogLevel;
   message: string;
+  sessionId: string;
   timestamp: string;
 }
 

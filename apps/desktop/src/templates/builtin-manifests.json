@@ -1,0 +1,1300 @@
+{
+  "schemaVersion": 1,
+  "rendererVersion": "13e.1",
+  "author": "CHETO VIDEO AI",
+  "license": "Proprietary CHETO composition; bundled fonts retain their own licenses",
+  "provenance": "Original CHETO composition; external repositories were visual references only",
+  "durationMs": {
+    "default": 4000,
+    "minimum": 500,
+    "maximum": 30000
+  },
+  "safeArea": {
+    "landscape": 0.06,
+    "portrait": 0.14,
+    "square": 0.08,
+    "classic": 0.07,
+    "ultrawide": 0.06
+  },
+  "fontRefs": [
+    "inter"
+  ],
+  "assetRefs": [],
+  "parameters": [
+    {
+      "id": "text",
+      "label": "Texto",
+      "type": "text",
+      "default": "Escribe tu título",
+      "required": true,
+      "group": "Contenido"
+    },
+    {
+      "id": "secondaryText",
+      "label": "Segunda línea",
+      "type": "text",
+      "default": "",
+      "group": "Contenido"
+    },
+    {
+      "id": "accentColor",
+      "label": "Acento",
+      "type": "color",
+      "default": "#34D5E5",
+      "group": "Diseño"
+    },
+    {
+      "id": "color",
+      "label": "Texto",
+      "type": "color",
+      "default": "#FFFFFF",
+      "group": "Diseño"
+    },
+    {
+      "id": "fontSize",
+      "label": "Tamaño",
+      "type": "number",
+      "default": 72,
+      "min": 18,
+      "max": 160,
+      "step": 1,
+      "group": "Diseño"
+    },
+    {
+      "id": "scale",
+      "label": "Escala",
+      "type": "scale",
+      "default": 1,
+      "min": 0.5,
+      "max": 2.5,
+      "step": 0.05,
+      "group": "Diseño"
+    },
+    {
+      "id": "font",
+      "label": "Fuente",
+      "type": "font",
+      "default": "Inter",
+      "options": [
+        "Inter",
+        "Instrument Serif"
+      ],
+      "group": "Avanzado"
+    },
+    {
+      "id": "fontWeight",
+      "label": "Peso",
+      "type": "fontWeight",
+      "default": 700,
+      "min": 400,
+      "max": 900,
+      "step": 100,
+      "group": "Avanzado"
+    },
+    {
+      "id": "alignment",
+      "label": "Alineación",
+      "type": "enum",
+      "default": "center",
+      "options": [
+        "left",
+        "center",
+        "right"
+      ],
+      "group": "Avanzado"
+    },
+    {
+      "id": "positionX",
+      "label": "Posición X",
+      "type": "position",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "group": "Posición"
+    },
+    {
+      "id": "positionY",
+      "label": "Posición Y",
+      "type": "position",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "group": "Posición"
+    }
+  ],
+  "supportedAspectRatios": [
+    "16:9",
+    "9:16",
+    "1:1",
+    "4:3",
+    "21:9"
+  ],
+  "templates": [
+    {
+      "templateId": "cheto.editorial-master",
+      "templateVersion": "1.0.0",
+      "legacyPresetId": "editorial-master",
+      "kind": "title",
+      "name": "Editorial Master",
+      "description": "Serif italic, headline and editorial rail",
+      "category": "Editorial",
+      "tags": [
+        "clean",
+        "bold",
+        "editorial"
+      ],
+      "recommendedProfiles": [
+        "presentation",
+        "conversation"
+      ],
+      "intensity": "normal",
+      "recipe": [
+        "opacity",
+        "translateY",
+        "staggerWords",
+        "accentBar"
+      ],
+      "fontRefs": [
+        "inter",
+        "instrument-serif"
+      ],
+      "preview": {
+        "text": "CONTENT CREATE",
+        "secondaryText": "those who master"
+      },
+      "responsiveVariants": {
+        "portrait": {
+          "positionY": 0.43,
+          "fontScale": 0.77,
+          "maxWidth": 0.78,
+          "alignment": "center"
+        },
+        "square": {
+          "positionY": 0.47,
+          "fontScale": 0.9,
+          "maxWidth": 0.82
+        }
+      },
+      "layers": [
+        {
+          "layerId": "eyebrow",
+          "type": "text",
+          "role": "Antetítulo",
+          "parameterId": "secondaryText",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "headline",
+          "type": "text",
+          "role": "Título",
+          "parameterId": "text",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "accent",
+          "type": "shape",
+          "role": "Acento",
+          "editable": false,
+          "locked": true
+        }
+      ]
+    },
+    {
+      "templateId": "cheto.future-glow",
+      "templateVersion": "1.0.0",
+      "legacyPresetId": "future-glow",
+      "kind": "title",
+      "name": "Future Glow",
+      "description": "Glowing headline with halo and accent",
+      "category": "Tech",
+      "tags": [
+        "neon",
+        "technology",
+        "vertical-friendly"
+      ],
+      "recommendedProfiles": [
+        "technology",
+        "tutorial"
+      ],
+      "intensity": "normal",
+      "recipe": [
+        "opacity",
+        "scale",
+        "glow",
+        "accentBar"
+      ],
+      "parameters": [
+        {
+          "id": "glowIntensity",
+          "label": "Intensidad de brillo",
+          "type": "percentage",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.05,
+          "group": "Diseño"
+        }
+      ],
+      "preview": {
+        "text": "FUTURE",
+        "secondaryText": "TOMORROW"
+      },
+      "responsiveVariants": {
+        "portrait": {
+          "positionY": 0.42,
+          "fontScale": 0.72,
+          "maxWidth": 0.8
+        },
+        "square": {
+          "fontScale": 0.9,
+          "maxWidth": 0.82
+        }
+      },
+      "layers": [
+        {
+          "layerId": "eyebrow",
+          "type": "text",
+          "role": "Antetítulo",
+          "parameterId": "secondaryText",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "headline",
+          "type": "text",
+          "role": "Título",
+          "parameterId": "text",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "glow",
+          "type": "shape",
+          "role": "Brillo",
+          "editable": false,
+          "locked": true
+        },
+        {
+          "layerId": "accent",
+          "type": "shape",
+          "role": "Línea",
+          "editable": false,
+          "locked": true
+        }
+      ]
+    },
+    {
+      "templateId": "cheto.content-create",
+      "templateVersion": "1.0.0",
+      "legacyPresetId": "content-create",
+      "kind": "title",
+      "name": "Content Create",
+      "description": "Two level stacked editorial title",
+      "category": "Editorial",
+      "tags": [
+        "clean",
+        "bold"
+      ],
+      "recommendedProfiles": [
+        "tutorial",
+        "presentation"
+      ],
+      "intensity": "normal",
+      "recipe": [
+        "opacity",
+        "translateY",
+        "backgroundPanel"
+      ],
+      "preview": {
+        "text": "CREATE",
+        "secondaryText": "CONTENT"
+      },
+      "responsiveVariants": {
+        "portrait": {
+          "fontScale": 0.76,
+          "maxWidth": 0.78
+        },
+        "square": {
+          "fontScale": 0.9
+        }
+      },
+      "layers": [
+        {
+          "layerId": "eyebrow",
+          "type": "text",
+          "role": "Antetítulo",
+          "parameterId": "secondaryText",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "headline",
+          "type": "text",
+          "role": "Título",
+          "parameterId": "text",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "panel",
+          "type": "shape",
+          "role": "Panel",
+          "editable": false,
+          "locked": true
+        }
+      ]
+    },
+    {
+      "templateId": "cheto.neon-statement",
+      "templateVersion": "1.0.0",
+      "legacyPresetId": "neon-statement",
+      "kind": "title",
+      "name": "Neon Statement",
+      "description": "Outlined neon statement",
+      "category": "Tech",
+      "tags": [
+        "neon",
+        "bold"
+      ],
+      "recommendedProfiles": [
+        "technology",
+        "gameplay"
+      ],
+      "intensity": "strong",
+      "recipe": [
+        "opacity",
+        "stroke",
+        "glow"
+      ],
+      "preview": {
+        "text": "GLOW",
+        "secondaryText": "MAKE IT"
+      },
+      "responsiveVariants": {
+        "portrait": {
+          "fontScale": 0.71,
+          "maxWidth": 0.8
+        },
+        "square": {
+          "fontScale": 0.88
+        }
+      },
+      "layers": [
+        {
+          "layerId": "headline",
+          "type": "text",
+          "role": "Título",
+          "parameterId": "text",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "glow",
+          "type": "shape",
+          "role": "Brillo",
+          "editable": false,
+          "locked": true
+        }
+      ]
+    },
+    {
+      "templateId": "cheto.kinetic-pop",
+      "templateVersion": "1.0.0",
+      "legacyPresetId": "kinetic-pop",
+      "kind": "title",
+      "name": "Kinetic Pop",
+      "description": "Punchy word pop on accent panel",
+      "category": "Kinetic",
+      "tags": [
+        "bold",
+        "kinetic"
+      ],
+      "recommendedProfiles": [
+        "gameplay",
+        "tutorial"
+      ],
+      "intensity": "strong",
+      "recipe": [
+        "opacity",
+        "scale",
+        "wordPop",
+        "backgroundPanel"
+      ],
+      "preview": {
+        "text": "POP!",
+        "secondaryText": "NOW"
+      },
+      "responsiveVariants": {
+        "portrait": {
+          "fontScale": 0.76,
+          "maxWidth": 0.79
+        },
+        "square": {
+          "fontScale": 0.9
+        }
+      },
+      "layers": [
+        {
+          "layerId": "headline",
+          "type": "text",
+          "role": "Título",
+          "parameterId": "text",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "panel",
+          "type": "shape",
+          "role": "Panel",
+          "editable": false,
+          "locked": true
+        }
+      ]
+    },
+    {
+      "templateId": "cheto.letter-cascade-pro",
+      "templateVersion": "1.0.0",
+      "legacyPresetId": "letter-cascade-pro",
+      "kind": "title",
+      "name": "Letter Cascade Pro",
+      "description": "Character stagger with editorial underline",
+      "category": "Kinetic",
+      "tags": [
+        "kinetic",
+        "characters"
+      ],
+      "recommendedProfiles": [
+        "presentation",
+        "tutorial"
+      ],
+      "intensity": "normal",
+      "recipe": [
+        "opacity",
+        "staggerCharacters",
+        "underline"
+      ],
+      "preview": {
+        "text": "CASCADE",
+        "secondaryText": "LETTER"
+      },
+      "responsiveVariants": {
+        "portrait": {
+          "fontScale": 0.68,
+          "maxWidth": 0.8
+        },
+        "square": {
+          "fontScale": 0.88
+        }
+      },
+      "layers": [
+        {
+          "layerId": "headline",
+          "type": "text",
+          "role": "Título",
+          "parameterId": "text",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "underline",
+          "type": "shape",
+          "role": "Subrayado",
+          "editable": false,
+          "locked": true
+        }
+      ]
+    },
+    {
+      "templateId": "cheto.dynamic-slide",
+      "templateVersion": "1.0.0",
+      "legacyPresetId": "dynamic-slide",
+      "kind": "title",
+      "name": "Dynamic Slide",
+      "description": "Directional slide with accent rail",
+      "category": "Kinetic",
+      "tags": [
+        "kinetic",
+        "tutorial"
+      ],
+      "recommendedProfiles": [
+        "tutorial",
+        "gameplay"
+      ],
+      "intensity": "normal",
+      "recipe": [
+        "opacity",
+        "translateX",
+        "accentBar"
+      ],
+      "preview": {
+        "text": "FORWARD",
+        "secondaryText": "MOVE"
+      },
+      "responsiveVariants": {
+        "portrait": {
+          "fontScale": 0.74,
+          "maxWidth": 0.77
+        },
+        "square": {
+          "fontScale": 0.88
+        }
+      },
+      "layers": [
+        {
+          "layerId": "headline",
+          "type": "text",
+          "role": "Título",
+          "parameterId": "text",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "secondary",
+          "type": "text",
+          "role": "Subtítulo",
+          "parameterId": "secondaryText",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "accent",
+          "type": "shape",
+          "role": "Acento",
+          "editable": false,
+          "locked": true
+        }
+      ]
+    },
+    {
+      "templateId": "cheto.typewriter-tech",
+      "templateVersion": "1.0.0",
+      "legacyPresetId": "typewriter-tech",
+      "kind": "title",
+      "name": "Typewriter Tech",
+      "description": "Deterministic character reveal and cursor",
+      "category": "Tech",
+      "tags": [
+        "tutorial",
+        "technology",
+        "typing"
+      ],
+      "recommendedProfiles": [
+        "tutorial",
+        "technology"
+      ],
+      "intensity": "subtle",
+      "recipe": [
+        "opacity",
+        "staggerCharacters",
+        "backgroundPanel"
+      ],
+      "preview": {
+        "text": "SYSTEM READY",
+        "secondaryText": ">_ init"
+      },
+      "responsiveVariants": {
+        "portrait": {
+          "fontScale": 0.76,
+          "maxWidth": 0.8
+        },
+        "square": {
+          "fontScale": 0.9
+        }
+      },
+      "layers": [
+        {
+          "layerId": "headline",
+          "type": "text",
+          "role": "Título",
+          "parameterId": "text",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "eyebrow",
+          "type": "text",
+          "role": "Etiqueta",
+          "parameterId": "secondaryText",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "panel",
+          "type": "shape",
+          "role": "Panel",
+          "editable": false,
+          "locked": true
+        }
+      ]
+    },
+    {
+      "templateId": "cheto.word-highlight",
+      "templateVersion": "1.0.0",
+      "legacyPresetId": "word-highlight",
+      "kind": "title",
+      "name": "Word Highlight",
+      "description": "Sequential word highlighting",
+      "category": "Tutorial",
+      "tags": [
+        "tutorial",
+        "highlight"
+      ],
+      "recommendedProfiles": [
+        "tutorial",
+        "presentation"
+      ],
+      "intensity": "normal",
+      "recipe": [
+        "opacity",
+        "staggerWords",
+        "highlight"
+      ],
+      "preview": {
+        "text": "IT MATTER",
+        "secondaryText": "MAKE"
+      },
+      "responsiveVariants": {
+        "portrait": {
+          "fontScale": 0.76,
+          "maxWidth": 0.8
+        },
+        "square": {
+          "fontScale": 0.88
+        }
+      },
+      "layers": [
+        {
+          "layerId": "headline",
+          "type": "text",
+          "role": "Título",
+          "parameterId": "text",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "highlight",
+          "type": "shape",
+          "role": "Resaltado",
+          "editable": false,
+          "locked": true
+        }
+      ]
+    },
+    {
+      "templateId": "cheto.split-impact",
+      "templateVersion": "1.0.0",
+      "legacyPresetId": "split-impact",
+      "kind": "title",
+      "name": "Split Impact",
+      "description": "Opposing text panels",
+      "category": "Kinetic",
+      "tags": [
+        "bold",
+        "kinetic"
+      ],
+      "recommendedProfiles": [
+        "gameplay",
+        "technology"
+      ],
+      "intensity": "strong",
+      "recipe": [
+        "opacity",
+        "translateX",
+        "stroke",
+        "backgroundPanel"
+      ],
+      "preview": {
+        "text": "STUDIO",
+        "secondaryText": "CREATIVE"
+      },
+      "responsiveVariants": {
+        "portrait": {
+          "fontScale": 0.7,
+          "maxWidth": 0.8
+        },
+        "square": {
+          "fontScale": 0.86
+        }
+      },
+      "layers": [
+        {
+          "layerId": "eyebrow",
+          "type": "text",
+          "role": "Antetítulo",
+          "parameterId": "secondaryText",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "headline",
+          "type": "text",
+          "role": "Título",
+          "parameterId": "text",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "panel",
+          "type": "shape",
+          "role": "Panel",
+          "editable": false,
+          "locked": true
+        }
+      ]
+    },
+    {
+      "templateId": "cheto.stacked-reveal-pro",
+      "templateVersion": "1.0.0",
+      "legacyPresetId": "stacked-reveal-pro",
+      "kind": "title",
+      "name": "Stacked Reveal Pro",
+      "description": "Eyebrow, headline and support",
+      "category": "Editorial",
+      "tags": [
+        "editorial",
+        "clean"
+      ],
+      "recommendedProfiles": [
+        "presentation",
+        "tutorial"
+      ],
+      "intensity": "normal",
+      "recipe": [
+        "opacity",
+        "translateY",
+        "clipReveal",
+        "accentBar"
+      ],
+      "preview": {
+        "text": "BIG IDEA",
+        "secondaryText": "THE NEXT"
+      },
+      "responsiveVariants": {
+        "portrait": {
+          "fontScale": 0.76,
+          "maxWidth": 0.78
+        },
+        "square": {
+          "fontScale": 0.9
+        }
+      },
+      "layers": [
+        {
+          "layerId": "eyebrow",
+          "type": "text",
+          "role": "Antetítulo",
+          "parameterId": "secondaryText",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "headline",
+          "type": "text",
+          "role": "Título",
+          "parameterId": "text",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "accent",
+          "type": "shape",
+          "role": "Acento",
+          "editable": false,
+          "locked": true
+        }
+      ]
+    },
+    {
+      "templateId": "cheto.underline-editorial",
+      "templateVersion": "1.0.0",
+      "legacyPresetId": "underline-editorial",
+      "kind": "title",
+      "name": "Underline Editorial",
+      "description": "Serif headline with underline sweep",
+      "category": "Editorial",
+      "tags": [
+        "clean",
+        "editorial"
+      ],
+      "recommendedProfiles": [
+        "presentation",
+        "conversation"
+      ],
+      "intensity": "subtle",
+      "recipe": [
+        "opacity",
+        "underline",
+        "translateY"
+      ],
+      "fontRefs": [
+        "inter",
+        "instrument-serif"
+      ],
+      "preview": {
+        "text": "STORY",
+        "secondaryText": "A BETTER"
+      },
+      "responsiveVariants": {
+        "portrait": {
+          "fontScale": 0.72,
+          "maxWidth": 0.78
+        },
+        "square": {
+          "fontScale": 0.88
+        }
+      },
+      "layers": [
+        {
+          "layerId": "headline",
+          "type": "text",
+          "role": "Título",
+          "parameterId": "text",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "secondary",
+          "type": "text",
+          "role": "Subtítulo",
+          "parameterId": "secondaryText",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "underline",
+          "type": "shape",
+          "role": "Subrayado",
+          "editable": false,
+          "locked": true
+        }
+      ]
+    },
+    {
+      "templateId": "cheto.lower-third-premium",
+      "templateVersion": "1.0.0",
+      "legacyPresetId": "lower-third-premium",
+      "kind": "lower-third",
+      "name": "Lower Third Premium",
+      "description": "Name panel with accent bar",
+      "category": "Lower Third",
+      "tags": [
+        "name",
+        "clean",
+        "vertical-friendly"
+      ],
+      "recommendedProfiles": [
+        "conversation",
+        "presentation"
+      ],
+      "intensity": "subtle",
+      "recipe": [
+        "opacity",
+        "translateX",
+        "backgroundPanel",
+        "accentBar"
+      ],
+      "preview": {
+        "text": "JOSÉ PÉREZ",
+        "secondaryText": "CREATIVE DIRECTOR"
+      },
+      "responsiveVariants": {
+        "landscape": {
+          "positionX": 0.08,
+          "positionY": 0.82,
+          "maxWidth": 0.63,
+          "alignment": "left"
+        },
+        "portrait": {
+          "positionX": 0.12,
+          "positionY": 0.79,
+          "fontScale": 0.72,
+          "maxWidth": 0.76,
+          "alignment": "left",
+          "panelWidth": 0.74
+        },
+        "square": {
+          "positionX": 0.09,
+          "positionY": 0.8,
+          "fontScale": 0.86,
+          "maxWidth": 0.78,
+          "alignment": "left"
+        }
+      },
+      "layers": [
+        {
+          "layerId": "name",
+          "type": "text",
+          "role": "Nombre",
+          "parameterId": "text",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "role",
+          "type": "text",
+          "role": "Cargo",
+          "parameterId": "secondaryText",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "accent",
+          "type": "shape",
+          "role": "Acento",
+          "editable": false,
+          "locked": true
+        },
+        {
+          "layerId": "panel",
+          "type": "shape",
+          "role": "Panel",
+          "editable": false,
+          "locked": true
+        }
+      ]
+    },
+    {
+      "templateId": "cheto.stat-hero",
+      "templateVersion": "1.0.0",
+      "legacyPresetId": "stat-hero",
+      "kind": "stat",
+      "name": "Stat Hero",
+      "description": "Large number with label and rail",
+      "category": "Stats",
+      "tags": [
+        "stat",
+        "bold"
+      ],
+      "recommendedProfiles": [
+        "tutorial",
+        "presentation"
+      ],
+      "intensity": "normal",
+      "recipe": [
+        "opacity",
+        "scale",
+        "counter",
+        "accentBar"
+      ],
+      "preview": {
+        "text": "85%",
+        "secondaryText": "COMPLETADO"
+      },
+      "responsiveVariants": {
+        "portrait": {
+          "positionY": 0.42,
+          "fontScale": 0.74,
+          "maxWidth": 0.8
+        },
+        "square": {
+          "fontScale": 0.9
+        }
+      },
+      "layers": [
+        {
+          "layerId": "value",
+          "type": "text",
+          "role": "Número",
+          "parameterId": "text",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "label",
+          "type": "text",
+          "role": "Etiqueta",
+          "parameterId": "secondaryText",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "accent",
+          "type": "shape",
+          "role": "Acento",
+          "editable": false,
+          "locked": true
+        }
+      ]
+    },
+    {
+      "templateId": "cheto.tutorial-step",
+      "templateVersion": "1.0.0",
+      "legacyPresetId": "tutorial-step",
+      "kind": "tutorial-step",
+      "name": "Tutorial Step",
+      "description": "Step badge and instruction",
+      "category": "Tutorial",
+      "tags": [
+        "tutorial",
+        "vertical-friendly"
+      ],
+      "recommendedProfiles": [
+        "tutorial"
+      ],
+      "intensity": "subtle",
+      "recipe": [
+        "opacity",
+        "translateX",
+        "backgroundPanel",
+        "accentBar"
+      ],
+      "preview": {
+        "text": "Configuración de José en Perú",
+        "secondaryText": "PASO 01"
+      },
+      "responsiveVariants": {
+        "landscape": {
+          "positionY": 0.24,
+          "maxWidth": 0.7
+        },
+        "portrait": {
+          "positionY": 0.2,
+          "fontScale": 0.72,
+          "maxWidth": 0.76,
+          "panelWidth": 0.75
+        },
+        "square": {
+          "positionY": 0.25,
+          "fontScale": 0.88
+        }
+      },
+      "layers": [
+        {
+          "layerId": "step",
+          "type": "text",
+          "role": "Paso",
+          "parameterId": "secondaryText",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "headline",
+          "type": "text",
+          "role": "Título",
+          "parameterId": "text",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "description",
+          "type": "text",
+          "role": "Descripción",
+          "parameterId": "descriptionText",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "panel",
+          "type": "shape",
+          "role": "Panel",
+          "editable": false,
+          "locked": true
+        }
+      ],
+      "parameters": [
+        {
+          "id": "descriptionText",
+          "label": "Descripción",
+          "type": "multilineText",
+          "default": "",
+          "group": "Contenido"
+        }
+      ]
+    },
+    {
+      "templateId": "cheto.quote-editorial",
+      "templateVersion": "1.0.0",
+      "legacyPresetId": "quote-editorial",
+      "kind": "quote",
+      "name": "Quote Editorial",
+      "description": "Serif quotation with attribution",
+      "category": "Callout / Quote",
+      "tags": [
+        "quote",
+        "clean"
+      ],
+      "recommendedProfiles": [
+        "conversation",
+        "presentation"
+      ],
+      "intensity": "subtle",
+      "recipe": [
+        "opacity",
+        "translateY",
+        "accentBar"
+      ],
+      "fontRefs": [
+        "inter",
+        "instrument-serif"
+      ],
+      "preview": {
+        "text": "CREATE THE FUTURE",
+        "secondaryText": "— Autor"
+      },
+      "responsiveVariants": {
+        "portrait": {
+          "fontScale": 0.7,
+          "maxWidth": 0.76
+        },
+        "square": {
+          "fontScale": 0.86
+        }
+      },
+      "layers": [
+        {
+          "layerId": "quote",
+          "type": "text",
+          "role": "Cita",
+          "parameterId": "text",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "author",
+          "type": "text",
+          "role": "Autor",
+          "parameterId": "secondaryText",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "accent",
+          "type": "shape",
+          "role": "Acento",
+          "editable": false,
+          "locked": true
+        }
+      ]
+    },
+    {
+      "templateId": "cheto.gaming-impact",
+      "templateVersion": "1.0.0",
+      "legacyPresetId": "gaming-impact",
+      "kind": "title",
+      "name": "Gaming Impact",
+      "description": "Impact headline with glow and outline",
+      "category": "Gaming",
+      "tags": [
+        "gaming",
+        "bold",
+        "glow"
+      ],
+      "recommendedProfiles": [
+        "gameplay"
+      ],
+      "intensity": "strong",
+      "recipe": [
+        "opacity",
+        "scale",
+        "glow",
+        "stroke",
+        "backgroundPanel"
+      ],
+      "preview": {
+        "text": "UP!",
+        "secondaryText": "LEVEL"
+      },
+      "responsiveVariants": {
+        "portrait": {
+          "fontScale": 0.68,
+          "maxWidth": 0.8
+        },
+        "square": {
+          "fontScale": 0.86
+        }
+      },
+      "layers": [
+        {
+          "layerId": "headline",
+          "type": "text",
+          "role": "Título",
+          "parameterId": "text",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "glow",
+          "type": "shape",
+          "role": "Brillo",
+          "editable": false,
+          "locked": true
+        },
+        {
+          "layerId": "panel",
+          "type": "shape",
+          "role": "Panel",
+          "editable": false,
+          "locked": true
+        }
+      ]
+    },
+    {
+      "templateId": "cheto.corporate-clean",
+      "templateVersion": "1.0.0",
+      "legacyPresetId": "corporate-clean",
+      "kind": "title",
+      "name": "Corporate Clean",
+      "description": "Clean typography with thin rail",
+      "category": "Corporate",
+      "tags": [
+        "corporate",
+        "clean",
+        "tutorial"
+      ],
+      "recommendedProfiles": [
+        "presentation",
+        "conversation",
+        "software"
+      ],
+      "intensity": "subtle",
+      "recipe": [
+        "opacity",
+        "translateY",
+        "underline"
+      ],
+      "preview": {
+        "text": "IN MOTION",
+        "secondaryText": "PRECISION"
+      },
+      "responsiveVariants": {
+        "portrait": {
+          "positionY": 0.43,
+          "fontScale": 0.77,
+          "maxWidth": 0.79
+        },
+        "square": {
+          "fontScale": 0.9
+        }
+      },
+      "layers": [
+        {
+          "layerId": "eyebrow",
+          "type": "text",
+          "role": "Antetítulo",
+          "parameterId": "secondaryText",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "headline",
+          "type": "text",
+          "role": "Título",
+          "parameterId": "text",
+          "editable": true,
+          "locked": false
+        },
+        {
+          "layerId": "underline",
+          "type": "shape",
+          "role": "Subrayado",
+          "editable": false,
+          "locked": true
+        }
+      ]
+    }
+  ]
+}

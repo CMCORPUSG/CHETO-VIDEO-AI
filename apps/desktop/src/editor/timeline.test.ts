@@ -8,4 +8,5 @@ describe("timeline math", () => {
   it("resizes a block", () => expect(resizeRange(12_000_000,18_000_000,"end",20_000_000,60_000_000)).toEqual({startUs:12_000_000,endUs:20_000_000}));
   it("snaps using a pixel threshold", () => expect(snapTimeUs(9_950_000,[10_000_000],100)).toBe(10_000_000));
   it("edits camera zoom and center safely", () => expect(editCamera({centerX:.5,centerY:.5,confidence:1,easing:"linear",endUs:18_000_000,id:"c",mode:"zoom",reason:null,startUs:12_000_000,zoom:1.28},{centerX:.65,centerY:.35,zoom:1.4})).toMatchObject({centerX:.65,centerY:.35,zoom:1.4}));
+  it("fits a two-hour source and maps its scroll position", () => { const pixelsPerSecond = 800 / 7200; expect(timelineWidth(7_200_000_000, pixelsPerSecond, 800)).toBe(800); expect(pixelsToUs(usToPixels(3_600_000_000, pixelsPerSecond), pixelsPerSecond)).toBe(3_600_000_000); });
 });

@@ -2,6 +2,7 @@ import { invoke, isTauri } from "@tauri-apps/api/core";
 import type { LocalProject } from "../types/project";
 import { createManifestInitializationRequest } from "./conversion";
 import type { EdlManifest, InitializeProjectRequest, ProjectBundle, ProjectManifest, ProjectStorageInfo } from "./contracts";
+import { hydrateTemplateInstance } from "../templates/engine";
 
 export function projectStorageErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
@@ -35,7 +36,8 @@ export async function initializeProjectManifest(request: InitializeProjectReques
 
 export async function loadProjectBundle(projectId: string): Promise<ProjectBundle> {
   requireTauri();
-  return invoke<ProjectBundle>("load_project_bundle", { projectId });
+  const bundle = await invoke<ProjectBundle>("load_project_bundle", { projectId });
+  return { ...bundle, edl: { ...bundle.edl, tracks: { ...bundle.edl.tracks, titles: bundle.edl.tracks.titles?.map(hydrateTemplateInstance) ?? [] } } };
 }
 
 export async function ensureProjectBundle(project: LocalProject): Promise<{ bundle: ProjectBundle; created: boolean }> {
@@ -45,7 +47,8 @@ export async function ensureProjectBundle(project: LocalProject): Promise<{ bund
 }
 
 export async function createProjectBundle(project: LocalProject): Promise<ProjectBundle> {
-  return initializeProjectManifest(createManifestInitializationRequest(project));
+  const request = createManifestInitializationRequest(project);
+  return initializeProjectManifest({ ...request, edl: { ...request.edl, sourceOnTimeline: false, audioOnTimeline: false } });
 }
 
 export async function saveProjectManifest(manifest: ProjectManifest): Promise<ProjectManifest> {
@@ -56,6 +59,26 @@ export async function saveProjectManifest(manifest: ProjectManifest): Promise<Pr
 export async function saveProjectEdl(edl: EdlManifest): Promise<EdlManifest> {
   requireTauri();
   return invoke<EdlManifest>("save_project_edl", { edl });
+}
+
+export interface ReanalysisPlan {
+  projectId: string;
+  edlRevision: string;
+  automaticCameraCount: number;
+  preservedCameraCount: number;
+  legacyUnclassifiedCameraCount: number;
+  smartCutDocumentPresent: boolean;
+  smartCameraDocumentPresent: boolean;
+}
+
+export async function previewReanalysisCleanup(projectId: string): Promise<ReanalysisPlan> {
+  requireTauri();
+  return invoke<ReanalysisPlan>("preview_reanalysis_cleanup", { projectId });
+}
+
+export async function applyReanalysisCleanup(projectId: string, expectedRevision: string): Promise<ReanalysisPlan> {
+  requireTauri();
+  return invoke<ReanalysisPlan>("apply_reanalysis_cleanup", { projectId, expectedRevision });
 }
 
 export async function updateProjectSource(bundle: ProjectBundle): Promise<ProjectBundle> {

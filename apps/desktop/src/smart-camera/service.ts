@@ -33,9 +33,14 @@ export async function reviewSmartCamera(projectId: string, suggestionId: string,
   return invoke("review_smart_camera", { request: { projectId, status, suggestionId } });
 }
 
-export async function applySmartCameraToEdl(projectId: string): Promise<ApplySmartCameraResult> {
+export async function reviewAllSmartCamera(projectId: string, status: CameraSuggestionStatus): Promise<SmartCameraDocument> {
   requireNative();
-  return invoke("apply_smart_camera_to_edl", { projectId });
+  return invoke("review_all_smart_camera", { projectId, status });
+}
+
+export async function applySmartCameraToEdl(projectId: string, resolutions: Record<string, "replace" | "merge" | "trim_new" | "keep_existing"> = {}): Promise<ApplySmartCameraResult> {
+  requireNative();
+  return invoke("apply_smart_camera_to_edl", { projectId, resolutions });
 }
 
 export function onSmartCameraProgress(handler: (progress: SmartCameraProgress) => void): Promise<UnlistenFn> {

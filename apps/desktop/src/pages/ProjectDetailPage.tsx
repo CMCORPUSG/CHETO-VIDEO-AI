@@ -1,5 +1,5 @@
 import { AlertTriangle, ArrowLeft, Clock3, Database, FileJson2, FileSearch, FileVideo, HardDrive, Layers3, Trash2, Volume2 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { MediaWorkspace } from "../components/media/MediaWorkspace";
@@ -7,6 +7,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import { formatFileSize } from "../lib/format";
 import { formatBitrate, formatChannels, formatCodec, formatDuration, formatFps, formatSampleRate } from "../media/format";
 import { countEdlTracks } from "../project/conversion";
+import { projectContextDiagnostic, resolveProjectContext } from "../project/isolation";
 import type { ProjectBundle } from "../project/contracts";
 import type { LocalProject } from "../types/project";
 import type { LogLevel } from "../types/diagnostics";
@@ -17,6 +18,7 @@ interface ProjectDetailPageProps {
   onBack: () => void;
   onDelete: (project: LocalProject) => void;
   onRelocate: (project: LocalProject) => void;
+  onReplaceSource: (projectId: string, path: string) => Promise<void>;
   onLog: (message: string, level?: LogLevel) => void;
   onNotify: (message: string, tone?: ToastTone) => void;
   project: LocalProject;
@@ -25,13 +27,17 @@ interface ProjectDetailPageProps {
   storageLoading: boolean;
 }
 
-export function ProjectDetailPage({ isRelocating, onBack, onDelete, onLog, onNotify, onRelocate, project, projectBundle, storageError, storageLoading }: ProjectDetailPageProps) {
+export function ProjectDetailPage({ isRelocating, onBack, onDelete, onLog, onNotify, onRelocate, onReplaceSource, project, projectBundle, storageError, storageLoading }: ProjectDetailPageProps) {
   const metadata = project.metadata;
   const sourceUnavailable = project.status === "source-missing" || project.status === "legacy";
   const trackCounts = countEdlTracks(projectBundle);
+  const context = resolveProjectContext(project.id, projectBundle, storageLoading);
+  const readyBundle = context.status === "ready" ? projectBundle : null;
+  const mismatch = context.status === "error" ? projectContextDiagnostic(context) : null;
+  useEffect(() => { if (mismatch) onLog(`PROJECT_CONTEXT_MISMATCH ${mismatch}`, "error"); }, [mismatch, onLog]);
 
-  if (projectBundle && project.status === "ready") {
-    return <div className="h-full min-h-0 w-full max-w-none overflow-hidden"><MediaWorkspace bundle={projectBundle} onLog={onLog} onNotify={onNotify} /></div>;
+  if (readyBundle && project.status === "ready") {
+    return <div className="h-full min-h-0 w-full max-w-none overflow-hidden"><MediaWorkspace bundle={readyBundle} context={context} key={`${project.id}:${readyBundle.source.sourceId}:${readyBundle.source.path}`} onLog={onLog} onNotify={onNotify} onReplaceSource={path => onReplaceSource(project.id, path)} /></div>;
   }
 
   return (
@@ -60,7 +66,8 @@ export function ProjectDetailPage({ isRelocating, onBack, onDelete, onLog, onNot
         </Card>
       ) : null}
 
-      {projectBundle && project.status === "ready" ? <MediaWorkspace bundle={projectBundle} onLog={onLog} onNotify={onNotify} /> : null}
+      {storageLoading && project.status === "ready" ? <Card className="p-6">Preparando Resultado…</Card> : null}
+      {mismatch ? <Card className="border-danger/35 p-6 text-danger">PROJECT_CONTEXT_MISMATCH · {mismatch}</Card> : null}
 
       <Card className="surface-shine p-6">
         <div className="flex items-start gap-4">

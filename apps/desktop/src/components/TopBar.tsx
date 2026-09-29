@@ -57,7 +57,7 @@ export function TopBar({
   }
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between border-b border-white/[0.06] bg-[#080f19]/95 px-4 backdrop-blur-xl lg:px-5">
+    <header className="app-topbar flex h-14 shrink-0 items-center justify-between border-b border-white/[0.06] bg-[#080f19]/95 px-4 backdrop-blur-xl lg:px-5">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <span className="h-1.5 w-1.5 rounded-full bg-success" />

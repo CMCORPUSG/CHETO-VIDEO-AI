@@ -104,6 +104,10 @@ pub struct CameraSuggestion {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct CameraStatistics {
+    #[serde(default)]
+    duplicate_existing: usize,
+    #[serde(default)]
+    duplicate_batch: usize,
     total: usize,
     zoom: usize,
     focus: usize,
@@ -135,6 +139,10 @@ pub struct SmartCameraDocument {
     content_mode: ContentMode,
     source: SourceSnapshot,
     statistics: CameraStatistics,
+    #[serde(default)]
+    detector_version: String,
+    #[serde(default)]
+    rule_version: String,
     suggestions: Vec<CameraSuggestion>,
 }
 
@@ -663,7 +671,7 @@ fn accepted_decisions(
         .filter(|item| item.status == SuggestionStatus::Accepted)
         .collect();
     accepted.sort_by_key(|item| item.start_us);
-    for (index, item) in accepted.iter().enumerate() {
+    for item in &accepted {
         let minimum = if item.suggestion_type == CameraSuggestionType::Reset {
             1
         } else {
@@ -673,12 +681,6 @@ fn accepted_decisions(
             return Err(SmartCameraError::new(
                 "invalid-camera-range",
                 "Una propuesta aceptada contiene parámetros inválidos",
-            ));
-        }
-        if index > 0 && overlaps(accepted[index - 1], item) {
-            return Err(SmartCameraError::new(
-                "overlapping-camera",
-                "Las propuestas aceptadas se superponen",
             ));
         }
     }
@@ -701,6 +703,15 @@ fn accepted_decisions(
             reason: Some(item.reason.clone()),
             confidence: Some(item.confidence),
             transition_us: Some(item.transition_us),
+            automation: Some(crate::project_storage::DecisionAutomation {
+                key: item.id.clone(),
+                detector: "smart_camera".into(),
+                detector_version: "13d-qa4-camera-v1".into(),
+                rule_version: Some("13d-qa4-camera-v1".into()),
+                origin: "automatic".into(),
+                confidence: Some(item.confidence),
+                manual_action: None,
+            }),
         })
         .collect())
 }
@@ -708,26 +719,153 @@ fn accepted_decisions(
 fn merge_decisions(
     existing: &mut Vec<CameraDecision>,
     decisions: Vec<CameraDecision>,
+    resolutions: &std::collections::HashMap<String, String>,
 ) -> Result<usize, SmartCameraError> {
+    use crate::conflicts::{classify_camera, overlap_us, timecode, ConflictClass};
+    let mut working = existing.clone();
     let mut applied = 0;
-    for decision in decisions {
-        if existing.iter().any(|item| item.id == decision.id) {
+    for mut decision in decisions {
+        let trim_prefix = format!("{}-trim-", decision.id);
+        if working
+            .iter()
+            .any(|item| item.id == decision.id || item.id.starts_with(&trim_prefix))
+        {
             continue;
         }
-        if existing
+        let overlaps: Vec<_> = working
             .iter()
-            .any(|item| item.start_us < decision.end_us && decision.start_us < item.end_us)
-        {
-            return Err(SmartCameraError::new(
-                "camera-conflict",
-                "Una propuesta entra en conflicto con un movimiento existente",
-            ));
+            .filter(|item| {
+                classify_camera(
+                    decision.start_us,
+                    decision.end_us,
+                    item.start_us,
+                    item.end_us,
+                    same_camera_effect(item, &decision),
+                ) != ConflictClass::New
+            })
+            .cloned()
+            .collect();
+        if let Some(conflict) = overlaps.iter().find(|item| {
+            matches!(
+                classify_camera(
+                    decision.start_us,
+                    decision.end_us,
+                    item.start_us,
+                    item.end_us,
+                    same_camera_effect(item, &decision)
+                ),
+                ConflictClass::Conflict | ConflictClass::Overlap
+            )
+        }) {
+            match resolutions.get(&decision.id).map(String::as_str) {
+                Some("keep_existing") => continue,
+                Some("replace") => {
+                    working.retain(|item| !overlaps.iter().any(|overlap| overlap.id == item.id));
+                    for overlap in &overlaps {
+                        if overlap.start_us < decision.start_us {
+                            let mut left = overlap.clone();
+                            left.end_us = decision.start_us;
+                            working.push(left);
+                        }
+                        if overlap.end_us > decision.end_us {
+                            let mut right = overlap.clone();
+                            right.id = format!("{}-right-{}", overlap.id, decision.id);
+                            right.start_us = decision.end_us;
+                            working.push(right);
+                        }
+                    }
+                    working.push(decision);
+                    applied += 1;
+                    continue;
+                }
+                Some("trim_new") => {
+                    let mut ranges = vec![(decision.start_us, decision.end_us)];
+                    for overlap in &overlaps {
+                        ranges = ranges
+                            .into_iter()
+                            .flat_map(|(start, end)| {
+                                if overlap.end_us <= start || overlap.start_us >= end {
+                                    return vec![(start, end)];
+                                }
+                                let mut pieces = Vec::new();
+                                if start < overlap.start_us {
+                                    pieces.push((start, overlap.start_us));
+                                }
+                                if overlap.end_us < end {
+                                    pieces.push((overlap.end_us, end));
+                                }
+                                pieces
+                            })
+                            .collect();
+                    }
+                    for (index, (start, end)) in ranges.into_iter().enumerate() {
+                        let mut piece = decision.clone();
+                        piece.id = format!("{}-trim-{index}", decision.id);
+                        piece.start_us = start;
+                        piece.end_us = end;
+                        piece.transition_us =
+                            piece.transition_us.map(|value| value.min(end - start));
+                        working.push(piece);
+                        applied += 1;
+                    }
+                    continue;
+                }
+                _ => {}
+            }
+            return Err(SmartCameraError::new("camera-conflict", format!(
+                "Conflicto de encuadre: propuesta {} {}–{} ({}x, centro {:.0}%, {:.0}%) contra movimiento existente {} {}–{} ({}x, centro {:.0}%, {:.0}%). Solapamiento {:.3} s. Revisa y resuelve antes de aplicar; EDL sin modificar.",
+                decision.id, timecode(decision.start_us), timecode(decision.end_us), decision.zoom.unwrap_or(1.0), decision.center_x.unwrap_or(0.5)*100.0, decision.center_y.unwrap_or(0.5)*100.0,
+                conflict.id, timecode(conflict.start_us), timecode(conflict.end_us), conflict.zoom.unwrap_or(1.0), conflict.center_x.unwrap_or(0.5)*100.0, conflict.center_y.unwrap_or(0.5)*100.0,
+                overlap_us(decision.start_us, decision.end_us, conflict.start_us, conflict.end_us) as f64 / 1_000_000.0
+            )));
         }
-        existing.push(decision);
+        if overlaps.iter().any(|item| {
+            matches!(
+                classify_camera(
+                    decision.start_us,
+                    decision.end_us,
+                    item.start_us,
+                    item.end_us,
+                    same_camera_effect(item, &decision),
+                ),
+                ConflictClass::Duplicate | ConflictClass::Contained
+            )
+        }) {
+            continue;
+        }
+        if let Some(first) = overlaps.first() {
+            decision.id = first.id.clone();
+            decision.start_us = overlaps
+                .iter()
+                .fold(decision.start_us, |start, item| start.min(item.start_us));
+            decision.end_us = overlaps
+                .iter()
+                .fold(decision.end_us, |end, item| end.max(item.end_us));
+            working.retain(|item| !overlaps.iter().any(|overlap| overlap.id == item.id));
+        }
+        working.push(decision);
         applied += 1;
     }
-    existing.sort_by_key(|item| item.start_us);
+    working.sort_by_key(|item| item.start_us);
+    *existing = working;
     Ok(applied)
+}
+
+fn same_camera_effect(left: &CameraDecision, right: &CameraDecision) -> bool {
+    let close = |a: Option<f64>, b: Option<f64>, default: f64, epsilon: f64| {
+        (a.unwrap_or(default) - b.unwrap_or(default)).abs() <= epsilon
+    };
+    left.mode == right.mode
+        && close(left.zoom, right.zoom, 1.0, 0.01)
+        && close(left.center_x, right.center_x, 0.5, 0.02)
+        && close(left.center_y, right.center_y, 0.5, 0.02)
+        && left.easing.as_deref().unwrap_or("ease_in_out")
+            == right.easing.as_deref().unwrap_or("ease_in_out")
+        && left
+            .transition_us
+            .unwrap_or(0)
+            .abs_diff(right.transition_us.unwrap_or(0))
+            <= crate::conflicts::TEMPORAL_EPSILON_US
 }
 
 fn analyze_impl(
@@ -818,6 +956,8 @@ fn analyze_impl(
             duration_us,
         },
         statistics: statistics(&suggestions),
+        detector_version: "13d-qa4-camera-v1".into(),
+        rule_version: "13d-qa4-camera-v1".into(),
         suggestions,
     };
     emit(app, project_id, "saving", duration_us, duration_us);
@@ -963,7 +1103,8 @@ pub fn review_smart_camera(
     let mut document: SmartCameraDocument = storage.read_json(&path).map_err(|_| {
         SmartCameraError::new("smart-camera-missing", "No existe análisis Smart Camera")
     })?;
-    if document.status == AnalysisStatus::Stale
+    if document.project_id != request.project_id
+        || document.status == AnalysisStatus::Stale
         || source_stale(
             &document,
             &bundle.source.source_id,
@@ -1008,9 +1149,132 @@ pub fn review_smart_camera(
 }
 
 #[tauri::command]
+pub fn review_all_smart_camera(
+    app: AppHandle,
+    project_id: String,
+    status: SuggestionStatus,
+) -> Result<SmartCameraDocument, SmartCameraError> {
+    let storage = ProjectStorage::from_app(&app)
+        .map_err(|_| SmartCameraError::new("storage-error", "Storage no disponible"))?;
+    let bundle = storage
+        .load_project(&project_id)
+        .map_err(|_| SmartCameraError::new("project-not-found", "Proyecto no disponible"))?;
+    let path = storage
+        .project_dir(&project_id)
+        .map_err(|_| SmartCameraError::new("invalid-project-id", "projectId inválido"))?
+        .join(FILE_NAME);
+    let mut document: SmartCameraDocument = storage.read_json(&path).map_err(|_| {
+        SmartCameraError::new("smart-camera-missing", "No existe análisis Smart Camera")
+    })?;
+    if document.project_id != project_id
+        || document.status == AnalysisStatus::Stale
+        || source_stale(
+            &document,
+            &bundle.source.source_id,
+            Path::new(&bundle.source.path),
+        )
+    {
+        return Err(SmartCameraError::new(
+            "smart-camera-stale",
+            "El análisis está desactualizado",
+        ));
+    }
+    let duration = bundle.source.duration_us.unwrap_or(0);
+    let minimum = effective_config(document.profile, document.content_mode).minimum_duration_us;
+    if status == SuggestionStatus::Accepted
+        && document.suggestions.iter().any(|item| {
+            !valid(
+                item,
+                duration,
+                if item.suggestion_type == CameraSuggestionType::Reset {
+                    1
+                } else {
+                    minimum
+                },
+            )
+        })
+    {
+        return Err(SmartCameraError::new(
+            "invalid-camera-range",
+            "Hay propuestas con un rango inválido",
+        ));
+    }
+    let mut working = bundle.edl.tracks.camera.clone();
+    let mut duplicate_existing = 0;
+    let mut duplicate_batch = 0;
+    document.suggestions.sort_by_key(|item| item.start_us);
+    for item in &mut document.suggestions {
+        if status == SuggestionStatus::Accepted {
+            use crate::conflicts::{classify_camera, ConflictClass};
+            let decision = CameraDecision {
+                id: item.id.clone(),
+                start_us: item.start_us,
+                end_us: item.end_us,
+                mode: format!("{:?}", item.suggestion_type).to_lowercase(),
+                zoom: Some(item.zoom),
+                center_x: Some(item.center_x),
+                center_y: Some(item.center_y),
+                easing: Some("ease_in_out".into()),
+                reason: None,
+                confidence: Some(item.confidence),
+                transition_us: Some(item.transition_us),
+                automation: Some(crate::project_storage::DecisionAutomation {
+                    key: item.id.clone(),
+                    detector: "smart_camera".into(),
+                    detector_version: "13d-qa4-camera-v1".into(),
+                    rule_version: Some("13d-qa4-camera-v1".into()),
+                    origin: "automatic".into(),
+                    confidence: Some(item.confidence),
+                    manual_action: None,
+                }),
+            };
+            let matches = |existing: &CameraDecision| {
+                existing.id == item.id
+                    || matches!(
+                        classify_camera(
+                            item.start_us,
+                            item.end_us,
+                            existing.start_us,
+                            existing.end_us,
+                            same_camera_effect(existing, &decision)
+                        ),
+                        ConflictClass::Duplicate | ConflictClass::Contained
+                    )
+            };
+            let already_applied = bundle.edl.tracks.camera.iter().any(matches);
+            let duplicate = already_applied || working.iter().any(matches);
+            if already_applied {
+                duplicate_existing += 1;
+            } else if duplicate {
+                duplicate_batch += 1;
+            }
+            item.status = if duplicate {
+                SuggestionStatus::Rejected
+            } else {
+                SuggestionStatus::Accepted
+            };
+            if !duplicate {
+                working.push(decision);
+            }
+        } else {
+            item.status = status;
+        }
+    }
+    document.statistics = statistics(&document.suggestions);
+    document.statistics.duplicate_existing = duplicate_existing;
+    document.statistics.duplicate_batch = duplicate_batch;
+    document.updated_at = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
+    storage
+        .write_json(&path, &document)
+        .map_err(|_| SmartCameraError::new("write-failed", "No se pudo guardar la revisión"))?;
+    Ok(document)
+}
+
+#[tauri::command]
 pub fn apply_smart_camera_to_edl(
     app: AppHandle,
     project_id: String,
+    resolutions: std::collections::HashMap<String, String>,
 ) -> Result<ApplyResult, SmartCameraError> {
     let storage = ProjectStorage::from_app(&app)
         .map_err(|_| SmartCameraError::new("storage-error", "Storage no disponible"))?;
@@ -1023,7 +1287,8 @@ pub fn apply_smart_camera_to_edl(
     let document: SmartCameraDocument = storage.read_json(&dir.join(FILE_NAME)).map_err(|_| {
         SmartCameraError::new("smart-camera-missing", "No existe análisis Smart Camera")
     })?;
-    if document.status == AnalysisStatus::Stale
+    if document.project_id != project_id
+        || document.status == AnalysisStatus::Stale
         || source_stale(
             &document,
             &bundle.source.source_id,
@@ -1037,7 +1302,7 @@ pub fn apply_smart_camera_to_edl(
     }
     let decisions = accepted_decisions(&document, bundle.source.duration_us.unwrap_or(0))?;
     let cuts_before = bundle.edl.tracks.cuts.clone();
-    let applied = merge_decisions(&mut bundle.edl.tracks.camera, decisions)?;
+    let applied = merge_decisions(&mut bundle.edl.tracks.camera, decisions, &resolutions)?;
     debug_assert_eq!(bundle.edl.tracks.cuts, cuts_before);
     bundle.edl.updated_at = Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true);
     storage
@@ -1078,6 +1343,8 @@ mod tests {
                 duration_us: 10_000_000,
             },
             statistics: statistics(&items),
+            detector_version: "13d-qa4-camera-v1".into(),
+            rule_version: "13d-qa4-camera-v1".into(),
             suggestions: items,
         }
     }
@@ -1150,6 +1417,97 @@ mod tests {
         let decisions = accepted_decisions(&document(vec![a.clone(), r, p]), 10_000_000).unwrap();
         assert_eq!(decisions.len(), 1);
         assert_eq!(a.id, id(CameraSuggestionType::Zoom, 0, 2_000_000));
+    }
+    #[test]
+    fn camera_overlap_reports_both_ranges_without_mutating_edl() {
+        let make = |id: &str, start_us, end_us, zoom| CameraDecision {
+            id: id.into(),
+            start_us,
+            end_us,
+            mode: "zoom".into(),
+            zoom: Some(zoom),
+            center_x: Some(0.5),
+            center_y: Some(0.5),
+            easing: Some("ease_in_out".into()),
+            reason: None,
+            confidence: None,
+            transition_us: None,
+            automation: None,
+        };
+        let mut existing = vec![make("old", 1_000_000, 4_000_000, 1.2)];
+        let original = existing.clone();
+        let error = merge_decisions(
+            &mut existing,
+            vec![make("new", 3_000_000, 5_000_000, 1.4)],
+            &Default::default(),
+        )
+        .unwrap_err();
+        assert!(error.message.contains("00:00:03.000–00:00:05.000"));
+        assert!(error.message.contains("00:00:01.000–00:00:04.000"));
+        assert_eq!(existing, original);
+        let mut keep = std::collections::HashMap::new();
+        keep.insert("new".to_string(), "keep_existing".to_string());
+        assert_eq!(
+            merge_decisions(
+                &mut existing,
+                vec![make("new", 3_000_000, 5_000_000, 1.4)],
+                &keep
+            )
+            .unwrap(),
+            0
+        );
+        assert_eq!(existing, original);
+        keep.insert("new".to_string(), "replace".to_string());
+        assert_eq!(
+            merge_decisions(
+                &mut existing,
+                vec![make("new", 3_000_000, 5_000_000, 1.4)],
+                &keep
+            )
+            .unwrap(),
+            1
+        );
+        assert_eq!(existing.len(), 2);
+        assert_eq!(
+            (
+                existing[0].id.as_str(),
+                existing[0].start_us,
+                existing[0].end_us
+            ),
+            ("old", 1_000_000, 3_000_000)
+        );
+        assert_eq!(
+            (
+                existing[1].id.as_str(),
+                existing[1].start_us,
+                existing[1].end_us
+            ),
+            ("new", 3_000_000, 5_000_000)
+        );
+        let mut trimmed = original;
+        keep.insert("new".to_string(), "trim_new".to_string());
+        assert_eq!(
+            merge_decisions(
+                &mut trimmed,
+                vec![make("new", 3_000_000, 5_000_000, 1.4)],
+                &keep
+            )
+            .unwrap(),
+            1
+        );
+        assert_eq!(
+            (trimmed[1].start_us, trimmed[1].end_us),
+            (4_000_000, 5_000_000)
+        );
+        assert_eq!(
+            merge_decisions(
+                &mut trimmed,
+                vec![make("new", 3_000_000, 5_000_000, 1.4)],
+                &keep
+            )
+            .unwrap(),
+            0
+        );
     }
     #[test]
     fn statuses_and_profiles() {
@@ -1258,8 +1616,14 @@ mod tests {
         let cuts = vec![(500_000_u64, 750_000_u64)];
         let before = cuts.clone();
         let mut camera = Vec::new();
-        assert_eq!(merge_decisions(&mut camera, decisions.clone()).unwrap(), 1);
-        assert_eq!(merge_decisions(&mut camera, decisions).unwrap(), 0);
+        assert_eq!(
+            merge_decisions(&mut camera, decisions.clone(), &Default::default()).unwrap(),
+            1
+        );
+        assert_eq!(
+            merge_decisions(&mut camera, decisions, &Default::default()).unwrap(),
+            0
+        );
         assert_eq!(camera.len(), 1);
         assert_eq!(cuts, before);
     }

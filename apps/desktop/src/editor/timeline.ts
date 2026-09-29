@@ -1,13 +1,13 @@
 import type { CameraDecision, CutDecision } from "../project/contracts";
 import { clampTimeUs } from "./timecode";
 
-export const MIN_TIMELINE_ZOOM = 0.25;
+export const MIN_TIMELINE_ZOOM = 0.02;
 export const MAX_TIMELINE_ZOOM = 320;
 export const SNAP_THRESHOLD_PX = 6;
 
 const RULER_STEPS_US = [
   250_000, 500_000, 1_000_000, 2_000_000, 5_000_000, 10_000_000, 15_000_000,
-  30_000_000, 60_000_000, 120_000_000, 300_000_000, 600_000_000, 1_200_000_000,
+  30_000_000, 60_000_000, 120_000_000, 300_000_000, 600_000_000, 1_200_000_000, 3_600_000_000, 7_200_000_000,
 ];
 
 export function usToPixels(us: number, pixelsPerSecond: number): number {

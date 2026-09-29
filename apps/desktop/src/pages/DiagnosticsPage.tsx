@@ -5,15 +5,19 @@ import {
   FileWarning,
   ScanSearch,
   TerminalSquare,
+  Trash2,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "../components/Button";
 import { StatusBadge } from "../components/StatusBadge";
 import { cn } from "../lib/cn";
 import {
+  formatDisplayDate,
+  formatFileSize,
   formatLogTime,
   getOperatingSystem,
 } from "../lib/format";
+import { getDiagnosticContext } from "../lib/diagnosticContext";
 import type {
   DiagnosticEvent,
   LogLevel,
@@ -26,10 +30,12 @@ type LogFilter = "all" | LogLevel;
 interface DiagnosticsPageProps {
   events: DiagnosticEvent[];
   media: MediaDiagnosticState;
+  onClear: () => void;
   onNotify: (
     message: string,
     tone?: ToastTone,
   ) => void;
+  sessionId: string;
 }
 
 const filters: Array<{
@@ -76,26 +82,29 @@ function diagnosticFileName(
 export function DiagnosticsPage({
   events,
   media,
+  onClear,
   onNotify,
+  sessionId,
 }: DiagnosticsPageProps) {
   const [activeFilter, setActiveFilter] =
     useState<LogFilter>("all");
 
+  const sessionEvents = useMemo(() => events.filter((event) => event.sessionId === sessionId), [events, sessionId]);
   const filteredEvents = useMemo(
     () =>
       activeFilter === "all"
-        ? events
-        : events.filter(
+        ? sessionEvents
+        : sessionEvents.filter(
             (event) =>
               event.level === activeFilter,
           ),
-    [activeFilter, events],
+    [activeFilter, sessionEvents],
   );
 
-  const errorCount = events.filter(
+  const errorCount = sessionEvents.filter(
     (event) => event.level === "error",
   ).length;
-  const warningCount = events.filter(
+  const warningCount = sessionEvents.filter(
     (event) => event.level === "warning",
   ).length;
   const hasEnvironmentIssue = !media.ffprobeAvailable;
@@ -140,14 +149,20 @@ export function DiagnosticsPage({
     }
   };
 
-  const exportDiagnostics = () => {
+  const exportDiagnostics = async () => {
     const now = new Date();
+    const context = await getDiagnosticContext().catch(() => null);
+    const recentErrors = events.filter((event) => event.level === "error" && event.sessionId !== sessionId).slice(-30);
 
     const content = [
       "CHETO VIDEO AI — Diagnóstico local",
       "Versión interna: 0.2.0",
       `Sistema operativo: ${getOperatingSystem()}`,
-      `Fecha: ${now.toLocaleString("es-PE")}`,
+      `CPU: ${context?.cpu ?? "No disponible"}`,
+      `GPU: ${context?.gpu.join(", ") || "No disponible"}`,
+      `RAM: ${context ? formatFileSize(context.ramTotalBytes) : "No disponible"}`,
+      `FFmpeg: ${context?.ffmpegVersion ?? "No disponible"}`,
+      `Fecha: ${formatDisplayDate(now)} ${formatLogTime(now.toISOString())}`,
       "Tema: Oscuro",
       "Idioma: Español",
       "API externa: Desactivada",
@@ -164,15 +179,14 @@ export function DiagnosticsPage({
               media.lastProbeMs / 1_000
             ).toFixed(2)} s`
       }`,
-      `Último archivo: ${
-        media.lastFileName ??
-        "No disponible"
-      }`,
       "",
-      "Eventos:",
-      ...(events.length
-        ? events.map(formatEvent)
+      "Sesión actual:",
+      ...(sessionEvents.length
+        ? sessionEvents.map(formatEvent)
         : ["Sin eventos registrados."]),
+      "",
+      "Errores recientes de sesiones anteriores (24 h):",
+      ...(recentErrors.length ? recentErrors.map(formatEvent) : ["Sin errores recientes."]),
     ].join("\n");
 
     const blob = new Blob([content], {
@@ -355,7 +369,7 @@ export function DiagnosticsPage({
           </div>
 
           <span className="font-mono text-[9px] text-muted/40">
-            {events.length} eventos
+            {sessionEvents.length} eventos de esta sesión
           </span>
         </header>
 
@@ -447,12 +461,13 @@ export function DiagnosticsPage({
         </div>
 
         <footer className="flex flex-wrap items-center gap-2 border-t border-white/[0.05] px-5 py-3">
+          <Button icon={<Trash2 size={13} />} onClick={() => { if (window.confirm("¿Limpiar solo el registro de diagnóstico? Los proyectos y ajustes no se modificarán.")) { onClear(); onNotify("Registro de diagnóstico limpiado", "success"); } }} variant="secondary">Limpiar registro</Button>
           <Button
             icon={
               <ClipboardCopy size={13} />
             }
             onClick={() =>
-              void copyEvents(events, 100)
+              void copyEvents(sessionEvents, 100)
             }
             variant="secondary"
           >
@@ -464,7 +479,7 @@ export function DiagnosticsPage({
               <ClipboardCopy size={13} />
             }
             onClick={() =>
-              void copyEvents(events, 200)
+              void copyEvents(sessionEvents, 200)
             }
             variant="secondary"
           >
@@ -477,7 +492,7 @@ export function DiagnosticsPage({
             }
             onClick={() =>
               void copyEvents(
-                events.filter(
+                sessionEvents.filter(
                   (event) =>
                     event.level ===
                     "error",
@@ -493,9 +508,7 @@ export function DiagnosticsPage({
           <div className="ml-auto">
             <Button
               icon={<Download size={13} />}
-              onClick={
-                exportDiagnostics
-              }
+              onClick={() => void exportDiagnostics()}
             >
               Exportar diagnóstico
             </Button>

@@ -45,7 +45,7 @@ export function Sidebar({
   profile,
 }: SidebarProps) {
   return (
-    <aside className="relative flex w-[72px] shrink-0 flex-col border-r border-white/[0.06] bg-[#080f19] px-2.5 py-4 md:w-[220px] md:px-3">
+    <aside className="app-sidebar relative flex w-[72px] shrink-0 flex-col border-r border-white/[0.06] bg-[#080f19] px-2.5 py-4 md:w-[220px] md:px-3">
       <div className="flex h-11 items-center gap-2.5 px-1.5">
         <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/[0.04] text-cyan ring-1 ring-white/[0.08]">
           <WandSparkles aria-hidden="true" size={17} strokeWidth={1.8} />

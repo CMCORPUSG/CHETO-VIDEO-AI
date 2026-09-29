@@ -97,6 +97,8 @@ pub enum PlaybackPreference {
 #[derive(Debug, Clone, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PlaybackSource {
+    pub project_id: String,
+    pub source_id: String,
     pub kind: PlaybackKind,
     pub path: String,
     pub duration_us: u64,

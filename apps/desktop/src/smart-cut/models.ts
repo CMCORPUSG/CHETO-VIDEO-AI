@@ -17,6 +17,8 @@ export interface SmartCutSuggestion {
 }
 
 export interface SmartCutStatistics {
+  candidatesDetected?: number;
+  candidatesRejected?: number;
   accepted: number;
   falseStart: number;
   filler: number;
@@ -35,6 +37,13 @@ export interface SmartCutDocument {
   source: { durationUs: number; fileSizeBytes: number; modifiedAt: string | null };
   sourceId: string;
   statistics: SmartCutStatistics;
+  diagnostics?: { thresholdDb: number; rawSilenceCount: number; rawSilenceDurationMs: number; tooShort: number; unsafeCount: number; candidateCount: number }[];
+  detectorVersion?: string;
+  ruleVersion?: string;
+  audioStream?: number;
+  sampleRate?: number | null;
+  channels?: number | null;
+  analysisDurationMs?: number;
   status: SmartCutAnalysisStatus;
   suggestions: SmartCutSuggestion[];
   updatedAt: string;

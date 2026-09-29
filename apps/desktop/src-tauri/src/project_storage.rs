@@ -1,4 +1,5 @@
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::collections::HashSet;
 use std::{
     fs::{self, File, OpenOptions},
     io::{BufReader, BufWriter, Write},
@@ -111,8 +112,8 @@ pub struct SourceAudioSnapshot {
     present: bool,
     codec: Option<String>,
     codec_long_name: Option<String>,
-    sample_rate: Option<u64>,
-    channels: Option<u64>,
+    pub(crate) sample_rate: Option<u64>,
+    pub(crate) channels: Option<u64>,
     channel_layout: Option<String>,
     bit_rate: Option<u64>,
 }
@@ -160,6 +161,8 @@ pub struct CutDecision {
     pub(crate) action: String,
     pub(crate) reason: Option<String>,
     pub(crate) confidence: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) automation: Option<DecisionAutomation>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -177,6 +180,8 @@ pub struct CameraDecision {
     pub(crate) confidence: Option<f64>,
     #[serde(default)]
     pub(crate) transition_us: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) automation: Option<DecisionAutomation>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -204,11 +209,114 @@ pub struct AudioDecision {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+pub struct AssetDecision {
+    pub(crate) id: String,
+    pub(crate) asset_id: String,
+    pub(crate) asset_path: String,
+    pub(crate) source_duration_us: u64,
+    pub(crate) kind: String,
+    pub(crate) start_us: u64,
+    pub(crate) end_us: u64,
+    pub(crate) gain_db: f64,
+    pub(crate) fade_in_us: u64,
+    pub(crate) fade_out_us: u64,
+    #[serde(rename = "loop")]
+    pub(crate) loop_: bool,
+    pub(crate) ducking: bool,
+    pub(crate) duck_db: f64,
+    pub(crate) attack_ms: u64,
+    pub(crate) release_ms: u64,
+    pub(crate) position_x: f64,
+    pub(crate) position_y: f64,
+    pub(crate) scale: f64,
+    pub(crate) opacity: f64,
+    pub(crate) muted: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) preview_input_offset_us: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) automation: Option<DecisionAutomation>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct DecisionAutomation {
+    pub(crate) key: String,
+    pub(crate) detector: String,
+    pub(crate) detector_version: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) rule_version: Option<String>,
+    pub(crate) origin: String,
+    pub(crate) confidence: Option<f64>,
+    pub(crate) manual_action: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct TitleDecision {
+    pub(crate) id: String,
+    pub(crate) preset_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) instance_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) template_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) template_version: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) parameters: Option<serde_json::Map<String, serde_json::Value>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) template_snapshot: Option<serde_json::Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) layer_overrides: Option<serde_json::Map<String, serde_json::Value>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) layout_overrides: Option<serde_json::Map<String, serde_json::Value>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) description_text: Option<String>,
+    pub(crate) text: String,
+    pub(crate) secondary_text: String,
+    pub(crate) start_us: u64,
+    pub(crate) end_us: u64,
+    pub(crate) position_x: f64,
+    pub(crate) position_y: f64,
+    pub(crate) anchor: String,
+    pub(crate) scale: f64,
+    pub(crate) font: String,
+    pub(crate) font_weight: u32,
+    pub(crate) font_size: f64,
+    pub(crate) color: String,
+    pub(crate) accent_color: String,
+    pub(crate) alignment: String,
+    pub(crate) tracking: f64,
+    pub(crate) line_height: f64,
+    pub(crate) opacity: f64,
+    pub(crate) safe_area: f64,
+    pub(crate) animation_in_us: u64,
+    pub(crate) animation_out_us: u64,
+    pub(crate) easing: String,
+    pub(crate) background: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct TransitionDecision {
+    pub(crate) id: String,
+    pub(crate) kind: String,
+    pub(crate) at_us: u64,
+    pub(crate) duration_us: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct EdlTracks {
     pub(crate) cuts: Vec<CutDecision>,
     pub(crate) camera: Vec<CameraDecision>,
     broll: Vec<BrollDecision>,
     pub(crate) audio: Vec<AudioDecision>,
+    #[serde(default)]
+    pub(crate) assets: Vec<AssetDecision>,
+    #[serde(default)]
+    pub(crate) titles: Vec<TitleDecision>,
+    #[serde(default)]
+    pub(crate) transitions: Vec<TransitionDecision>,
 }
 
 impl EdlTracks {
@@ -217,6 +325,9 @@ impl EdlTracks {
             && self.camera.is_empty()
             && self.broll.is_empty()
             && self.audio.is_empty()
+            && self.assets.is_empty()
+            && self.titles.is_empty()
+            && self.transitions.is_empty()
     }
 }
 
@@ -237,14 +348,36 @@ pub struct EdlOutput {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct EdlManifest {
+    #[serde(default)]
+    pub(crate) manual_trim: Option<ManualTrim>,
+    #[serde(default)]
+    pub(crate) manual_split_points_us: Vec<u64>,
+    pub(crate) audio_on_timeline: Option<bool>,
+    #[serde(default)]
+    pub(crate) automation: Option<AutomationSettings>,
     schema_version: u32,
-    project_id: String,
-    source_id: String,
+    pub(crate) project_id: String,
+    pub(crate) source_id: String,
     timebase: EdlTimebase,
     pub(crate) source_duration_us: Option<u64>,
+    pub(crate) source_on_timeline: Option<bool>,
     pub(crate) tracks: EdlTracks,
     output: EdlOutput,
     pub(crate) updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct ManualTrim {
+    pub(crate) source_in_us: u64,
+    pub(crate) source_out_us: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct AutomationSettings {
+    pub(crate) mode: String,
+    pub(crate) rules_version: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -318,7 +451,8 @@ impl ProjectStorage {
     }
 
     fn manifest_exists(&self, project_id: &str) -> Result<bool, ProjectStorageError> {
-        Ok(self.project_dir(project_id)?.join(PROJECT_FILE).is_file())
+        let path = self.project_dir(project_id)?.join(PROJECT_FILE);
+        Ok(path.is_file() || !Self::backup_candidates(&path).is_empty())
     }
 
     fn validate_bundle(
@@ -378,7 +512,7 @@ impl ProjectStorage {
         Self::validate_bundle(&bundle, true)?;
         self.initialize()?;
         let project_dir = self.project_dir(&bundle.project.project_id)?;
-        if project_dir.join(PROJECT_FILE).is_file() {
+        if self.manifest_exists(&bundle.project.project_id)? {
             return self.load_project(&bundle.project.project_id);
         }
         fs::create_dir_all(&project_dir).map_err(|error| {
@@ -599,28 +733,68 @@ impl ProjectStorage {
         &self,
         path: &Path,
     ) -> Result<T, ProjectStorageError> {
-        let file = File::open(path).map_err(|error| {
-            ProjectStorageError::new(
-                "project-file-unavailable",
-                format!(
-                    "No se pudo abrir {}: {error}",
-                    path.file_name()
-                        .and_then(|name| name.to_str())
-                        .unwrap_or("JSON")
-                ),
-            )
-        })?;
-        serde_json::from_reader(BufReader::new(file)).map_err(|error| {
-            ProjectStorageError::new(
-                "corrupt-json",
-                format!(
-                    "{} contiene JSON inválido: {error}",
-                    path.file_name()
-                        .and_then(|name| name.to_str())
-                        .unwrap_or("El archivo")
-                ),
-            )
-        })
+        let original = File::open(path)
+            .map_err(|error| {
+                ProjectStorageError::new(
+                    "project-file-unavailable",
+                    format!(
+                        "No se pudo abrir {}: {error}",
+                        path.file_name()
+                            .and_then(|name| name.to_str())
+                            .unwrap_or("JSON")
+                    ),
+                )
+            })
+            .and_then(|file| {
+                serde_json::from_reader(BufReader::new(file)).map_err(|error| {
+                    ProjectStorageError::new(
+                        "corrupt-json",
+                        format!(
+                            "{} contiene JSON inválido: {error}",
+                            path.file_name()
+                                .and_then(|name| name.to_str())
+                                .unwrap_or("El archivo")
+                        ),
+                    )
+                })
+            });
+        if original.is_ok() {
+            return original;
+        }
+        for candidate in Self::backup_candidates(path) {
+            if let Ok(file) = File::open(&candidate) {
+                if let Ok(value) = serde_json::from_reader(BufReader::new(file)) {
+                    return Ok(value);
+                }
+            }
+        }
+        original
+    }
+
+    fn backup_candidates(path: &Path) -> Vec<PathBuf> {
+        let Some(parent) = path.parent() else {
+            return Vec::new();
+        };
+        let Some(name) = path.file_name().and_then(|v| v.to_str()) else {
+            return Vec::new();
+        };
+        let prefix = format!(".{name}.");
+        let mut candidates: Vec<_> = fs::read_dir(parent)
+            .into_iter()
+            .flatten()
+            .flatten()
+            .filter_map(|entry| {
+                let file_name = entry.file_name();
+                let file_name = file_name.to_str()?;
+                if !file_name.starts_with(&prefix) || !file_name.ends_with(".bak") {
+                    return None;
+                }
+                let modified = entry.metadata().ok()?.modified().ok()?;
+                Some((entry.path(), modified))
+            })
+            .collect();
+        candidates.sort_by_key(|(_, modified)| std::cmp::Reverse(*modified));
+        candidates.into_iter().map(|(path, _)| path).collect()
     }
 }
 
@@ -669,6 +843,154 @@ pub fn save_project_edl(
     edl: EdlManifest,
 ) -> Result<EdlManifest, ProjectStorageError> {
     ProjectStorage::from_app(&app)?.save_edl(edl)
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReanalysisPlan {
+    project_id: String,
+    edl_revision: String,
+    automatic_camera_count: usize,
+    preserved_camera_count: usize,
+    legacy_unclassified_camera_count: usize,
+    smart_cut_document_present: bool,
+    smart_camera_document_present: bool,
+}
+
+fn smart_camera_suggestion_ids(path: &Path) -> HashSet<String> {
+    let Ok(bytes) = fs::read(path) else {
+        return HashSet::new();
+    };
+    let Ok(json) = serde_json::from_slice::<serde_json::Value>(&bytes) else {
+        return HashSet::new();
+    };
+    json.get("suggestions")
+        .and_then(|value| value.as_array())
+        .into_iter()
+        .flatten()
+        .filter_map(|value| {
+            value
+                .get("id")
+                .and_then(|id| id.as_str())
+                .map(str::to_owned)
+        })
+        .collect()
+}
+
+fn matches_legacy_smart_camera_id(item: &CameraDecision) -> bool {
+    let kind = match item.mode.as_str() {
+        "zoom" => "Zoom",
+        "focus" => "Focus",
+        "reset" => "Reset",
+        _ => return false,
+    };
+    let id = Uuid::new_v5(
+        &Uuid::NAMESPACE_OID,
+        format!("smart-camera:{kind}:{}:{}", item.start_us, item.end_us).as_bytes(),
+    )
+    .to_string();
+    item.id == id || item.id.starts_with(&format!("{id}-trim-"))
+}
+
+fn is_automatic_camera(item: &CameraDecision, suggestion_ids: &HashSet<String>) -> bool {
+    match item.automation.as_ref() {
+        Some(meta) if meta.origin == "manual" => false,
+        Some(meta) => meta.origin == "automatic" && meta.detector == "smart_camera",
+        None => {
+            suggestion_ids
+                .iter()
+                .any(|id| item.id == *id || item.id.starts_with(&format!("{id}-trim-")))
+                || matches_legacy_smart_camera_id(item)
+        }
+    }
+}
+
+fn reanalysis_plan_for(bundle: &ProjectBundle, dir: &Path) -> ReanalysisPlan {
+    let ids = smart_camera_suggestion_ids(&dir.join("smart_camera.json"));
+    let automatic_camera_count = bundle
+        .edl
+        .tracks
+        .camera
+        .iter()
+        .filter(|item| is_automatic_camera(item, &ids))
+        .count();
+    let legacy_unclassified_camera_count = bundle
+        .edl
+        .tracks
+        .camera
+        .iter()
+        .filter(|item| item.automation.is_none() && !is_automatic_camera(item, &ids))
+        .count();
+    ReanalysisPlan {
+        project_id: bundle.project.project_id.clone(),
+        edl_revision: bundle.edl.updated_at.clone(),
+        automatic_camera_count,
+        preserved_camera_count: bundle.edl.tracks.camera.len() - automatic_camera_count,
+        legacy_unclassified_camera_count,
+        smart_cut_document_present: dir.join("smart_cut.json").is_file(),
+        smart_camera_document_present: dir.join("smart_camera.json").is_file(),
+    }
+}
+
+#[tauri::command]
+pub fn preview_reanalysis_cleanup(
+    app: AppHandle,
+    project_id: String,
+) -> Result<ReanalysisPlan, ProjectStorageError> {
+    let storage = ProjectStorage::from_app(&app)?;
+    let bundle = storage.load_project(&project_id)?;
+    let dir = storage.project_dir(&project_id)?;
+    Ok(reanalysis_plan_for(&bundle, &dir))
+}
+
+#[tauri::command]
+pub fn apply_reanalysis_cleanup(
+    app: AppHandle,
+    project_id: String,
+    expected_revision: String,
+) -> Result<ReanalysisPlan, ProjectStorageError> {
+    let storage = ProjectStorage::from_app(&app)?;
+    let mut bundle = storage.load_project(&project_id)?;
+    if bundle.edl.updated_at != expected_revision {
+        return Err(ProjectStorageError::new(
+            "edl-stale",
+            "El EDL cambió; revisa el plan antes de reanalizar.",
+        ));
+    }
+    let dir = storage.project_dir(&project_id)?;
+    let plan = reanalysis_plan_for(&bundle, &dir);
+    let ids = smart_camera_suggestion_ids(&dir.join("smart_camera.json"));
+    storage.write_json(
+        &dir.join(format!("edl.pre-reanalysis.{}.json", Uuid::new_v4())),
+        &bundle.edl,
+    )?;
+    bundle
+        .edl
+        .tracks
+        .camera
+        .retain(|item| !is_automatic_camera(item, &ids));
+    let next = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
+    bundle.edl.updated_at = if next <= expected_revision {
+        (chrono::DateTime::parse_from_rfc3339(&expected_revision)
+            .map_err(|_| ProjectStorageError::new("edl-revision", "Revisión EDL inválida"))?
+            + chrono::Duration::milliseconds(1))
+        .to_rfc3339_opts(chrono::SecondsFormat::Millis, true)
+    } else {
+        next
+    };
+    storage.save_edl(bundle.edl)?;
+    for file in ["smart_cut.json", "smart_camera.json"] {
+        let path = dir.join(file);
+        if path.exists() {
+            fs::remove_file(path).map_err(|error| {
+                ProjectStorageError::new(
+                    "cleanup-failed",
+                    format!("No se pudo invalidar {file}: {error}"),
+                )
+            })?;
+        }
+    }
+    Ok(plan)
 }
 
 #[tauri::command]
@@ -760,6 +1082,10 @@ mod tests {
                 },
             },
             edl: EdlManifest {
+                manual_trim: None,
+                manual_split_points_us: Vec::new(),
+                audio_on_timeline: None,
+                automation: None,
                 schema_version: 1,
                 project_id: project_id.to_owned(),
                 source_id: source_id.to_owned(),
@@ -767,11 +1093,15 @@ mod tests {
                     unit: "microseconds".into(),
                 },
                 source_duration_us: Some(58_000_123),
+                source_on_timeline: None,
                 tracks: EdlTracks {
                     cuts: vec![],
                     camera: vec![],
                     broll: vec![],
                     audio: vec![],
+                    assets: vec![],
+                    titles: vec![],
+                    transitions: vec![],
                 },
                 output: EdlOutput {
                     aspect_ratio_mode: "source".into(),
@@ -943,5 +1273,83 @@ mod tests {
             storage.load_project(&project_id).unwrap_err().code,
             "corrupt-json"
         );
+    }
+
+    #[test]
+    fn reanalysis_identifies_legacy_auto_camera_and_preserves_manual_work() {
+        let (_temp, storage, project_id, source_id) = fixture();
+        let mut bundle = storage
+            .initialize_project(sample_request(&project_id, &source_id, "Proyecto"))
+            .unwrap();
+        let make = |id: &str, automation: Option<DecisionAutomation>| CameraDecision {
+            id: id.into(),
+            start_us: 1_000_000,
+            end_us: 2_000_000,
+            mode: "zoom".into(),
+            zoom: Some(1.2),
+            center_x: Some(0.5),
+            center_y: Some(0.5),
+            easing: None,
+            reason: None,
+            confidence: None,
+            transition_us: None,
+            automation,
+        };
+        let manual = DecisionAutomation {
+            key: "manual".into(),
+            detector: "smart_camera".into(),
+            detector_version: "old".into(),
+            rule_version: None,
+            origin: "manual".into(),
+            confidence: None,
+            manual_action: Some("modified".into()),
+        };
+        bundle.edl.tracks.camera = vec![
+            make("legacy-auto", None),
+            make("manual", Some(manual)),
+            make("unknown", None),
+        ];
+        bundle.edl.tracks.titles.push(
+            serde_json::from_value(serde_json::json!({
+                "id":"title","presetId":"lower-third","text":"Manual","secondaryText":"",
+                "startUs":0,"endUs":2000000,"positionX":0.5,"positionY":0.8,
+                "anchor":"center","scale":1,"font":"Inter","fontWeight":700,"fontSize":48,
+                "color":"#FFFFFF","accentColor":"#34D5E5","alignment":"left","tracking":0,
+                "lineHeight":1.1,"opacity":1,"safeArea":0.06,"animationInUs":0,"animationOutUs":0,
+                "easing":"linear","background":false
+            }))
+            .unwrap(),
+        );
+        let dir = storage.project_dir(&project_id).unwrap();
+        fs::write(
+            dir.join("smart_camera.json"),
+            r#"{"suggestions":[{"id":"legacy-auto"},{"id":"manual"}]}"#,
+        )
+        .unwrap();
+        let plan = reanalysis_plan_for(&bundle, &dir);
+        assert_eq!(plan.automatic_camera_count, 1);
+        assert_eq!(plan.preserved_camera_count, 2);
+        assert_eq!(plan.legacy_unclassified_camera_count, 1);
+        let ids = smart_camera_suggestion_ids(&dir.join("smart_camera.json"));
+        bundle
+            .edl
+            .tracks
+            .camera
+            .retain(|item| !is_automatic_camera(item, &ids));
+        assert_eq!(
+            bundle
+                .edl
+                .tracks
+                .camera
+                .iter()
+                .map(|item| item.id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["manual", "unknown"]
+        );
+        assert_eq!(bundle.edl.tracks.titles[0].text, "Manual");
+        let generated_id =
+            Uuid::new_v5(&Uuid::NAMESPACE_OID, b"smart-camera:Zoom:1000000:2000000").to_string();
+        assert!(matches_legacy_smart_camera_id(&make(&generated_id, None)));
+        assert!(!matches_legacy_smart_camera_id(&make("user-camera", None)));
     }
 }

@@ -28,12 +28,16 @@ export async function reviewSmartCutSuggestion(projectId: string, suggestionId: 
   return invoke("review_smart_cut_suggestion", { request: { projectId, status, suggestionId } });
 }
 
-export async function applySmartCutToEdl(projectId: string): Promise<ApplySmartCutResult> {
+export async function reviewAllSmartCutSuggestions(projectId: string, status: SmartCutSuggestionStatus): Promise<SmartCutDocument> {
   requireNative();
-  return invoke("apply_smart_cut_to_edl", { projectId });
+  return invoke("review_all_smart_cut_suggestions", { projectId, status });
+}
+
+export async function applySmartCutToEdl(projectId: string, resolutions: Record<string, "merge" | "replace" | "keep_existing"> = {}): Promise<ApplySmartCutResult> {
+  requireNative();
+  return invoke("apply_smart_cut_to_edl", { projectId, resolutions });
 }
 
 export function onSmartCutProgress(handler: (progress: SmartCutProgress) => void): Promise<UnlistenFn> {
   return listen<SmartCutProgress>("smart-cut://progress", ({ payload }) => handler(payload));
 }
-
